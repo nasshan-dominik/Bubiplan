@@ -3735,120 +3735,6 @@ function gradId(brand) {
   return BRANDS.indexOf(brand);
 }
 
-/* ================= GABARITS DE CONTENANTS =================
-   Une boîte ronde n'est pas un rectangle : elle a un couvercle, des bords qui fuient
-   et une lumière qui glisse sur le métal. On dessine donc une silhouette par type de
-   contenant, et la photo vient s'y loger, resserrée sur les côtés pour épouser la
-   courbure. C'est cette petite distorsion qui fait qu'une canette a l'air d'une
-   canette et non d'une vignette collée.
-*/
-function shapeOf(p) {
-  if (/Soupe/.test(p.name)) return 'brique';
-  if (/Terrine|Mousse|Complet/.test(p.name)) return 'barquette';
-  if (p.cat === "William's" && p.univ === 'chat' && p.fmt === '85g') return 'pochon';
-  if (/Beauty|Health Care|Vitality|Sterilised/.test(p.name) || /Junior, poulet, 70g/.test(p.name)) return 'pochon';
-  if (p.cat === 'Gustav' && p.fmt === '150g') return 'barquette';
-  if (p.fmt === '6×70g') return 'multipack';
-  return 'canette';
-}
-
-/* Renvoie le tracé du contenant et la zone où poser la photo. */
-function shapeGeometry(kind, x, y, w, h) {
-  const r = Math.min(w, h) * .12;
-  switch (kind) {
-    case 'canette': {
-      const lid = Math.max(2, h * .10);       // couvercle
-      const rim = Math.max(1.5, h * .06);     // sertissage du bas
-      return {
-        body: `M${x} ${y+lid} h${w} v${h-lid-rim} q0 ${rim} ${-w/2} ${rim} q${-w/2} 0 ${-w/2} ${-rim} z`,
-        lidPath: `M${x} ${y+lid} q${w/2} ${-lid*1.5} ${w} 0 z`,
-        photo: { x: x + w * .07, y: y + lid, w: w * .86, h: h - lid - rim },
-        curve: true
-      };
-    }
-    case 'barquette': {
-      const lip = Math.max(1.5, h * .16);
-      return {
-        body: `M${x} ${y+lip} h${w} v${h-lip} h${-w} z`,
-        lidPath: `M${x-w*.03} ${y} h${w*1.06} v${lip} h${-w*1.06} z`,
-        photo: { x: x + w * .04, y: y + lip * .2, w: w * .92, h: h - lip * .2 },
-        curve: false
-      };
-    }
-    case 'brique':
-      return {
-        body: `M${x} ${y+h*.06} q0 ${-h*.06} ${w*.18} ${-h*.06} h${w*.64} q${w*.18} 0 ${w*.18} ${h*.06} v${h*.94} h${-w} z`,
-        lidPath: '',
-        photo: { x: x + w * .05, y: y + h * .08, w: w * .9, h: h * .88 },
-        curve: false
-      };
-    case 'pochon':
-      return {
-        body: `M${x+w*.12} ${y} h${w*.76} q${w*.12} 0 ${w*.12} ${w*.12} v${h-w*.12} q0 ${w*.1} ${-w*.14} ${w*.1} h${-w*.72} q${-w*.14} 0 ${-w*.14} ${-w*.1} v${-(h-w*.12)} q0 ${-w*.12} ${w*.12} ${-w*.12} z`,
-        lidPath: `M${x+w*.12} ${y} h${w*.76} v${h*.07} h${-w*.76} z`,
-        photo: { x: x + w * .1, y: y + h * .06, w: w * .8, h: h * .9 },
-        curve: false
-      };
-    case 'multipack':
-      return {
-        body: `M${x} ${y} h${w} v${h} h${-w} z`,
-        lidPath: `M${x} ${y} h${w} v${h*.12} h${-w} z`,
-        photo: { x: x + w * .03, y: y + h * .14, w: w * .94, h: h * .82 },
-        curve: false
-      };
-    default:
-      return { body: `M${x} ${y} h${w} v${h} h${-w} z`, lidPath: '', photo: { x, y, w, h }, curve: false };
-  }
-}
-
-/* Dessine un contenant : silhouette, photo intégrée, ombrage. */
-function drawContainer(p, x, y, w, h, url, dark, idSeed) {
-  const kind = shapeOf(p);
-  const g = shapeGeometry(kind, x, y, w, h);
-  const cid = 'sh' + idSeed;
-  let s = `<clipPath id="${cid}"><path d="${g.body}"/></clipPath>`;
-
-  if (kind === 'canette') {
-    // corps en fer-blanc : gris métal, pas la couleur de la marque
-    s += `<path d="${g.body}" fill="url(#metal)"/>`;
-    const ph = g.photo;
-    // l'étiquette ne couvre pas toute la boîte : un anneau de métal reste visible
-    const inset = Math.max(1, h * .06);
-    const ly = ph.y + inset, lh = ph.h - inset * 2;
-    const lid = 'lb' + idSeed;
-    s += `<clipPath id="${lid}"><rect x="${x}" y="${ly}" width="${w}" height="${lh}"/></clipPath>`;
-    if (url) {
-      // la photo est étirée sur la largeur de la boîte, comme une étiquette enroulée :
-      // on la resserre légèrement sur les bords pour suivre la courbure
-      s += `<image href="${url}" xlink:href="${url}" x="${x - w * .10}" y="${ly - lh * .18}" width="${w * 1.20}" height="${lh * 1.36}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${lid})"/>`;
-      s += `<rect x="${x}" y="${ly}" width="${w}" height="${lh}" fill="url(#cyl)" clip-path="url(#${lid})" opacity=".55"/>`;
-    } else {
-      s += `<rect x="${x}" y="${ly}" width="${w}" height="${lh}" fill="url(#grad${gradId(p.cat)})" clip-path="url(#${lid})"/>`;
-      s += `<rect x="${x}" y="${ly}" width="${w}" height="${lh}" fill="url(#cyl)" clip-path="url(#${lid})" opacity=".5"/>`;
-    }
-    // liserés du haut et du bas de l'étiquette
-    s += `<line x1="${x}" y1="${ly}" x2="${x+w}" y2="${ly}" stroke="rgba(0,0,0,.22)" stroke-width=".5"/>`;
-    s += `<line x1="${x}" y1="${ly+lh}" x2="${x+w}" y2="${ly+lh}" stroke="rgba(0,0,0,.22)" stroke-width=".5"/>`;
-    // reflet du métal sur toute la boîte
-    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#cyl)" clip-path="url(#${cid})" opacity=".38"/>`;
-    // couvercle bombé
-    if (g.lidPath) s += `<path d="${g.lidPath}" fill="url(#lidg)"/>`;
-    s += `<path d="${g.body}" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".7"/>`;
-    return s;
-  }
-
-  // autres contenants : la photo occupe toute la face
-  s += `<path d="${g.body}" fill="url(#grad${gradId(p.cat)})"/>`;
-  if (url) {
-    const ph = g.photo;
-    s += `<image href="${url}" xlink:href="${url}" x="${ph.x}" y="${ph.y}" width="${ph.w}" height="${ph.h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cid})"/>`;
-  }
-  s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#flat)" clip-path="url(#${cid})" opacity=".45"/>`;
-  if (g.lidPath) s += `<path d="${g.lidPath}" fill="${dark ? 'rgba(255,255,255,.20)' : 'rgba(0,0,0,.13)'}"/>`;
-  s += `<path d="${g.body}" fill="none" stroke="${dark ? 'rgba(0,0,0,.5)' : 'rgba(0,0,0,.18)'}" stroke-width=".7"/>`;
-  return s;
-}
-
 let clipSeq = 0;
 
 function gondolaSVG(interactive, photos, scene) {
@@ -3863,7 +3749,7 @@ function gondolaSVG(interactive, photos, scene) {
   clipSeq = 0;
   // pas de largeur fixe : le rayon s'étire pour occuper toute la place disponible
   let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W+L+8} ${H+B+8}" preserveAspectRatio="xMidYMid meet" font-family="-apple-system,system-ui,sans-serif" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <defs><linearGradient id="backpanel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#54585d"/><stop offset="1" stop-color="#3a3d42"/></linearGradient><linearGradient id="shelfedge" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2f3f5"/><stop offset="1" stop-color="#c6cacf"/></linearGradient><linearGradient id="metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8d9196"/><stop offset=".16" stop-color="#e3e6e9"/><stop offset=".42" stop-color="#c3c7cc"/><stop offset=".72" stop-color="#a8adb3"/><stop offset="1" stop-color="#7e8288"/></linearGradient><linearGradient id="lidg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9aa0a6"/><stop offset=".3" stop-color="#eceef0"/><stop offset="1" stop-color="#8b9096"/></linearGradient><linearGradient id="cyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgba(0,0,0,.28)"/><stop offset=".18" stop-color="rgba(255,255,255,.30)"/><stop offset=".45" stop-color="rgba(255,255,255,.06)"/><stop offset="1" stop-color="rgba(0,0,0,.30)"/></linearGradient><linearGradient id="flat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.26)"/><stop offset="1" stop-color="rgba(0,0,0,.16)"/></linearGradient>${BRANDS.map((b, i) => `<linearGradient id="grad${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${BRAND_LIGHT[b]}"/><stop offset="1" stop-color="${BRAND_DARK[b]}"/></linearGradient>`).join('')}</defs>
+  <defs><linearGradient id="backpanel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#54585d"/><stop offset="1" stop-color="#3a3d42"/></linearGradient><linearGradient id="shelfedge" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2f3f5"/><stop offset="1" stop-color="#c6cacf"/></linearGradient><linearGradient id="cyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgba(0,0,0,.28)"/><stop offset=".18" stop-color="rgba(255,255,255,.30)"/><stop offset=".45" stop-color="rgba(255,255,255,.06)"/><stop offset="1" stop-color="rgba(0,0,0,.30)"/></linearGradient><linearGradient id="flat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.26)"/><stop offset="1" stop-color="rgba(0,0,0,.16)"/></linearGradient>${BRANDS.map((b, i) => `<linearGradient id="grad${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${BRAND_LIGHT[b]}"/><stop offset="1" stop-color="${BRAND_DARK[b]}"/></linearGradient>`).join('')}</defs>
   ${scene
     ? `<rect x="${L}" y="4" width="${W}" height="${H}" fill="url(#backpanel)"/>`
     : `<rect x="${L}" y="4" width="${W}" height="${H}" fill="${dark?'#2c2c2e':'#fff'}" stroke="${dark?'#8e8e93':'#8d8b82'}" stroke-width="1.5"/>`}`;
@@ -3899,8 +3785,22 @@ function gondolaSVG(interactive, photos, scene) {
           const yy = y1 - (j2 + 1) * hOne;
           if (bad) {
             s += `<rect x="${x+.5}" y="${yy+.5}" width="${wOne-1}" height="${hOne-1}" rx="2.5" fill="#ff3b30"/>`;
-          } else {
-            s += drawContainer(p, x + .5, yy + .5, wOne - 1, hOne - 1, url, dark, clipSeq++);
+            continue;
+          }
+          s += `<rect x="${x+.5}" y="${yy+.5}" width="${wOne-1}" height="${hOne-1}" rx="2.5" fill="url(#grad${gradId(p.cat)})" stroke="${dark?'#1c1c1e':'#fff'}" stroke-width="1"/>`;
+          if (url) {
+            // la photo remplit la boîte ; le zoom rogne la marge blanche résiduelle
+            const bw = wOne - 2, bh = hOne - 2, bx = x + 1, by = yy + 1;
+            const z = FIT.zoom || 1;
+            const iw = bw * z, ih = bh * z;
+            const cid = 'clip' + (clipSeq++);
+            s += `<clipPath id="${cid}"><rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5"/></clipPath>`;
+            s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5" fill="#fff"/>`;
+            s += `<image href="${url}" xlink:href="${url}" x="${bx-(iw-bw)/2}" y="${by-(ih-bh)/2}" width="${iw}" height="${ih}" preserveAspectRatio="${FIT.mode==='fill'?'xMidYMid slice':'xMidYMid meet'}" clip-path="url(#${cid})"/>`;
+          } else if (wOne > 16 && hOne > 10) {
+            // pas de photo : le logo de la marque tient lieu de repère
+            const lg = LOGOS[p.cat], lw2 = Math.min(wOne - 6, 26), lh2 = lw2 * lg.h / lg.w;
+            if (lh2 < hOne - 4) s += `<image href="${lg.white}" xlink:href="${lg.white}" x="${x + (wOne - lw2) / 2}" y="${yy + (hOne - lh2) / 2}" width="${lw2}" height="${lh2}" opacity=".9"/>`;
           }
         }
         // la référence n'est écrite sur la boîte qu'en l'absence de photo
