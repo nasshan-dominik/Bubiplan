@@ -1910,6 +1910,72 @@ html, body {
 
 /* le titre de la barre de navigation cède la place aux boutons */
 .nav .t { min-width: 0; overflow: hidden; }
+
+/* ============================================================
+   CORRECTIONS ISSUES DE L'INSPECTION NAVIGATEUR
+   ============================================================ */
+
+/* la carte produit ne peut pas déborder sur une seconde ligne */
+.pi { grid-template-rows: minmax(0, 1fr); }
+.pi > * { grid-row: 1; }
+.pi .add, .pi .bd { box-sizing: border-box; }
+
+/* cibles tactiles réellement mesurées sous 44 px */
+.nav .nb.b { min-height: 44px; padding: 8px 14px; }
+.nb.side, [data-act="univ2"], [data-act="univ"] { min-width: 44px; }
+.seg button { padding-left: 10px; padding-right: 10px; }
+
+/* la poignée du tiroir ne faisait que 5 px de haut : on élargit la zone d'appui */
+.grab {
+  height: 22px;                 /* zone d'appui confortable */
+  padding: 0;
+  position: relative;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.grab::before {                 /* le trait visible reste fin */
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bubi-border);
+}
+
+.grab::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 44px;
+}
+
+/* le bandeau Annuler ne doit pas masquer la première carte du catalogue */
+
+
+/* le bouton de l'état vide doit lui aussi respecter la cible tactile */
+.pill { min-height: 48px; padding: 13px 24px; }
+
+/* la poignée du tiroir : zone d'appui étendue, invisible mais réelle */
+.grab::after { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 140px; height: 44px; }
+
+/* le bandeau Annuler vit au bas de la zone du plan, jamais sur le rayon ni sur le catalogue */
+.cwWrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cwWrap .cw { flex: 1; min-height: 0; }
+.undobar { bottom: 10px; }
 </style>
 </head>
 <body>
@@ -3505,8 +3571,10 @@ function renderEditor() {
     <div class="stats" id="stats"></div>
     <div id="warns"></div>
     <div class="body">
-      <div class="cw" id="cw"></div>
-      <div class="undobar" id="undobar"></div>
+      <div class="cwWrap">
+        <div class="cw" id="cw"></div>
+        <div class="undobar" id="undobar"></div>
+      </div>
       <div class="dr${S.min?' min':''}" id="dr">
         <div class="grab" data-act="drawer"></div>
         <div class="sb"><button class="nb tg" data-act="drawer" id="bDr">${S.min?ic('right',18):ic('left',18)}</button><div class="in">${ic('search',18)}<input id="q" placeholder="Réf. ou nom de produit" value="${esc(S.q)}" autocomplete="off" autocorrect="off"></div><button class="nb side" data-act="side" id="bSide" title="Côté d'insertion">${S.side==='left'?ic('left',19):ic('right',19)}</button><span class="cnt" id="cnt"></span></div>
@@ -3565,15 +3633,16 @@ function refreshCounts() {
   const c = placedCounts();
   document.querySelectorAll('#pl .pi').forEach(el => {
     const r = el.dataset.ref;
-    let b = el.querySelector('.bd');
+    // la troisième colonne contient soit le bouton +, soit le compteur, jamais les deux
+    const slot = el.querySelector('.add, .bd');
+    if (!slot) return;
     if (c[r]) {
-      if (!b) {
-        b = document.createElement('span');
-        b.className = 'bd';
-        el.appendChild(b);
-      }
-      b.textContent = c[r];
-    } else if (b) b.remove();
+      slot.className = 'bd';
+      slot.textContent = c[r];
+    } else if (slot.className !== 'add') {
+      slot.className = 'add';
+      slot.innerHTML = ic('plus', 16);
+    }
   });
 }
 
