@@ -1084,25 +1084,56 @@ a.chip {
   inset: 0;
   background: var(--bg);
   z-index: 40;
+  overflow: hidden;
+  touch-action: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--sat) + 60px) 16px calc(var(--sab) + 16px)
 }
 
-.pres svg {
+.presWrap {
+  width: 100%;
+  height: 100%;
+  padding: calc(var(--sat) + 16px) 16px calc(var(--sab) + 76px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  transition: transform .06s linear;
+  will-change: transform;
+}
+
+.presWrap svg {
   max-width: 100%;
   max-height: 100%;
   background: var(--gond);
-  border-radius: 12px
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .12);
 }
 
-.pres .nb {
-  position: absolute;
-  top: calc(var(--sat) + 10px);
-  right: 12px;
-  background: var(--card);
-  border-radius: 20px
+.presBar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + var(--sab));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 24px;
+  background: var(--nav);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .18);
+  border: .5px solid var(--sep);
+}
+
+.presBar #presPct {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mut);
+  min-width: 58px;
+  text-align: center;
 }
 
 .ver {
@@ -1431,6 +1462,110 @@ body { font-size: 100%; }
   border-radius: 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
 }
+
+/* ================= MATIÈRE TRANSLUCIDE =================
+   Approximation web du verre d'iOS : flou de l'arrière-plan avec saturation, bordure
+   claire en haut qui simule la réfraction, ombre portée courte. Le vrai Liquid Glass
+   d'Apple déforme l'image derrière lui en temps réel, ce qu'un navigateur ne sait pas
+   faire ; on en garde la profondeur et la légèreté.
+   Sur les appareils qui ne gèrent pas le flou, on retombe sur un fond opaque lisible.
+*/
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  :root {
+    --glass: rgba(255, 255, 255, .62);
+    --glassEdge: rgba(255, 255, 255, .85);
+    --glassLine: rgba(0, 0, 0, .06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --glass: rgba(40, 40, 44, .58);
+      --glassEdge: rgba(255, 255, 255, .16);
+      --glassLine: rgba(255, 255, 255, .08);
+    }
+  }
+
+  .nav,
+  .dr,
+  .presBar,
+  .selbar,
+  .undobar,
+  .sh {
+    background: var(--glass);
+    -webkit-backdrop-filter: saturate(190%) blur(28px);
+    backdrop-filter: saturate(190%) blur(28px);
+    border: .5px solid var(--glassLine);
+  }
+
+  /* le liseré clair du haut fait la réfraction */
+  .nav, .dr, .sh, .presBar, .selbar {
+    box-shadow: inset 0 .5px 0 var(--glassEdge), 0 2px 14px rgba(0, 0, 0, .08);
+  }
+
+  .dr { border-left: .5px solid var(--glassLine); }
+
+  .undobar {
+    background: rgba(28, 28, 30, .72);
+    box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .14), 0 6px 22px rgba(0, 0, 0, .28);
+  }
+
+  /* les pastilles et puces deviennent du verre posé sur du verre */
+  .l, .chip, .st, .seg, .btn:not(.p), .sb2 {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+
+  /* le fond de l'app transparaît sous les surfaces : dégradé doux plutôt qu'un aplat */
+  body {
+    background:
+      radial-gradient(120% 80% at 12% 0%, rgba(36, 154, 109, .16), transparent 60%),
+      radial-gradient(100% 70% at 100% 100%, rgba(122, 146, 181, .16), transparent 55%),
+      var(--bg);
+    background-attachment: fixed;
+  }
+}
+
+/* Les boutons pleins gardent leur matière propre, ils doivent rester nets. */
+.btn.p, .pill { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* Reflet mobile sur le bouton principal, comme une lumière qui glisse sur le verre. */
+@media (prefers-reduced-motion: no-preference) {
+  .btn.p { position: relative; overflow: hidden; }
+
+  .btn.p::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, .38) 50%, transparent 62%);
+    transform: translateX(-120%);
+    transition: transform .55s ease;
+  }
+
+  .btn.p:active::after { transform: translateX(120%); }
+}
+
+/* Pendant un glissement, plus rien ne défile ni ne se sélectionne. */
+body.dragging { touch-action: none; overflow: hidden; }
+body.dragging .pl, body.dragging .cw { overflow: hidden; }
+
+/* ===== Mise en situation en magasin ===== */
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.pres.withScene .presWrap { position: relative; z-index: 1; }
+
+.pres.withScene .presWrap svg {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .35), 0 2px 0 rgba(0, 0, 0, .2);
+  border-radius: 4px;
+}
+
+/* le glissement doit rester possible même dans une liste qui défile */
+.pi { touch-action: manipulation; }
 </style>
 </head>
 <body>
@@ -1514,8 +1649,8 @@ const BRANDS = Object.keys(BRAND);
 
 /* Libellés des deux univers (manquait aussi dans le V11 reçu). */
 const UNIV = {
-  chien: "${ic('dog',17)} Chien",
-  chat: "${ic('cat',17)} Chat"
+  chien: 'Chien',
+  chat: 'Chat'
 };
 
 /* Racine des visuels sur le site Bubimex (manquait aussi dans le V11 reçu). */
@@ -1537,16 +1672,16 @@ const CATALOGUE_RAW = [
   ["chien", "8032", "Bubi Nature, poulet/crevettes, 70g",                      "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
   ["chien", "8033", "Bubi Nature, poulet/poisson blanc, 70g",                  "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
   ["chien", "8035", "Bubi Nature, cuisse de poulet, 70g",                      "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chien", "8050", "Bubi Nature, blanc de poulet, 150g",                      "Bubi Nature", "150g", 10,  3.2, 7.5, 2, 4],
-  ["chien", "8051", "Bubi Nature, blanc de poulet/petits légumes, 150g",       "Bubi Nature", "150g", 10,  3.2, 7.5, 2, 4],
-  ["chien", "8052", "Bubi Nature, filet de poulet/aloe vera, 150g",            "Bubi Nature", "150g", 10,  3.2, 7.5, 2, 4],
-  ["chien", "8053", "Bubi Nature, jambon/poulet, 150g",                        "Bubi Nature", "150g", 10,  3.2, 7.5, 2, 4],
-  ["chien", "8054", "Bubi Nature, bœuf/poulet, 150g",                          "Bubi Nature", "150g", 10,  3.2, 7.5, 2, 4],
-  ["chien", "8055", "Bubi Nature, poulet/pomme, 150g",                         "Bubi Nature", "150g", 10,  3.2, 7.5, 2, 4],
-  ["chien", "8056", "Bubi Nature, poulet/papaye, 150g",                        "Bubi Nature", "150g", 10,  3.2, 7.5, 2, 4],
-  ["chien", "8057", "Bubi Nature, poulet/ananas, 150g",                        "Bubi Nature", "150g", 10,  3.2, 7.5, 2, 4],
-  ["chien", "8060", "Bubi Nature, thon, 150g",                                 "Bubi Nature", "150g", 10,  3.2, 7.5, 2, 4],
-  ["chien", "8061", "Bubi Nature, thon/aloe vera, 150g",                       "Bubi Nature", "150g", 10,  3.2, 7.5, 2, 4],
+  ["chien", "8050", "Bubi Nature, blanc de poulet, 150g",                      "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
+  ["chien", "8051", "Bubi Nature, blanc de poulet/petits légumes, 150g",       "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
+  ["chien", "8052", "Bubi Nature, filet de poulet/aloe vera, 150g",            "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
+  ["chien", "8053", "Bubi Nature, jambon/poulet, 150g",                        "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
+  ["chien", "8054", "Bubi Nature, bœuf/poulet, 150g",                          "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
+  ["chien", "8055", "Bubi Nature, poulet/pomme, 150g",                         "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
+  ["chien", "8056", "Bubi Nature, poulet/papaye, 150g",                        "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
+  ["chien", "8057", "Bubi Nature, poulet/ananas, 150g",                        "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
+  ["chien", "8060", "Bubi Nature, thon, 150g",                                 "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
+  ["chien", "8061", "Bubi Nature, thon/aloe vera, 150g",                       "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
   ["chien", "8070", "Bubi Nature Soupe au poulet, 185g",                       "Bubi Nature", "185g", 7,   10,  7,   2, 1],
   ["chien", "8071", "Bubi Nature Soupe au canard, 185g",                       "Bubi Nature", "185g", 7,   10,  7,   2, 1],
   ["chien", "8072", "Bubi Nature Soupe au bœuf, 185g",                         "Bubi Nature", "185g", 7,   10,  7,   2, 1],
@@ -1645,16 +1780,16 @@ const CATALOGUE_RAW = [
   ["chat",  "9016", "Bubi Nature Complet, thon/bar en gelée, 85g",             "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
   ["chat",  "9017", "Bubi Nature Complet, poulet en bouillon sterilised, 85g", "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
   ["chat",  "9018", "Bubi Nature Complet, poulet/thon en bouillon, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
-  ["chat",  "9070", "Bubi Nature, thon, 140g",                                 "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
-  ["chat",  "9071", "Bubi Nature, thon/crevettes, 140g",                       "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
-  ["chat",  "9072", "Bubi Nature, thon/poulet, 140g",                          "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
-  ["chat",  "9073", "Bubi Nature, thon/saumon, 140g",                          "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
-  ["chat",  "9074", "Bubi Nature, poisson de l’océan, 140g",                   "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
-  ["chat",  "9075", "Bubi Nature, thon/sardine, 140g",                         "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
-  ["chat",  "9076", "Bubi Nature, maquereau, 140g",                            "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
-  ["chat",  "9077", "Bubi Nature, poulet/crevettes, 140g",                     "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
-  ["chat",  "9078", "Bubi Nature, cuisse de poulet, 140g",                     "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
-  ["chat",  "9080", "Bubi Nature, filet de poulet, 140g",                      "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
+  ["chat",  "9070", "Bubi Nature, thon, 140g",                                 "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
+  ["chat",  "9071", "Bubi Nature, thon/crevettes, 140g",                       "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
+  ["chat",  "9072", "Bubi Nature, thon/poulet, 140g",                          "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
+  ["chat",  "9073", "Bubi Nature, thon/saumon, 140g",                          "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
+  ["chat",  "9074", "Bubi Nature, poisson de l’océan, 140g",                   "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
+  ["chat",  "9075", "Bubi Nature, thon/sardine, 140g",                         "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
+  ["chat",  "9076", "Bubi Nature, maquereau, 140g",                            "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
+  ["chat",  "9077", "Bubi Nature, poulet/crevettes, 140g",                     "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
+  ["chat",  "9078", "Bubi Nature, cuisse de poulet, 140g",                     "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
+  ["chat",  "9080", "Bubi Nature, filet de poulet, 140g",                      "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
   ["chat",  "9082", "Bubi Nature Mousse, poulet, 50g",                         "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
   ["chat",  "9083", "Bubi Nature Mousse, saumon, 50g",                         "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
   ["chat",  "9084", "Bubi Nature Mousse, lapin, 50g",                          "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
@@ -1804,8 +1939,6 @@ function ic(name, size) {
     save: '<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h7V3"/><rect x="8" y="13" width="8" height="8"/>',
     cog: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
     box: '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
-    dog: '<path d="M5 10V6l3 2h8l3-2v4"/><path d="M5 10c0 5 3 9 7 9s7-4 7-9"/><circle cx="10" cy="13" r=".9"/><circle cx="14" cy="13" r=".9"/>',
-    cat: '<path d="M5 11L4 5l4 3h8l4-3-1 6"/><path d="M5 11c0 5 3 8 7 8s7-3 7-8"/><circle cx="10" cy="13" r=".9"/><circle cx="14" cy="13" r=".9"/>'
   }[name] || '';
   return `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 }
@@ -1878,10 +2011,12 @@ function depthCapacity(p) {
 
 function itemCapacity(it) {
   const p = BY_REF[it.ref];
+  if (!p) return 0;                     // espace de calage : aucune contenance
   return it.f * (it.s || 1) * depthCapacity(p);
 }
 
 function itemDOS(it) {
+  if (!BY_REF[it.ref]) return null;     // espace de calage
   const d = perf(it.ref),
     u = +d.unitsWeek || 0;
   return u > 0 ? itemCapacity(it) / (u / 7) : null;
@@ -2387,6 +2522,7 @@ const S = {
   univ: 'chien',
   min: false,
   side: 'right',   // côté où viennent se poser les nouveaux produits
+  insertAt: null,  // endroit visé sur le rayon, en centimètres
   sel: [],         // emplacements sélectionnés
   selMode: false
 };
@@ -2463,6 +2599,7 @@ function undo() {
     S.cur = JSON.parse(S.hist[S.hi]);
     persist();
     update();
+    offerUndo('Action annulée');
   }
 }
 
@@ -2476,7 +2613,7 @@ function redo() {
 }
 
 function shelfW(sh) {
-  return sh.items.reduce((a, it) => a + (BY_REF[it.ref] ? BY_REF[it.ref].w * it.f : 0), 0);
+  return sh.items.reduce((a, it) => a + (it.gap || (BY_REF[it.ref] ? BY_REF[it.ref].w * it.f : 0)), 0);
 }
 
 function shelfH() {
@@ -2484,7 +2621,7 @@ function shelfH() {
 }
 
 function countRefs(p) {
-  return new Set(p.shelves.flatMap(s => s.items.map(i => i.ref))).size;
+  return new Set(p.shelves.flatMap(s => s.items.filter(i => !i.gap).map(i => i.ref))).size;
 }
 
 /* ================= SHEETS ================= */
@@ -2565,7 +2702,7 @@ function projectForm(edit) {
     univ: 'chien'
   };
   sheet(`<h2>${edit?'Gondole':'Nouvelle gondole'}</h2><div id="ferr"></div>
-   <div class="seg" style="margin:0 0 12px" id="usg"><button data-act="univ" data-v="chien" class="${p.univ!=='chat'?'on':''}">${ic('dog',17)} Chien</button><button data-act="univ" data-v="chat" class="${p.univ==='chat'?'on':''}">${ic('cat',17)} Chat</button></div>
+   <div class="seg" style="margin:0 0 12px" id="usg"><button data-act="univ" data-v="chien" class="${p.univ!=='chat'?'on':''}">Chien</button><button data-act="univ" data-v="chat" class="${p.univ==='chat'?'on':''}">Chat</button></div>
    <input type="hidden" id="f_univ" value="${p.univ||'chien'}">
    <div class="grp">
      <div class="f"><label>Magasin</label><input id="f_store" value="${esc(p.store)}" placeholder="Gamm Vert Muret" autocapitalize="words"></div>
@@ -2652,6 +2789,7 @@ function submitProject(edit) {
 /* ================= EDITOR ================= */
 
 function openProject(id) {
+  S.insertAt = null;
   const p = S.projects.find(x => x.id === id);
   if (!p) return;
   S.cur = p;
@@ -2695,7 +2833,7 @@ function renderEditor() {
 
 function renderFilters() {
   $('segb').innerHTML =
-    `<button data-act="univ2" data-v="${S.univ==='chien'?'chat':'chien'}">${S.univ==='chien'?ic('dog',17):ic('cat',17)}</button>` +
+    `<button data-act="univ2" data-v="${S.univ==='chien'?'chat':'chien'}">${S.univ==='chien'?'Chien':'Chat'}</button>` +
     ['', ...BRANDS].map(c => {
       const on = S.cat === c;
       const inner = c
@@ -2763,7 +2901,17 @@ function addProduct(ref) {
   const last = S.side === 'left' ? items[0] : items[items.length - 1];
   const df = Math.max(1, Math.min(p.df, Math.floor((S.cur.W - shelfW(S.cur.shelves[S.shelf])) / p.w)));
   const nouveau = { id: uid(), ref, f: df, s: p.st };
-  if (last && last.ref === ref) last.f += df;
+  if (S.insertAt != null) {
+    // on pose à l'endroit exact tapé sur le rayon
+    let acc = 0, at = items.length;
+    for (let k = 0; k < items.length; k++) {
+      const wIt = items[k].gap || BY_REF[items[k].ref].w * items[k].f;
+      if (S.insertAt < acc + wIt / 2) { at = k; break; }
+      acc += wIt;
+    }
+    items.splice(at, 0, nouveau);
+    S.insertAt = null;
+  } else if (last && last.ref === ref) last.f += df;
   else if (S.side === 'left') items.unshift(nouveau);
   else items.push(nouveau);
   let msg = `${p.ref} → niveau ${S.shelf+1}`;
@@ -3170,7 +3318,7 @@ function commercialSheetNow() {
   const occ = Math.round(used / (W * N) * 100),
     date = new Date().toLocaleDateString('fr-FR');
   const svg = gondolaSVG(false, true);
-  const remote = [...new Set(S.cur.shelves.flatMap(sh => sh.items.map(i => i.ref)))]
+  const remote = [...new Set(S.cur.shelves.flatMap(sh => sh.items.filter(i => !i.gap).map(i => i.ref)))]
     .filter(r => !UPHOTO[r] && PHOTO[r] && PHOTO[r] !== 'none').length;
   const html = `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
@@ -3289,6 +3437,12 @@ function haptic(ms) {
   if (navigator.vibrate) try { navigator.vibrate(ms || 8); } catch (e) {}
 }
 
+/* Position en centimètres visée par un clic sur le rayon. */
+function shelfPointFromEvent(e) {
+  const p = shelfAtPoint(e.clientX, e.clientY);
+  return p ? Math.max(0, Math.min(S.cur.W, p.cm)) : null;
+}
+
 function shelfAtPoint(clientX, clientY) {
   const svg = document.querySelector('#cw svg');
   if (!svg) return null;
@@ -3320,6 +3474,7 @@ function startDrag(e, ref, moveId) {
   g.innerHTML = `<img src="${photoSrc(ref)}" alt=""><span>${p.ref}</span>`;
   document.body.appendChild(g);
   drag.ghost = g;
+  document.body.classList.add('dragging');   // fige le défilement pendant le glissement
   moveGhost(t.clientX, t.clientY);
   haptic(10);
   e.preventDefault();
@@ -3344,6 +3499,7 @@ function endDrag() {
   drag.on = false;
   if (drag.ghost) drag.ghost.remove();
   drag.ghost = null;
+  document.body.classList.remove('dragging');
   drag.shelf = -1;
   if (shelf < 0) { update(); return; }
   const items = S.cur.shelves[shelf].items;
@@ -3388,13 +3544,13 @@ function bindDrag() {
         const f = findItem(box.dataset.id);
         if (f) startDrag(pressStart.e, f.it.ref, box.dataset.id);
       }
-    }, 260);
+    }, 200);
   };
   const onMove = e => {
     const t = e.touches ? e.touches[0] : e;
     if (pressTimer && pressStart) {
       const d = Math.hypot(t.clientX - pressStart.x, t.clientY - pressStart.y);
-      if (d > 12) { clearTimeout(pressTimer); pressTimer = null; }
+      if (d > 16) { clearTimeout(pressTimer); pressTimer = null; }
     }
     if (drag.on) { moveGhost(t.clientX, t.clientY); e.preventDefault(); }
   };
@@ -3421,7 +3577,9 @@ let undoTimer = null;
 function offerUndo(label) {
   const el = $('undobar');
   if (!el) return;
-  el.innerHTML = `<span>${esc(label)}</span><button data-act="undo">Annuler</button>`;
+  const canRedo = S.hi < S.hist.length - 1;
+  el.innerHTML = `<span>${esc(label)}</span><button data-act="undo">Annuler</button>` +
+    (canRedo ? `<button data-act="redo">Rétablir</button>` : '');
   el.classList.add('on');
   clearTimeout(undoTimer);
   undoTimer = setTimeout(() => el.classList.remove('on'), 4200);
@@ -3459,6 +3617,7 @@ function update() {
     const w = shelfW(sh);
     used += Math.min(w, W);
     sh.items.forEach(it => {
+      if (it.gap) return;
       fac += it.f;
       refs.add(it.ref);
       const p = BY_REF[it.ref];
@@ -3495,6 +3654,99 @@ function gradId(brand) {
   return BRANDS.indexOf(brand);
 }
 
+/* ================= GABARITS DE CONTENANTS =================
+   Une boîte ronde n'est pas un rectangle : elle a un couvercle, des bords qui fuient
+   et une lumière qui glisse sur le métal. On dessine donc une silhouette par type de
+   contenant, et la photo vient s'y loger, resserrée sur les côtés pour épouser la
+   courbure. C'est cette petite distorsion qui fait qu'une canette a l'air d'une
+   canette et non d'une vignette collée.
+*/
+function shapeOf(p) {
+  if (/Soupe/.test(p.name)) return 'brique';
+  if (/Terrine|Mousse|Complet/.test(p.name)) return 'barquette';
+  if (p.cat === "William's" && p.univ === 'chat' && p.fmt === '85g') return 'pochon';
+  if (/Beauty|Health Care|Vitality|Sterilised/.test(p.name) || /Junior, poulet, 70g/.test(p.name)) return 'pochon';
+  if (p.cat === 'Gustav' && p.fmt === '150g') return 'barquette';
+  if (p.fmt === '6×70g') return 'multipack';
+  return 'canette';
+}
+
+/* Renvoie le tracé du contenant et la zone où poser la photo. */
+function shapeGeometry(kind, x, y, w, h) {
+  const r = Math.min(w, h) * .12;
+  switch (kind) {
+    case 'canette': {
+      const lid = Math.max(2, h * .10);       // couvercle
+      const rim = Math.max(1.5, h * .06);     // sertissage du bas
+      return {
+        body: `M${x} ${y+lid} h${w} v${h-lid-rim} q0 ${rim} ${-w/2} ${rim} q${-w/2} 0 ${-w/2} ${-rim} z`,
+        lidPath: `M${x} ${y+lid} q${w/2} ${-lid*1.5} ${w} 0 z`,
+        photo: { x: x + w * .07, y: y + lid, w: w * .86, h: h - lid - rim },
+        curve: true
+      };
+    }
+    case 'barquette': {
+      const lip = Math.max(1.5, h * .16);
+      return {
+        body: `M${x} ${y+lip} h${w} v${h-lip} h${-w} z`,
+        lidPath: `M${x-w*.03} ${y} h${w*1.06} v${lip} h${-w*1.06} z`,
+        photo: { x: x + w * .04, y: y + lip * .2, w: w * .92, h: h - lip * .2 },
+        curve: false
+      };
+    }
+    case 'brique':
+      return {
+        body: `M${x} ${y+h*.06} q0 ${-h*.06} ${w*.18} ${-h*.06} h${w*.64} q${w*.18} 0 ${w*.18} ${h*.06} v${h*.94} h${-w} z`,
+        lidPath: '',
+        photo: { x: x + w * .05, y: y + h * .08, w: w * .9, h: h * .88 },
+        curve: false
+      };
+    case 'pochon':
+      return {
+        body: `M${x+w*.12} ${y} h${w*.76} q${w*.12} 0 ${w*.12} ${w*.12} v${h-w*.12} q0 ${w*.1} ${-w*.14} ${w*.1} h${-w*.72} q${-w*.14} 0 ${-w*.14} ${-w*.1} v${-(h-w*.12)} q0 ${-w*.12} ${w*.12} ${-w*.12} z`,
+        lidPath: `M${x+w*.12} ${y} h${w*.76} v${h*.07} h${-w*.76} z`,
+        photo: { x: x + w * .1, y: y + h * .06, w: w * .8, h: h * .9 },
+        curve: false
+      };
+    case 'multipack':
+      return {
+        body: `M${x} ${y} h${w} v${h} h${-w} z`,
+        lidPath: `M${x} ${y} h${w} v${h*.12} h${-w} z`,
+        photo: { x: x + w * .03, y: y + h * .14, w: w * .94, h: h * .82 },
+        curve: false
+      };
+    default:
+      return { body: `M${x} ${y} h${w} v${h} h${-w} z`, lidPath: '', photo: { x, y, w, h }, curve: false };
+  }
+}
+
+/* Dessine un contenant : silhouette, photo intégrée, ombrage. */
+function drawContainer(p, x, y, w, h, url, dark, idSeed) {
+  const kind = shapeOf(p);
+  const g = shapeGeometry(kind, x, y, w, h);
+  const cid = 'sh' + idSeed;
+  let s = `<clipPath id="${cid}"><path d="${g.body}"/></clipPath>`;
+  s += `<path d="${g.body}" fill="url(#grad${gradId(p.cat)})"/>`;
+
+  if (url) {
+    const ph = g.photo;
+    // la photo est légèrement resserrée : les bords fuient comme sur un cylindre
+    const squeeze = g.curve ? ph.w * .06 : 0;
+    s += `<image href="${url}" xlink:href="${url}" x="${ph.x + squeeze}" y="${ph.y}" width="${ph.w - squeeze*2}" height="${ph.h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cid})"/>`;
+  }
+
+  // lumière du cylindre : reflet clair à gauche, ombre à droite
+  if (g.curve) {
+    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#cyl)" clip-path="url(#${cid})" opacity=".85"/>`;
+  } else {
+    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#flat)" clip-path="url(#${cid})" opacity=".5"/>`;
+  }
+
+  if (g.lidPath) s += `<path d="${g.lidPath}" fill="${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}"/>`;
+  s += `<path d="${g.body}" fill="none" stroke="${dark ? 'rgba(0,0,0,.5)' : 'rgba(0,0,0,.18)'}" stroke-width=".7"/>`;
+  return s;
+}
+
 let clipSeq = 0;
 
 function gondolaSVG(interactive, photos) {
@@ -3509,7 +3761,7 @@ function gondolaSVG(interactive, photos) {
   clipSeq = 0;
   // pas de largeur fixe : le rayon s'étire pour occuper toute la place disponible
   let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W+L+8} ${H+B+8}" preserveAspectRatio="xMidYMid meet" font-family="-apple-system,system-ui,sans-serif" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <defs>${BRANDS.map((b, i) => `<linearGradient id="grad${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${BRAND_LIGHT[b]}"/><stop offset="1" stop-color="${BRAND_DARK[b]}"/></linearGradient>`).join('')}</defs>
+  <defs><linearGradient id="cyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgba(0,0,0,.28)"/><stop offset=".18" stop-color="rgba(255,255,255,.30)"/><stop offset=".45" stop-color="rgba(255,255,255,.06)"/><stop offset="1" stop-color="rgba(0,0,0,.30)"/></linearGradient><linearGradient id="flat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.26)"/><stop offset="1" stop-color="rgba(0,0,0,.16)"/></linearGradient>${BRANDS.map((b, i) => `<linearGradient id="grad${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${BRAND_LIGHT[b]}"/><stop offset="1" stop-color="${BRAND_DARK[b]}"/></linearGradient>`).join('')}</defs>
   <rect x="${L}" y="4" width="${W}" height="${H}" fill="${dark?'#2c2c2e':'#fff'}" stroke="${dark?'#8e8e93':'#8d8b82'}" stroke-width="1.5"/>`;
   S.cur.shelves.forEach((shelf, i) => {
     const y0 = 4 + i * sh,
@@ -3521,38 +3773,28 @@ function gondolaSVG(interactive, photos) {
     let x = L;
     const over = shelfW(shelf) >S.cur.W;
     shelf.items.forEach(it => {
+      if (it.gap) { x += it.gap * sc; return; }   // espace de calage d'une colonne
       const p = BY_REF[it.ref];
       const st = it.s || 1;
       const wOne = p.w * sc,
         hOne = Math.min(p.h * sc, (sh - 15) / st);
       const url = photos ? photoURL(it.ref) : null;
       for (let k = 0; k < it.f; k++) {
-        const bad = over && x + wOne >L + W;
-        const picked = S.selMode && S.sel.includes(it.id);
+        const bad = over && x + wOne > L + W;
         s += `<g data-act="item" data-id="${it.id}" style="cursor:pointer">`;
-        for (let j = 0; j < st; j++) {
-          const y = y1 - (j + 1) * hOne;
-          s += `<rect x="${x+.5}" y="${y+.5}" width="${wOne-1}" height="${hOne-1}" rx="2.5" fill="${bad?'#ff3b30':'url(#grad'+gradId(p.cat)+')'}" stroke="${dark?'#1c1c1e':'#fff'}" stroke-width="1"/>`;
-          if (!bad && !url && wOne > 16 && hOne > 10) {
-            const lg = LOGOS[p.cat], lw2 = Math.min(wOne - 6, 26), lh2 = lw2 * lg.h / lg.w;
-            if (lh2 < hOne - 4) s += `<image href="${lg.white}" xlink:href="${lg.white}" x="${x + (wOne - lw2) / 2}" y="${y + (hOne - lh2) / 2}" width="${lw2}" height="${lh2}" opacity=".9"/>`;
-          }
-          if (url && !bad) {
-            // la photo remplit la boîte ; le zoom rogne la marge blanche résiduelle
-            const bw = wOne - 2, bh = hOne - 2, bx = x + 1, by = y + 1;
-            const z = FIT.zoom || 1;
-            const iw = bw * z, ih = bh * z;
-            const cid = 'clip' + (clipSeq++);
-            s += `<clipPath id="${cid}"><rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5"/></clipPath>`;
-            s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5" fill="#fff"/>`;
-            s += `<image href="${url}" xlink:href="${url}" x="${bx-(iw-bw)/2}" y="${by-(ih-bh)/2}" width="${iw}" height="${ih}" preserveAspectRatio="${FIT.mode==='fill'?'xMidYMid slice':'xMidYMid meet'}" clip-path="url(#${cid})"/>`;
+        const picked = S.selMode && S.sel.includes(it.id);
+        for (let j2 = 0; j2 < st; j2++) {
+          const yy = y1 - (j2 + 1) * hOne;
+          if (bad) {
+            s += `<rect x="${x+.5}" y="${yy+.5}" width="${wOne-1}" height="${hOne-1}" rx="2.5" fill="#ff3b30"/>`;
+          } else {
+            s += drawContainer(p, x + .5, yy + .5, wOne - 1, hOne - 1, url, dark, clipSeq++);
           }
         }
-        // la référence est reportée dans le bandeau du niveau ; sur la boîte on ne
-        // garde une petite étiquette que s'il n'y a pas de photo à masquer
+        // la référence n'est écrite sur la boîte qu'en l'absence de photo
         if (k === 0 && !url && hOne > 12) {
           const yt = y1 - st * hOne;
-          s += `<text x="${x+2.5}" y="${yt+9}" font-size="7" font-weight="700" fill="#fff" opacity=".85" pointer-events="none">${p.ref}</text>`;
+          s += `<text x="${x+2.5}" y="${yt+9}" font-size="7" font-weight="700" fill="#fff" opacity=".9" pointer-events="none">${p.ref}</text>`;
         }
         if (picked) s += `<rect x="${x+1}" y="${y1-st*hOne+1}" width="${wOne-2}" height="${st*hOne-2}" rx="3" fill="rgba(36,154,109,.3)" stroke="#249A6D" stroke-width="2"/>`;
         s += `</g>`;
@@ -3565,6 +3807,7 @@ function gondolaSVG(interactive, photos) {
       s += `<rect x="${L}" y="${y0 + 1}" width="${W}" height="${bh2}" fill="${dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.05)'}"/>`;
       let bx2 = L;
       shelf.items.forEach(it => {
+        if (it.gap) { bx2 += it.gap * sc; return; }
         const pr = BY_REF[it.ref];
         const wTot = pr.w * it.f * sc;
         // on n'écrit que ce qui tient dans la largeur du produit
@@ -3577,6 +3820,11 @@ function gondolaSVG(interactive, photos) {
         }
         bx2 += wTot;
       });
+    }
+    if (interactive && i === S.shelf && S.insertAt != null) {
+      const mx = L + S.insertAt * sc;
+      s += `<line x1="${mx}" y1="${y0+12}" x2="${mx}" y2="${y1-1}" stroke="#249A6D" stroke-width="2" stroke-dasharray="4 3"/>`;
+      s += `<circle cx="${mx}" cy="${y0+12}" r="3.5" fill="#249A6D"/>`;
     }
     if (interactive) {
       const rest = S.cur.W - shelfW(shelf);
@@ -3779,7 +4027,7 @@ function proformaFacings(rows) {
 
 /* Remplit une colonne de largeur colW, du bas vers le haut, en coupant les facings
    d'une référence sur plusieurs niveaux quand elle ne tient pas d'un bloc. */
-function fillColumn(list, N, colW) {
+function fillColumn(list, N, colW, pad) {
   const rows = Array.from({ length: N }, () => []);
   let si = N - 1, x = 0;
   list.forEach(it => {
@@ -3798,6 +4046,12 @@ function fillColumn(list, N, colW) {
       if (left > 0) { si--; x = 0; }
     }
   });
+  // calage : chaque niveau de la colonne est complété jusqu'à sa largeur allouée,
+  // sans quoi les descentes se décalent d'une étagère à l'autre
+  if (pad) rows.forEach(row => {
+    const used = row.reduce((a, it) => a + (it.gap || BY_REF[it.ref].w * it.f), 0);
+    if (colW - used > .4) row.push({ id: uid(), ref: null, gap: colW - used, f: 1, s: 1 });
+  });
   return rows;
 }
 
@@ -3806,9 +4060,9 @@ function fillColumn(list, N, colW) {
 function trimOverflow(shelves, W) {
   shelves.forEach(sh => {
     let guard = 0;
-    const width = () => sh.items.reduce((a, it) => a + BY_REF[it.ref].w * it.f, 0);
+    const width = () => sh.items.reduce((a, it) => a + (it.gap || BY_REF[it.ref].w * it.f), 0);
     while (width() >W && guard++ < 500) {
-      const c = sh.items.filter(it => it.f > 1)
+      const c = sh.items.filter(it => !it.gap && it.f > 1)
         .sort((a, b) =>BY_REF[b.ref].w * b.f - BY_REF[a.ref].w * a.f)[0];
       if (!c) break;
       c.f--;
@@ -3831,15 +4085,30 @@ function runProforma(mode) {
     .sort((a, c) => parseInt(c.p.fmt) - parseInt(a.p.fmt) || a.ref.localeCompare(c.ref));
 
   if (mode === 'descente') {
-    // chaque marque tient une colonne verticale, large au prorata de son linéaire
+    // Une colonne par marque, large au prorata de son linéaire. Dans la colonne, on
+    // regroupe par goût : un même parfum décliné en 150 g, 400 g et 800 g se retrouve
+    // l'un sous l'autre, ce qui donne des descentes lisibles et un choix évident pour
+    // le client. Les gros formats restent en bas, les petits en haut.
     const tot = {};
     brands.forEach(b => tot[b] = byBrand(b).reduce((a, i) => a + lin(i), 0));
     const grand = Object.values(tot).reduce((a, b) => a + b, 0) || 1;
     const cols = brands.map(b => ({ b, w: Math.max(tot[b] / grand * W, 12) }));
     const sum = cols.reduce((a, c) => a + c.w, 0);
-    cols.forEach(c => c.w = c.w / sum * W);           // ramené à la largeur réelle
+    cols.forEach(c => c.w = c.w / sum * W);
+
     cols.forEach(c => {
-      const part = fillColumn(byBrand(c.b), N, c.w);
+      const list = byBrand(c.b);
+      // regroupement par goût, en ignorant le format et la déclinaison
+      const key = it => (it.p.flav || it.p.name).toLowerCase()
+        .replace(/\b(junior|senior|adulte|optimal|sterilised|beauty|health care|vitality care|mousse|terrine|soupe au?|gelée|complet)\b/g, '')
+        .replace(/[^a-zéèêàîôûç/]/g, '').trim();
+      const groups = {};
+      list.forEach(it => { const k = key(it) || it.ref; (groups[k] = groups[k] || []).push(it); });
+      // les familles de goûts les plus fournies passent en premier
+      const ordered = Object.values(groups)
+        .map(g => g.sort((a, b) => parseInt(b.p.fmt) - parseInt(a.p.fmt) || b.p.h - a.p.h))
+        .sort((a, b) => b.reduce((s, i) => s + lin(i), 0) - a.reduce((s, i) => s + lin(i), 0));
+      const part = fillColumn(ordered.flat(), N, c.w, true);
       part.forEach((row, si) => row.forEach(it => shelves[si].items.push(it)));
     });
   } else if (mode === 'etagere') {
@@ -3979,6 +4248,105 @@ function onboardingDemo() {
   lsSet('bubiplan_seen', '1');
 }
 
+/* ================= MISE EN SITUATION =================
+   Un décor de magasin dessiné derrière la gondole : sol carrelé, mur, gondoles
+   voisines floutées, éclairage de plafond. Rien de photographique, juste de quoi
+   montrer au client à quoi ressemblera son rayon dans son magasin.
+*/
+let sceneOn = false;
+
+function storeScene(w, h) {
+  return `<svg class="scene" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#e9e9ec"/><stop offset="1" stop-color="#d5d5d9"/>
+      </linearGradient>
+      <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#cfc7bb"/><stop offset="1" stop-color="#b8afa1"/>
+      </linearGradient>
+      <linearGradient id="spot" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="rgba(255,255,240,.55)"/><stop offset="1" stop-color="rgba(255,255,240,0)"/>
+      </linearGradient>
+      <filter id="soft"><feGaussianBlur stdDeviation="3.5"/></filter>
+    </defs>
+    <rect width="${w}" height="${h*.74}" fill="url(#wall)"/>
+    <rect y="${h*.74}" width="${w}" height="${h*.26}" fill="url(#floor)"/>
+    ${[0,1,2,3,4,5,6,7].map(i => `<line x1="${i*w/8 - h*.06}" y1="${h}" x2="${i*w/8 + w*.04}" y2="${h*.74}" stroke="rgba(0,0,0,.07)" stroke-width="1.5"/>`).join('')}
+    <line x1="0" y1="${h*.74}" x2="${w}" y2="${h*.74}" stroke="rgba(0,0,0,.14)" stroke-width="2"/>
+    <g filter="url(#soft)" opacity=".55">
+      <rect x="${-w*.02}" y="${h*.20}" width="${w*.17}" height="${h*.56}" fill="#b9bcc2"/>
+      ${[0,1,2,3].map(i => `<rect x="${-w*.02}" y="${h*(.28+i*.13)}" width="${w*.17}" height="${h*.035}" fill="#8f949c"/>`).join('')}
+      <rect x="${w*.85}" y="${h*.22}" width="${w*.19}" height="${h*.54}" fill="#b9bcc2"/>
+      ${[0,1,2,3].map(i => `<rect x="${w*.85}" y="${h*(.30+i*.13)}" width="${w*.19}" height="${h*.035}" fill="#8f949c"/>`).join('')}
+    </g>
+    ${[0,1,2].map(i => `<ellipse cx="${w*(.25+i*.25)}" cy="${h*.02}" rx="${w*.13}" ry="${h*.10}" fill="url(#spot)"/>`).join('')}
+    <rect width="${w}" height="${h}" fill="rgba(0,0,0,.03)"/>
+  </svg>`;
+}
+
+function toggleScene() {
+  sceneOn = !sceneOn;
+  const el = $('pres');
+  if (!el) return;
+  const old = el.querySelector('.scene');
+  if (old) old.remove();
+  if (sceneOn) el.insertAdjacentHTML('afterbegin', storeScene(1600, 1000));
+  el.classList.toggle('withScene', sceneOn);
+}
+
+/* ================= AJOUTER UNE GAMME ENTIÈRE ================= */
+/* Combien de linéaire réclame une sélection, et de combien on dispose. */
+function needFor(list) {
+  return list.reduce((a, p) => a + p.w * p.df, 0);
+}
+
+function addAllSheet() {
+  const brands = BRANDS.filter(b => PRODUCTS.some(p => p.univ === S.univ && p.cat === b));
+  const count = b => PRODUCTS.filter(p => p.univ === S.univ && p.cat === b && (!S.fmt || p.fg === S.fmt)).length;
+  sheet(`<h2>Ajouter une gamme entière</h2>
+   <p>Toutes les références sont posées d'un coup, avec leur présentation d'origine, puis réparties en descentes propres.</p>
+   ${brands.map(b => {
+      const l = PRODUCTS.filter(p => p.univ === S.univ && p.cat === b && (!S.fmt || p.fg === S.fmt));
+      return `<button class="btn" data-act="addall" data-v="${esc(b)}"><span style="width:10px;height:10px;border-radius:3px;background:${BRAND[b]};display:inline-block;margin-right:8px"></span>${esc(b)} — ${count(b)} réf., ${Math.round(needFor(l))} cm</button>`;
+    }).join('')}
+   ${(() => {
+      const all = PRODUCTS.filter(p => p.univ === S.univ && (!S.fmt || p.fg === S.fmt));
+      const need = Math.round(needFor(all)), cap = S.cur.W * S.cur.shelves.length;
+      return `<button class="btn p" data-act="addall" data-v="*">Tout le catalogue — ${all.length} réf., ${need} cm</button>
+        <p style="margin-top:10px">Ta gondole offre <b>${cap} cm</b> de linéaire.${need > cap ? ` Il en faudrait <b>${need} cm</b> : l'app posera ce qui rentre et te dira ce qui reste dehors.` : ''}</p>`;
+    })()}
+   ${S.fmt ? `<p style="margin-top:10px">Filtre actif : format ${S.fmt}. Retire-le pour prendre tous les formats.</p>` : ''}
+   <button class="btn" data-act="close">Annuler</button>`);
+}
+
+function addAll(brand) {
+  let list = PRODUCTS.filter(p => p.univ === S.univ && (brand === '*' || p.cat === brand) && (!S.fmt || p.fg === S.fmt));
+  if (!list.length) { toast('Aucune référence'); return; }
+  const cap = S.cur.W * S.cur.shelves.length * .97;
+  let left = 0;
+  if (needFor(list) > cap) {
+    // on garde d'abord les gros formats, vitrine de la gamme, puis on complète
+    const ordered = list.slice().sort((a, b) =>
+      BRANDS.indexOf(a.cat) - BRANDS.indexOf(b.cat) ||
+      parseInt(b.fmt) - parseInt(a.fmt) ||
+      a.ref.localeCompare(b.ref));
+    const keep = [];
+    let used = 0;
+    ordered.forEach(p => {
+      const need = p.w * p.df;
+      if (used + need <= cap) { keep.push(p); used += need; }
+    });
+    left = list.length - keep.length;
+    list = keep;
+  }
+  PROFORMA = list.map(p => ({ ref: p.ref, qty: 1 }));
+  closeSheet();
+  runProforma('descente');
+  toast(left
+    ? `${list.length} références posées, ${left} n'entrent pas`
+    : `${list.length} références posées`);
+}
+
 /* ---- menu / exports ---- */
 
 function menu() {
@@ -3996,6 +4364,7 @@ function wizardSheet() {
   sheet(`<h2>Composer le rayon</h2>
   <p>Quatre façons de partir, de la plus guidée à la plus libre.</p>
   <button class="btn p" data-act="prof-open">${ic('tray')} Depuis une proforma</button>
+  <button class="btn" data-act="addall-sheet">${ic('grid')} Ajouter une gamme entière</button>
   <button class="btn" data-act="autofill-sheet">${ic('wand')} Remplissage automatique</button>
   <button class="btn" data-act="optimize">${ic('grid')} Réorganiser l'existant</button>
   <button class="btn" data-act="spaceplanner">${ic('ruler')} Calculer la place nécessaire</button>
@@ -4030,7 +4399,7 @@ function settingsSheet() {
    incorporées : une image exportée ne peut pas aller chercher un fichier sur le web.
    On les récupère et on les détoure au passage. */
 async function inlinePhotosForExport() {
-  const refs = [...new Set(S.cur.shelves.flatMap(sh => sh.items.map(i => i.ref)))]
+  const refs = [...new Set(S.cur.shelves.flatMap(sh => sh.items.filter(i => !i.gap).map(i => i.ref)))]
     .filter(r => !UPHOTO[r] && PHOTO[r] && PHOTO[r] !== 'none');
   if (!refs.length) return 0;
   toast('Préparation des visuels…');
@@ -4124,6 +4493,7 @@ function exportCSV() {
     ['Niveau', 'Position', 'Référence', 'Produit', 'Gamme', 'Format', 'Largeur cm', 'Hauteur cm', 'Facings', 'Empilement', 'Linéaire cm']
   ];
   S.cur.shelves.forEach((sh, i) => sh.items.forEach((it, k) => {
+    if (it.gap) return;
     const p = BY_REF[it.ref];
     rows.push([i + 1, k + 1, p.ref, p.name, p.cat, p.fmt, p.w, p.h, it.f, it.s || 1, (p.w * it.f).toFixed(1)]);
   }));
@@ -4133,13 +4503,107 @@ function exportCSV() {
   }), fileName('csv'), () => `<pre>${esc(rows.map(r=>r.join(' ; ')).join('\n'))}</pre>`);
 }
 
+/* ================= MODE PRÉSENTATION =================
+   Plein écran pour montrer le rayon au client. On pince pour zoomer, on fait glisser
+   pour se déplacer, on tape deux fois pour revenir au cadrage d'origine.
+*/
 function presentation() {
   const d = document.createElement('div');
   d.className = 'pres';
   d.id = 'pres';
-  d.innerHTML = gondolaSVG(false, true) + `<button class="nb" data-act="close-pres">${ic('plus',18)} Fermer</button>`;
+  d.innerHTML = `<div class="presWrap" id="presWrap">${gondolaSVG(false, true)}</div>
+    <div class="presBar">
+      <button class="nb" data-act="pres-zoom" data-v="-1">−</button>
+      <span id="presPct">100 %</span>
+      <button class="nb" data-act="pres-zoom" data-v="1">+</button>
+      <button class="nb" data-act="pres-reset">Ajuster</button>
+      <button class="nb" data-act="pres-scene">Magasin</button>
+      <button class="nb" data-act="close-pres">Fermer</button>
+    </div>`;
   document.body.appendChild(d);
+  bindPresentationGestures();
 }
+
+const pres = { z: 1, x: 0, y: 0, sx: 0, sy: 0, dist: 0, panning: false };
+
+function presApply() {
+  const wrap = $('presWrap');
+  if (!wrap) return;
+  wrap.style.transform = `translate(${pres.x}px, ${pres.y}px) scale(${pres.z})`;
+  const pct = $('presPct');
+  if (pct) pct.textContent = Math.round(pres.z * 100) + ' %';
+}
+
+function presZoom(factor, cx, cy) {
+  const before = pres.z;
+  pres.z = Math.max(0.5, Math.min(6, pres.z * factor));
+  // on zoome autour du point visé, pas autour du coin
+  if (cx !== undefined) {
+    const r = pres.z / before;
+    const w = window.innerWidth / 2, h = window.innerHeight / 2;
+    pres.x = cx - w - (cx - w - pres.x) * r;
+    pres.y = cy - h - (cy - h - pres.y) * r;
+  }
+  presApply();
+}
+
+function presReset() {
+  pres.z = 1;
+  pres.x = 0;
+  pres.y = 0;
+  presApply();
+}
+
+function bindPresentationGestures() {
+  const el = $('pres');
+  if (!el) return;
+  presReset();
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const mid = t => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
+
+  el.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      pres.dist = dist(e.touches);
+    } else if (e.touches.length === 1) {
+      pres.panning = true;
+      pres.sx = e.touches[0].clientX - pres.x;
+      pres.sy = e.touches[0].clientY - pres.y;
+    }
+  }, { passive: true });
+
+  el.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && pres.dist) {
+      const d2 = dist(e.touches);
+      const [mx, my] = mid(e.touches);
+      presZoom(d2 / pres.dist, mx, my);
+      pres.dist = d2;
+      e.preventDefault();
+    } else if (e.touches.length === 1 && pres.panning) {
+      pres.x = e.touches[0].clientX - pres.sx;
+      pres.y = e.touches[0].clientY - pres.sy;
+      presApply();
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  el.addEventListener('touchend', e => {
+    if (!e.touches.length) { pres.panning = false; pres.dist = 0; }
+  });
+
+  // double tape pour ajuster, molette et trackpad sur ordinateur
+  let lastTap = 0;
+  el.addEventListener('click', e => {
+    if (e.target.closest('[data-act]')) return;
+    const now = Date.now();
+    if (now - lastTap < 320) { pres.z > 1.05 ? presReset() : presZoom(2, e.clientX, e.clientY); }
+    lastTap = now;
+  });
+  el.addEventListener('wheel', e => {
+    presZoom(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY);
+    e.preventDefault();
+  }, { passive: false });
+}
+
 
 /* ================= EVENTS (délégation) ================= */
 document.addEventListener('click', e => {
@@ -4183,6 +4647,8 @@ document.addEventListener('click', e => {
       break;
     case 'redo':
       redo();
+      hideUndo();
+      haptic();
       break;
     case 'menu':
       menu();
@@ -4225,10 +4691,15 @@ document.addEventListener('click', e => {
     case 'add':
       addProduct(el.dataset.ref);
       break;
-    case 'shelf':
+    case 'shelf': {
+      // taper le rayon choisit le niveau, et retient l'endroit exact visé
       S.shelf = +el.dataset.i;
+      const pt = shelfPointFromEvent(e);
+      S.insertAt = pt == null ? null : pt;
       update();
+      haptic(5);
       break;
+    }
     case 'item':
       if (S.selMode) toggleSelect(el.dataset.id);
       else editItem(el.dataset.id);
@@ -4440,6 +4911,21 @@ document.addEventListener('click', e => {
     case 'present':
       closeSheet();
       presentation();
+      break;
+    case 'pres-zoom':
+      presZoom(+v > 0 ? 1.25 : 1 / 1.25);
+      break;
+    case 'pres-scene':
+      toggleScene();
+      break;
+    case 'addall-sheet':
+      addAllSheet();
+      break;
+    case 'addall':
+      addAll(v);
+      break;
+    case 'pres-reset':
+      presReset();
       break;
     case 'close-pres': {
       const p = $('pres');
