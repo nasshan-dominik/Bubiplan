@@ -487,14 +487,14 @@ button {
   height: 100%;
   background: var(--gond);
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .08)
+  box-shadow: var(--shadow-subtle)
 }
 
 /* DRAWER */
 .dr {
   background: var(--card);
   border-radius: 16px 16px 0 0;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, .08);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -1106,7 +1106,7 @@ a.chip {
   background: var(--bubi-graphite);
   color: #fff;
   padding: 10px 16px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   font-size: 14px;
   font-weight: 500;
   z-index: 200;
@@ -1115,7 +1115,7 @@ a.chip {
   pointer-events: none;
   max-width: 88%;
   text-align: center;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .2)
+  box-shadow: var(--shadow-subtle)
 }
 
 .toast.on {
@@ -1277,11 +1277,11 @@ a.chip {
 .l {
   padding: 8px 14px;
   font-size: 14px;
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   transition: background .15s;
 }
 
-.l.on { box-shadow: 0 2px 6px rgba(117, 138, 107, .3); }
+.l.on { box-shadow: none; }
 
 .st {
   border-radius: 14px;
@@ -1291,14 +1291,14 @@ a.chip {
 .btn { border-radius: var(--radius-sm); }
 
 .btn.p {
-  box-shadow: 0 2px 8px rgba(117, 138, 107, .3);
+  box-shadow: none;
 }
 
 .empty .i { font-size: 64px; }
 
 .pill {
-  border-radius: 18px;
-  box-shadow: 0 3px 12px rgba(117, 138, 107, .3);
+  border-radius: var(--radius-md);
+  box-shadow: none;
 }
 
 .toast { border-radius: var(--radius-sm); }
@@ -1360,7 +1360,7 @@ a.chip {
   align-items: center;
   gap: 14px;
   padding: 10px 12px 10px 16px;
-  border-radius: 22px;
+  border-radius: var(--radius-sm);
   background: var(--bubi-graphite);
   color: #fff;
   font-size: 14px;
@@ -1447,7 +1447,7 @@ body { font-size: 100%; }
 .onbHead img {
   width: 84px;
   height: 84px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-subtle);
 }
 
@@ -1559,7 +1559,7 @@ body { font-size: 100%; }
   right: 14px;
   width: 46px;
   height: 46px;
-  border-radius: 23px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1616,7 +1616,7 @@ body { font-size: 100%; }
   margin: 10px 16px 4px;
   padding: 12px;
   background: var(--card);
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-subtle);
 }
 
@@ -1856,6 +1856,23 @@ html, body {
 .pres { background: var(--bubi-bg); }
 .presWrap svg { background: var(--bubi-surface); border: .5px solid var(--bubi-border); box-shadow: none; }
 .pres.withScene .presWrap svg { box-shadow: var(--shadow-subtle); }
+
+/* ============================================================
+   CIBLES TACTILES : 44 × 44 minimum, partout
+   ============================================================ */
+.nb, .btn, .chip, .l, .seg button, .pi .add, .sb2, .fb, .qs button, .presBar .nb, .presClose,
+.row, .pi, .resume, .selbar button, .undobar button, .lvl .l {
+  min-height: 44px;
+}
+.chip, .l { display: inline-flex; align-items: center; padding-top: 0; padding-bottom: 0; }
+.seg button, .fb, .qs button, .sb2 { min-height: 44px; }
+.pi .add { min-width: 44px; min-height: 44px; width: 44px; height: 44px; }
+.nb { min-width: 44px; }
+.stp button { min-width: 56px; min-height: 48px; }
+.cart, .dimin { min-height: 44px; }
+
+/* les listes de puces gardent leur hauteur de ligne malgré la cible agrandie */
+.chips { align-items: center; }
 </style>
 </head>
 <body>
@@ -1919,22 +1936,14 @@ const LOGOS = {
    Les valeurs d'origine (V8) sont rétablies ici.
 */
 const BRAND = {
-  "Bubi Nature": "#DDAA4D",   /* ochre */
-  "Gustav": "#758A6B",        /* sage */
-  "William's": "#C96F4F"      /* terracotta */
+  "Bubi Nature": "var(--bubi-ochre)",
+  "Gustav": "var(--bubi-sage)",
+  "William's": "var(--bubi-terracotta)"
 };
 
 /* Nuances dérivées, pour les dégradés des boîtes dessinées sur le rayon. */
-const BRAND_LIGHT = {
-  "Bubi Nature": "#E8C070",
-  "Gustav": "#8A9E7F",
-  "William's": "#D68A6D"
-};
-const BRAND_DARK = {
-  "Bubi Nature": "#C2923A",
-  "Gustav": "#617556",
-  "William's": "#AE5A3C"
-};
+const BRAND_LIGHT = BRAND;
+const BRAND_DARK = BRAND;
 const BRANDS = Object.keys(BRAND);
 
 /* Libellés des deux univers (manquait aussi dans le V11 reçu). */
@@ -2231,6 +2240,25 @@ function ic(name, size) {
   }[name] || '';
   return `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 }
+
+/* ================= TOKENS CÔTÉ EXPORT =================
+   Une image ou une page exportée vit hors de l'application : les variables CSS n'y
+   existent pas. Avant tout export, on remplace chaque var(--bubi-…) par sa valeur.
+*/
+const TOKENS = {
+  '--bubi-bg': '#F7F6F2', '--bubi-surface': '#FFFFFF', '--bubi-surface-2': '#F4F5F3',
+  '--bubi-graphite': '#283238', '--bubi-text-secondary': '#56636A', '--bubi-border': '#E6E8E7',
+  '--bubi-blueprint-soft': '#DCE8EE', '--bubi-blueprint': '#7895A4', '--bubi-blueprint-strong': '#527789',
+  '--bubi-sage': '#758A6B', '--bubi-terracotta': '#C96F4F', '--bubi-ochre': '#DDAA4D',
+  '--bubi-cream': '#E8D8BD', '--bubi-shelf': '#D8B991', '--bubi-warning': '#B8862B',
+  '--bubi-warning-bg': '#FBF3DF', '--bubi-danger': '#B5473A'
+};
+
+function resolveTokens(str) {
+  return String(str).replace(/var\((--bubi-[a-z0-9-]+)\)/g, (m, k) => TOKENS[k] || '#888');
+}
+
+const TOKEN_STYLE = `<style>:root{${Object.entries(TOKENS).map(([k, v]) => k + ':' + v).join(';')}}</style>`;
 
 /* ================= STOCKAGE SÛR =================
    Safari refuse localStorage dans certains cas (fichier ouvert en local, navigation
@@ -2533,23 +2561,14 @@ function photoPlacement(ref, fx, fy, fw, fh) {
     return { x: fx - fw * (z - 1) / 2, y: fy - fh * (z - 1) / 2, w: fw * z, h: fh * z,
              par: FIT.mode === 'fill' ? 'xMidYMid slice' : 'xMidYMid meet' };
   }
-  // Le produit photographié et la boîte dessinée sont censés avoir les mêmes
-  // proportions. Quand elles sont proches, on fait remplir le cadre au produit, quitte
-  // à rogner un liseré : plus aucun bord visible. Quand elles divergent franchement,
-  // un 70 g photographié de face posé dans une boîte très plate par exemple, rogner
-  // couperait le produit en deux : on le laisse entier, centré, et le fond reste
-  // discret.
-  const prodAr = (b.bw * b.ar) / b.bh;               // proportions du produit
-  const frameAr = fw / fh;                           // proportions du cadre
-  const gap = Math.max(prodAr, frameAr) / Math.min(prodAr, frameAr);
-  const cover = gap <= 1.35;
-  const Dw = cover
-    ? Math.max(fw / b.bw, (fh / b.bh) * b.ar)
-    : Math.min(fw / b.bw, (fh / b.bh) * b.ar);
-  const Dh = Dw / b.ar;
+  // Règle simple : le produit tient entier dans la hauteur du gabarit, et s'il n'en
+  // remplit pas la largeur, on l'étire horizontalement jusqu'à la remplir. Jamais de
+  // rognage, jamais de bande sur les côtés.
+  const Dh = Math.min(fh / b.bh, (fw / b.bw) / b.ar);   // hauteur : le produit rentre
+  const Dw = fw / b.bw;                                 // largeur : toujours remplie
   const cx = (b.bx + b.bw / 2) * Dw;                  // centre du produit dans l'image
   const cy = (b.by + b.bh / 2) * Dh;
-  return { x: fx + fw / 2 - cx, y: fy + fh / 2 - cy, w: Dw, h: Dh, par: 'none', cover };
+  return { x: fx + fw / 2 - cx, y: fy + fh / 2 - cy, w: Dw, h: Dh, par: 'none', cover: true };
 }
 
 /* ================= AJUSTEMENT DES VISUELS =================
@@ -3963,12 +3982,13 @@ function commercialSheetNow() {
   });
   const occ = Math.round(used / (W * N) * 100),
     date = new Date().toLocaleDateString('fr-FR');
-  const svg = gondolaSVG(false, true);
+  const svg = resolveTokens(gondolaSVG(false, true));
   const remote = [...new Set(S.cur.shelves.flatMap(sh => sh.items.filter(i => !i.gap).map(i => i.ref)))]
     .filter(r => !UPHOTO[r] && PHOTO[r] && PHOTO[r] !== 'none').length;
   const html = `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>${esc(S.cur.store)} - ${esc(S.cur.name)}</title>
+${TOKEN_STYLE}
 <style>
   @page { size: A4 landscape; margin: 10mm; }
   * { box-sizing: border-box; }
@@ -3987,7 +4007,7 @@ function commercialSheetNow() {
   th { background: var(--bubi-surface-2); }
   tr { page-break-inside: avoid; }
   h2 { font-size: 15px; margin: 0 0 8px; color: var(--bubi-graphite); }
-  .warn { background: var(--bubi-warning-bg); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #8a5a00; margin-bottom: 10px; }
+  .warn { background: var(--bubi-warning-bg); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--bubi-warning); margin-bottom: 10px; }
   @media print {
     body { margin: 0; }
     .noprint { display: none; }
@@ -5034,7 +5054,7 @@ function labelsSheet() {
   }));
   if (!rows.length) { toast('Aucun produit à étiqueter'); return; }
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
-  <title>Étiquettes ${esc(S.cur.store)}</title><style>
+  <title>Étiquettes ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>
     @page { size: A4; margin: 8mm; }
     body { font-family: -apple-system, Arial, sans-serif; margin: 0; }
     h1 { font-size: 15px; margin: 0 0 8px; color: var(--bubi-graphite); }
@@ -5050,7 +5070,7 @@ function labelsSheet() {
   <div class="noprint"><button onclick="print()">Imprimer les étiquettes</button></div>
   <h1>${esc(S.cur.store)} — ${esc(S.cur.name)} · ${rows.length} étiquettes</h1>
   <div class="grid">${rows.map(r => `<div class="lab">
-    <div class="b" style="color:${BRAND[r.p.cat]}">${esc(r.p.cat)}</div>
+    <div class="b" style="color:${resolveTokens(BRAND[r.p.cat])}">${esc(r.p.cat)}</div>
     <div class="n">${esc(r.p.name)}</div>
     <div class="m"><span class="r">${r.p.ref}</span><span>Niv. ${r.n} · ${r.f} de face${r.s>1?' × '+r.s:''}</span></div>
   </div>`).join('')}</div></body></html>`;
@@ -5072,7 +5092,7 @@ function buildSheet() {
     }).join('<br>') + '</li>';
   }).join('');
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
-  <title>Montage ${esc(S.cur.store)}</title><style>
+  <title>Montage ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>
     @page { size: A4; margin: 12mm; }
     body { font-family: -apple-system, Arial, sans-serif; color: #111; }
     h1 { color: var(--bubi-graphite); font-size: 19px; margin: 0; }
@@ -5187,7 +5207,7 @@ function orderExport() {
   const totUnits = lines.reduce((a, l) => a + l.qty, 0);
   const totVal = lines.reduce((a, l) => a + l.qty * l.price, 0);
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
-  <title>Commande ${esc(S.cur.store)}</title><style>
+  <title>Commande ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>
     @page { size: A4; margin: 14mm; }
     body { font-family: -apple-system, Arial, sans-serif; color: #111; font-size: 12px; }
     h1 { color: var(--bubi-graphite); font-size: 20px; margin: 0; }
