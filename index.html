@@ -1157,21 +1157,6 @@ a.chip {
 }
 
 /* En-tête de l'écran d'accueil */
-.brandbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  padding: 4px 16px 10px;
-  opacity: .85;
-}
-
-.brandbar img {
-  height: 20px;
-  max-width: 92px;
-  object-fit: contain;
-}
-
 /* ===== Sélection multiple ===== */
 .selbar {
   display: flex;
@@ -1424,36 +1409,6 @@ body { font-size: 100%; }
 .onb b { font-weight: 600; }
 
 /* ===== Logo de l'application ===== */
-.applogo {
-  width: 24px;
-  height: 24px;
-  vertical-align: -.32em;
-  margin-right: 7px;
-  border-radius: 6px;
-}
-
-.hero {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 6px 16px 2px;
-}
-
-.hero img {
-  width: 62px;
-  height: 62px;
-  border-radius: 15px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .16);
-}
-
-.hero .big { padding: 0; }
-
-.heroSub {
-  font-size: 14px;
-  color: var(--mut);
-  margin-top: 1px;
-}
-
 .onbHead { text-align: center; margin: 2px 0 10px; }
 
 .onbHead img {
@@ -1647,6 +1602,126 @@ body.dragging .pl, body.dragging .cw { overflow: hidden; }
   font-weight: 400;
   font-size: 11px;
   color: var(--mut);
+}
+
+/* ===== Bouton Fermer du mode présentation ===== */
+.presClose {
+  position: fixed;
+  top: calc(var(--sat) + 12px);
+  right: 14px;
+  width: 46px;
+  height: 46px;
+  border-radius: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nav);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border: .5px solid var(--sep);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .22);
+  color: var(--txt);
+  z-index: 60;
+}
+
+.presClose .ic { transform: rotate(45deg); }
+.presClose:active { background: var(--fill2); }
+
+/* les commandes de la présentation sont plus faciles à viser */
+.presBar { padding: 8px 10px; gap: 8px; z-index: 60; }
+.presBar .nb { min-width: 52px; min-height: 44px; padding: 8px 12px; }
+
+/* ===== Barres de répartition ===== */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 7px;
+  font-size: 13px;
+}
+
+.bar .bl { width: 92px; flex-shrink: 0; }
+
+.bar .bt {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.bar .bt i {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+}
+
+.bar .bv {
+  width: 42px;
+  text-align: right;
+  font-weight: 600;
+}
+
+/* ===== Bibliothèque de plans ===== */
+.resume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 16px 4px;
+  padding: 12px;
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .07);
+}
+
+.resume:active { transform: scale(.99); }
+
+.resume .rth {
+  width: 76px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card2);
+  flex-shrink: 0;
+  border: .5px solid var(--sep);
+}
+
+.resume .rth svg { width: 100%; height: 100%; }
+.resume .rtx { flex: 1; min-width: 0; }
+
+.resume .rl {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--tint);
+}
+
+.resume .rn {
+  font-size: 17px;
+  font-weight: 600;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resume .rs {
+  font-size: 13px;
+  color: var(--mut);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pill2 {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 11px;
+  background: var(--fill);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 </style>
 </head>
@@ -2212,7 +2287,7 @@ function saveDimsFromSheet() {
      y compris sur une photo distante qu'on ne peut pas analyser.
 */
 const FITKEY = 'bubiplan_fit';
-let FIT = { zoom: 1.35, mode: 'fill' };
+let FIT = { zoom: 1, mode: 'fill' };
 try {
   Object.assign(FIT, JSON.parse(lsGet(FITKEY) || '{}'));
 } catch (e) {}
@@ -2522,7 +2597,34 @@ function pumpPhotos() {
     resolvePhoto(r, () => {
       photoBusy--;
       refreshPhoto(r);
+      queueDetour(r);
       pumpPhotos();
+    });
+  }
+}
+
+/* Une fois la photo trouvée sur le site, on la rapatrie et on efface son fond blanc,
+   sans rien demander. C'est ce qui la rend nette dans le rayon, disponible hors ligne
+   et incorporable aux exports. Deux à la fois pour ne pas saturer la connexion. */
+let detourQueue = [], detourBusy = 0;
+
+function queueDetour(ref) {
+  if (UPHOTO[ref] || !PHOTO[ref] || PHOTO[ref] === 'none') return;
+  if (!detourQueue.includes(ref)) detourQueue.push(ref);
+  pumpDetour();
+}
+
+function pumpDetour() {
+  while (detourBusy < 2 && detourQueue.length) {
+    const r = detourQueue.shift();
+    detourBusy++;
+    fetchAndDetour([r]).then(() => {
+      detourBusy--;
+      refreshPhoto(r);
+      pumpDetour();
+    }).catch(() => {
+      detourBusy--;
+      pumpDetour();
     });
   }
 }
@@ -2602,6 +2704,8 @@ const S = {
   fmt: '',
   univ: 'chien',
   min: false,
+  homeFilter: 'encours',  // vue de la bibliothèque
+  homeQ: '',             // recherche sur l'accueil
   side: 'right',   // côté où viennent se poser les nouveaux produits
   insertAt: null,  // endroit visé sur le rayon, en centimètres
   sel: [],         // emplacements sélectionnés
@@ -2733,18 +2837,94 @@ function confirmBox(title, text, ok, cb, danger) {
 
 /* ================= HOME ================= */
 
+/* ================= BIBLIOTHÈQUE DE PLANS =================
+   L'accueil est une bibliothèque, pas un tableau de bord d'activité : on y range et on
+   y retrouve des planogrammes. Chaque plan porte un statut, du brouillon jusqu'au plan
+   posé en rayon, et se range sous le magasin auquel il est destiné.
+*/
+const STATUS = {
+  brouillon: { l: 'Brouillon', c: 'var(--mut)' },
+  propose: { l: 'Proposé', c: '#ff9500' },
+  valide: { l: 'Validé', c: 'var(--tint)' },
+  pose: { l: 'Posé', c: '#8e8e93' }
+};
+
+function statusOf(p) {
+  return STATUS[p.status] ? p.status : 'brouillon';
+}
+
+function projectLinear(p) {
+  return p.shelves.reduce((a, sh) => a + sh.items.reduce((b, it) =>
+    b + (it.gap ? 0 : (BY_REF[it.ref] ? BY_REF[it.ref].w * it.f : 0)), 0), 0);
+}
+
 function renderHome() {
   S.cur = null;
-  const list = S.projects.slice().sort((a, b) => b.updated - a.updated);
-  $('app').innerHTML = `<div class="nav"><span class="nb" style="visibility:hidden">·</span><div class="t"><h1><img class="applogo" src="${APP_ICON}" alt="">BubiPlan</h1></div><button class="nb b" data-act="new">＋</button></div>
+  const all = S.projects.slice().sort((a, b) => b.updated - a.updated);
+  const filt = S.homeFilter || 'encours';
+  const q = (S.homeQ || '').toLowerCase().trim();
+  const keep = p => filt === 'tous' ? true
+    : filt === 'encours' ? statusOf(p) !== 'pose'
+    : statusOf(p) === filt;
+  const list = all.filter(p => keep(p) && (!q || (p.store + ' ' + p.name).toLowerCase().includes(q)));
+  const last = all[0];
+
+  // rangement par magasin : un plan est fait pour une gondole précise
+  const groups = {};
+  list.forEach(p => (groups[p.store] = groups[p.store] || []).push(p));
+
+  $('app').innerHTML = `<div class="nav">
+      <span class="nb" style="visibility:hidden">·</span>
+      <div class="t"><h1>BubiPlan</h1></div>
+      <button class="nb b" data-act="new">${ic('plus', 22)}</button>
+    </div>
   <div class="scroll">
-    <div class="hero"><img src="${APP_ICON}" alt="BubiPlan"><div><div class="big">Projets</div><div class="heroSub">Planogrammes Bubimex</div></div></div>
-    <div class="brandbar">${BRANDS.map(b => `<img src="${LOGOS[b].color}" alt="${esc(b)}">`).join('')}</div>
-    ${list.length?`<div class="sec">${list.length} gondole${list.length>1?'s':''} · ${PRODUCTS.length} références</div><div class="list">${list.map(p=>`
-      <div class="row" data-act="open" data-id="${p.id}"><div class="th">${thumb(p)}</div><div class="tx"><div class="n">${esc(p.store)}</div><div class="s">${UNIV[p.univ]} · ${esc(p.name)} · ${p.W}×${p.H} cm · ${countRefs(p)} réf.</div></div><span class="chev">›</span></div>`).join('')}</div>`
-    :`<div class="empty"><div class="i">${ic('grid',56)}</div>Aucune gondole pour l'instant.<br><button class="pill" data-act="new">${ic('plus',18)} Nouvelle gondole</button></div>`}
+    <div class="big">Mes plans</div>
+
+    ${last ? `<div class="resume" data-act="open" data-id="${last.id}">
+      <div class="rth">${thumb(last)}</div>
+      <div class="rtx">
+        <span class="rl">Reprendre</span>
+        <div class="rn">${esc(last.store)}</div>
+        <div class="rs">${esc(last.name)} · ${countRefs(last)} réf. · ${Math.round(projectLinear(last))} cm</div>
+      </div>
+      <span class="chev">›</span>
+    </div>` : ''}
+
+    ${all.length > 1 ? `
+      <div class="sb" style="padding:10px 16px 4px">
+        <div class="in">${ic('search', 18)}<input id="hq" placeholder="Magasin ou plan" value="${esc(S.homeQ || '')}" autocomplete="off"></div>
+      </div>
+      <div class="chips" style="padding:6px 16px 4px">
+        ${[['encours', 'En cours'], ['propose', 'Proposés'], ['valide', 'Validés'], ['pose', 'Posés'], ['tous', 'Tous']]
+          .map(([k, l]) => `<span class="chip${filt === k ? ' on' : ''}" data-act="hfilter" data-v="${k}">${l}</span>`).join('')}
+      </div>` : ''}
+
+    ${list.length ? Object.entries(groups).map(([store, ps]) => `
+      <div class="sec">${esc(store)}</div>
+      <div class="list">${ps.map(p => `
+        <div class="row" data-act="open" data-id="${p.id}">
+          <div class="th">${thumb(p)}</div>
+          <div class="tx">
+            <div class="n">${esc(p.name)}</div>
+            <div class="s">${UNIV[p.univ]} · ${p.W}×${p.H} cm · ${countRefs(p)} réf. · ${fmtDate(p.updated)}</div>
+          </div>
+          <span class="pill2" style="color:${STATUS[statusOf(p)].c}">${STATUS[statusOf(p)].l}</span>
+          <span class="chev">›</span>
+        </div>`).join('')}</div>`).join('')
+      : all.length
+        ? `<div class="empty">Aucun plan dans cette vue.</div>`
+        : `<div class="empty"><div class="i">${ic('grid', 56)}</div>Ta première gondole t'attend.<br><button class="pill" data-act="new">${ic('plus', 18)} Nouveau plan</button></div>`}
     <div style="height:40px"></div>
   </div>`;
+
+  const hq = $('hq');
+  if (hq) hq.addEventListener('input', e => {
+    S.homeQ = e.target.value;
+    renderHome();
+    const f = $('hq');
+    if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+  });
 }
 
 function thumb(p) {
@@ -3789,13 +3969,14 @@ function gondolaSVG(interactive, photos, scene) {
           }
           s += `<rect x="${x+.5}" y="${yy+.5}" width="${wOne-1}" height="${hOne-1}" rx="2.5" fill="url(#grad${gradId(p.cat)})" stroke="${dark?'#1c1c1e':'#fff'}" stroke-width="1"/>`;
           if (url) {
-            // la photo remplit la boîte ; le zoom rogne la marge blanche résiduelle
+            // la photo occupe toute la boîte ; le zoom rogne ce qui resterait de marge
             const bw = wOne - 2, bh = hOne - 2, bx = x + 1, by = yy + 1;
             const z = FIT.zoom || 1;
             const iw = bw * z, ih = bh * z;
             const cid = 'clip' + (clipSeq++);
+            const cut = UPHOTO[it.ref];   // photo déjà détourée : fond transparent
             s += `<clipPath id="${cid}"><rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5"/></clipPath>`;
-            s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5" fill="#fff"/>`;
+            s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5" fill="${cut ? 'url(#grad'+gradId(p.cat)+')' : '#fff'}"/>`;
             s += `<image href="${url}" xlink:href="${url}" x="${bx-(iw-bw)/2}" y="${by-(ih-bh)/2}" width="${iw}" height="${ih}" preserveAspectRatio="${FIT.mode==='fill'?'xMidYMid slice':'xMidYMid meet'}" clip-path="url(#${cid})"/>`;
           } else if (wOne > 16 && hOne > 10) {
             // pas de photo : le logo de la marque tient lieu de repère
@@ -4653,6 +4834,198 @@ function orderCSV() {
     () => `<pre>${rows.length - 1} lignes de commande.</pre>`);
 }
 
+/* ================= ANALYSE COMMERCIALE =================
+   Trois indicateurs qui servent d'argumentaire partout dans le monde :
+
+   - la part de linéaire (share of shelf) : ce que la marque occupe dans la catégorie ;
+   - l'indice espace/ventes (space to sales, ou fair share) : la part des ventes divisée
+     par la part de linéaire. Au-dessus de 1, la référence rapporte plus que la place
+     qu'elle prend, elle mérite d'être élargie. En dessous, elle est sur-linéarisée ;
+   - la qualité de placement : les niveaux ne se valent pas. Le niveau des yeux vend
+     nettement mieux que le niveau du sol, et une référence qui tourne mérite d'y être.
+
+   Sans chiffres de ventes saisis, seuls la part de linéaire et le placement s'affichent.
+*/
+const CATKEY = 'bubiplan_cat_linear';
+
+function catLinear() {
+  const v = +lsGet(CATKEY + '_' + S.cur.id);
+  return v > 0 ? v : 0;
+}
+
+/* Poids d'attention d'un niveau : les yeux d'abord, puis la main, le haut, le sol. */
+function levelWeights(n) {
+  if (n === 1) return [1];
+  const eye = n <= 3 ? 0 : 1;                    // rangée au niveau du regard
+  return Array.from({ length: n }, (_, i) => {
+    if (i === eye) return 1;                     // niveau des yeux
+    if (i === eye + 1) return .92;               // niveau des mains
+    if (i < eye) return .78;                     // au-dessus du regard
+    return i === n - 1 ? .58 : .72;              // bas, et sol
+  });
+}
+
+function analysisData() {
+  const N = S.cur.shelves.length;
+  const wts = levelWeights(N);
+  const lines = [];
+  S.cur.shelves.forEach((sh, i) => sh.items.forEach(it => {
+    if (it.gap || !BY_REF[it.ref]) return;
+    const p = BY_REF[it.ref];
+    const d = perf(it.ref);
+    const lin = p.w * it.f;
+    const ca = (+d.unitsWeek || 0) * (+d.price || 0);
+    const prev = lines.find(l => l.ref === it.ref);
+    if (prev) { prev.lin += lin; prev.lvl = Math.min(prev.lvl, i); }
+    else lines.push({ ref: it.ref, p, lin, ca, lvl: i, w: wts[i] });
+  }));
+  const totLin = lines.reduce((a, l) => a + l.lin, 0) || 1;
+  const totCa = lines.reduce((a, l) => a + l.ca, 0);
+  lines.forEach(l => {
+    l.partLin = l.lin / totLin;
+    l.partCa = totCa ? l.ca / totCa : null;
+    l.index = l.partCa == null ? null : (l.partLin ? l.partCa / l.partLin : null);
+    l.w = wts[l.lvl];
+  });
+  const byBrand = {};
+  lines.forEach(l => {
+    const b = byBrand[l.p.cat] = byBrand[l.p.cat] || { lin: 0, ca: 0, n: 0 };
+    b.lin += l.lin; b.ca += l.ca; b.n++;
+  });
+  // qualité de placement : linéaire pondéré par l'attention que reçoit chaque niveau
+  const quality = lines.reduce((a, l) => a + l.lin * l.w, 0) / totLin;
+  return { lines, totLin, totCa, byBrand, quality, wts, N };
+}
+
+function commercialAnalysis() {
+  const a = analysisData();
+  if (!a.lines.length) { toast("Pose d'abord des produits"); return; }
+  const cat = catLinear();
+  const pct = x => (x * 100).toFixed(0) + ' %';
+  const sorted = a.lines.slice().filter(l => l.index != null).sort((x, y) => y.index - x.index);
+  const over = sorted.filter(l => l.index >= 1.25).slice(0, 5);
+  const under = sorted.filter(l => l.index <= .75).reverse().slice(0, 5);
+  const eye = a.lines.filter(l => l.w >= .92);
+  const eyeShare = a.lines.length ? eye.length / a.lines.length : 0;
+  const bestSellers = a.lines.filter(l => l.ca > 0).sort((x, y) => y.ca - x.ca).slice(0, 5);
+  const misplaced = bestSellers.filter(l => l.w < .9);
+
+  sheet(`<h2>Analyse commerciale</h2>
+
+   <p style="margin-bottom:6px"><b>Part de linéaire</b></p>
+   <div class="grp">
+     <div class="f"><label>Catégorie entière</label><input id="catLin" type="number" inputmode="numeric" value="${cat || ''}" placeholder="${Math.round(S.cur.W * S.cur.shelves.length)}"><span class="unit">cm</span></div>
+   </div>
+   ${cat
+     ? (cat < a.totLin
+        ? `<p>Le chiffre saisi (${cat} cm) est inférieur au linéaire Bubimex déjà posé (${Math.round(a.totLin)} cm). Additionne tous les niveaux de toute la catégorie, marques concurrentes comprises.</p>`
+        : `<p>Bubimex occupe <b>${pct(a.totLin / cat)}</b> du linéaire de la catégorie, soit ${Math.round(a.totLin)} cm sur ${cat}.</p>`)
+     : `<p>Additionne la largeur de tous les niveaux de la catégorie, concurrence comprise, pour connaître la part de linéaire Bubimex.</p>`}
+   <button class="btn" data-act="cat-save">Enregistrer</button>
+
+   <p style="margin:18px 0 6px"><b>Répartition par gamme</b></p>
+   ${Object.entries(a.byBrand).sort((x, y) => y[1].lin - x[1].lin).map(([b, v]) => `
+     <div class="bar"><span class="bl">${esc(b)}</span>
+       <span class="bt"><i style="width:${(v.lin / a.totLin * 100).toFixed(1)}%;background:${BRAND[b]}"></i></span>
+       <span class="bv">${pct(v.lin / a.totLin)}</span></div>`).join('')}
+
+   <p style="margin:18px 0 6px"><b>Qualité de placement</b></p>
+   <div class="stats" style="padding:0 0 8px">
+     <div class="st">Note<b>${Math.round(a.quality * 100)} / 100</b></div>
+     <div class="st">Au niveau des yeux<b>${eye.length} réf.</b></div>
+     <div class="st">Part du regard<b>${pct(eyeShare)}</b></div>
+   </div>
+   <p style="font-size:13px">Le niveau des yeux et celui des mains vendent le mieux ; le niveau du sol perd de l'ordre de quatre dixièmes de l'attention. La note pondère ton linéaire par l'attention que reçoit chaque niveau.</p>
+   ${misplaced.length ? `<p><b>À remonter au niveau des yeux</b><br><span style="font-size:13px;color:var(--mut)">${misplaced.map(l => l.ref + ' — ' + esc(l.p.name.split(',')[1] || l.p.name)).join('<br>')}</span></p>` : ''}
+
+   ${a.totCa ? `
+     <p style="margin:18px 0 6px"><b>Indice espace / ventes</b></p>
+     <p style="font-size:13px">Part des ventes divisée par part de linéaire. Au-dessus de 1, la référence rapporte plus que la place qu'elle occupe.</p>
+     ${over.length ? `<p><b>À élargir</b><br>${over.map(l => `<span style="font-size:13px">${l.ref} — indice ${l.index.toFixed(2)}</span>`).join('<br>')}</p>` : ''}
+     ${under.length ? `<p><b>Trop de place</b><br>${under.map(l => `<span style="font-size:13px">${l.ref} — indice ${l.index.toFixed(2)}</span>`).join('<br>')}</p>` : ''}
+     <button class="btn p" data-act="rebalance">Rééquilibrer selon les ventes</button>`
+    : `<p style="margin-top:18px;font-size:13px">Renseigne les ventes hebdomadaires et les prix dans Ventes &amp; contraintes pour obtenir l'indice espace / ventes, l'argument le plus solide en rendez-vous.</p>`}
+
+   <button class="btn" data-act="close">Fermer</button>`);
+}
+
+function saveCatLinear() {
+  const v = parseInt($('catLin').value, 10);
+  if (v > 0) lsSet(CATKEY + '_' + S.cur.id, String(v));
+  commercialAnalysis();
+}
+
+/* Déplace du linéaire des références sur-dotées vers celles qui sous-performent. */
+function rebalance() {
+  const a = analysisData();
+  const usable = a.lines.filter(l => l.index != null);
+  if (!usable.length) { toast('Renseigne les ventes'); return; }
+  let moved = 0;
+  usable.sort((x, y) => y.index - x.index);
+  const winners = usable.filter(l => l.index >= 1.2);
+  const losers = usable.filter(l => l.index <= .8).reverse();
+  const W = S.cur.W;
+  losers.forEach(l => {
+    if (!winners.length || moved >= 12) return;
+    for (const sh of S.cur.shelves) {
+      const src = sh.items.find(it => it.ref === l.ref && it.f > 1);
+      if (!src) continue;
+      const srcW = BY_REF[src.ref].w;
+      // on cherche une gagnante qui tient dans la place ainsi libérée
+      // on libère d'abord la place, puis on cherche qui peut en profiter
+      src.f--;
+      const cand = winners
+        .map(w => {
+          for (const sh2 of S.cur.shelves) {
+            const t = sh2.items.find(it => it.ref === w.ref);
+            if (!t) continue;
+            if (BY_REF[t.ref].w <= W - shelfW(sh2)) return t;
+          }
+          return null;
+        })
+        .find(Boolean);
+      if (!cand) { src.f++; continue; }   // personne ne peut grandir : on remet
+      cand.f++;
+      moved++;
+      break;
+    }
+  });
+  closeSheet();
+  if (moved) commit(`${moved} face${moved>1?'s':''} déplacée${moved>1?'s':''} vers les meilleures ventes`);
+  else toast('Rien à rééquilibrer');
+}
+
+/* Le même plan reproduit dans un autre magasin : deux Gamm Vert ont souvent la même
+   gondole, on ne refait pas le travail. */
+function dupToStore() {
+  sheet(`<h2>Copier vers un autre magasin</h2>
+   <p>Le plan est repris à l'identique, produits et dimensions compris, sous un nouveau magasin.</p>
+   <div class="grp">
+     <div class="f"><label>Magasin</label><input id="dupStore" placeholder="ex : Gamm Vert Colomiers" autocapitalize="words"></div>
+     <div class="f"><label>Nom du plan</label><input id="dupName" value="${esc(S.cur.name)}"></div>
+   </div>
+   <button class="btn p" data-act="dup-go">Copier</button>
+   <button class="btn" data-act="close">Annuler</button>`);
+  setTimeout(() => { const e = $('dupStore'); if (e) e.focus(); }, 180);
+}
+
+function dupToStoreGo() {
+  const st = ($('dupStore').value || '').trim();
+  if (!st) { toast('Indique le magasin'); return; }
+  const c = JSON.parse(JSON.stringify(S.cur));
+  c.id = uid();
+  c.store = st;
+  c.name = ($('dupName').value || '').trim() || c.name;
+  c.status = 'brouillon';
+  delete c.before;
+  c.created = c.updated = Date.now();
+  c.shelves.forEach(sh => sh.items.forEach(it => it.id = uid()));
+  S.projects.push(c);
+  store.save(S.projects);
+  closeSheet();
+  toast('Plan copié vers ' + st);
+}
+
 /* ---- menu / exports ---- */
 
 function menu() {
@@ -4677,6 +5050,7 @@ function wizardSheet() {
   <button class="btn" data-act="spaceplanner">${ic('ruler')} Calculer la place nécessaire</button>
   <p style="margin-top:16px"><b>Vérifier</b></p>
   <button class="btn" data-act="compare">${ic('chart')} Avant / après</button>
+  <button class="btn p" data-act="commercial-analysis">${ic('chart')} Analyse commerciale</button>
   <button class="btn" data-act="analysis">${ic('chart')} Diagnostic du rayon</button>
   <button class="btn" data-act="performance">${ic('chart')} Ventes et contraintes</button>
   <button class="btn" data-act="close">Fermer</button>`);
@@ -4689,8 +5063,11 @@ function settingsSheet() {
   <button class="btn" data-act="dims">${ic('ruler')} Dimensions des boîtes</button>
   <button class="btn" data-act="edit-project">${ic('cog')} Dimensions de la gondole</button>
   <button class="btn" data-act="templates">${ic('grid')} Gabarits de gondole</button>
+  <p style="margin-top:16px"><b>Où en est ce plan ?</b></p>
+  <div class="qs">${Object.entries(STATUS).map(([k, v]) => `<button data-act="setstatus" data-v="${k}" class="${statusOf(S.cur) === k ? 'on' : ''}">${v.l}</button>`).join('')}</div>
   <p style="margin-top:16px"><b>Ce projet</b></p>
   <button class="btn" data-act="dup">${ic('copy')} Dupliquer</button>
+  <button class="btn" data-act="dup-store">${ic('copy')} Copier vers un autre magasin</button>
   <button class="btn d" data-act="clear">${ic('undo')} Vider la gondole</button>
   <button class="btn d" data-act="delete-project">${ic('trash')} Supprimer le projet</button>
   <p style="margin-top:16px"><b>Toutes les données</b></p>
@@ -4823,8 +5200,8 @@ function presentation() {
       <button class="nb" data-act="pres-zoom" data-v="1">+</button>
       <button class="nb" data-act="pres-reset">Ajuster</button>
       <button class="nb" data-act="pres-scene">Magasin</button>
-      <button class="nb" data-act="close-pres">Fermer</button>
-    </div>`;
+    </div>
+    <button class="presClose" data-act="close-pres" aria-label="Fermer">${ic('plus', 22)}</button>`;
   document.body.appendChild(d);
   bindPresentationGestures();
 }
@@ -4870,6 +5247,8 @@ function bindPresentationGestures() {
     if (e.touches.length === 2) {
       pres.dist = dist(e.touches);
     } else if (e.touches.length === 1) {
+      // un doigt posé sur une commande ne déplace pas le plan
+      if (e.target.closest('[data-act]')) return;
       pres.panning = true;
       pres.sx = e.touches[0].clientX - pres.x;
       pres.sy = e.touches[0].clientY - pres.y;
@@ -4977,8 +5356,27 @@ document.addEventListener('click', e => {
     case 'order-csv':
       orderCSV();
       break;
+    case 'hfilter':
+      S.homeFilter = v;
+      renderHome();
+      break;
+    case 'setstatus':
+      S.cur.status = v;
+      persist();
+      toast('Plan ' + STATUS[v].l.toLowerCase());
+      settingsSheet();
+      break;
     case 'share':
       shareSheet();
+      break;
+    case 'commercial-analysis':
+      commercialAnalysis();
+      break;
+    case 'cat-save':
+      saveCatLinear();
+      break;
+    case 'rebalance':
+      rebalance();
       break;
     case 'compare':
       compareSheet();
@@ -5276,6 +5674,12 @@ document.addEventListener('click', e => {
     case 'photos':
       closeSheet();
       resetPhotos();
+      break;
+    case 'dup-go':
+      dupToStoreGo();
+      break;
+    case 'dup-store':
+      dupToStore();
       break;
     case 'dup': {
       const c = JSON.parse(JSON.stringify(S.cur));
