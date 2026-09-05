@@ -2205,14 +2205,54 @@ function savePhotoMap() {
   } catch (e) {}
 }
 
+/* Les visuels déposés dans le dossier photos/ du dépôt sont servis par la même adresse
+   que l'application : aucun refus de copie, détourage possible, présence dans les
+   exports et disponibilité hors ligne. On les cherche donc avant tout le reste, le
+   site Bubimex ne servant que de secours. */
+function localPhotos(ref) {
+  return ['./photos/' + ref + '.jpg', './photos/' + ref + '.png', './photos/' + ref + '.webp'];
+}
+
 function photoCandidates(ref) {
   const p = BY_REF[ref];
-  const explicit = (p && p.imageCandidates) || [];
+  const explicit = [...localPhotos(ref), ...((p && p.imageCandidates) || [])];
   // Fallbacks historiques conservés pour les références dont WordPress a renommé le fichier.
   const root = 'https://bubimex.eu/wp-content/uploads/';
   const generic = [`${root}${ref}.jpg`, `${root}${ref}-1.jpg`, `${root}${ref}-2.jpg`, `${root}${ref}-700x700.jpg`, `${root}${ref}-600x600.jpg`, `${root}${ref}.png`, `${root}${ref}.webp`, `${root}${ref}.jpeg`];
   return [...new Set([...explicit, ...generic])];
 }
+/* ================= CORRECTIONS PUBLIÉES =================
+   Un fichier catalogue.json déposé à côté de l'application corrige des cotes ou ajoute
+   des références sans republier l'application entière. Format attendu :
+     { "corrections": [ { "ref": "9099", "w": 23, "h": 8, "d": 16, "df": 1, "st": 2 } ],
+       "ajouts":      [ ["chat","9200","Nom du produit","Bubi Nature","70g",7.5,3.8,7.5,2,4] ] }
+   Absent ou illisible, l'application tourne sur son catalogue interne.
+*/
+function loadCatalogueOverlay() {
+  if (typeof fetch !== 'function') return;              // navigateur sans fetch
+  if (!/^https?:$/.test(location.protocol)) return;     // fichier local : rien à charger
+  try {
+    fetch('./catalogue.json', { cache: 'no-cache' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+      if (!data) return;
+      let n = 0;
+      (data.corrections || []).forEach(c => {
+        const p = BY_REF[c.ref];
+        if (!p) return;
+        ['w', 'h', 'd', 'df', 'st'].forEach(k => { if (c[k] != null) p[k] = +c[k]; });
+        if (c.name) p.name = c.name;
+        n++;
+      });
+      if (!n) return;
+      applyDimFixes();
+      renderListIfEditor();
+      if (S.cur) update();
+    })
+      .catch(() => {});
+  } catch (e) {}
+}
+
 /* ================= CORRECTIONS DE DIMENSIONS =================
    Les cotes du catalogue viennent du site Bubimex et des fiches revendeurs ; certaines
    sont approximatives. Cet écran permet de les corriger au mètre ruban, par format.
@@ -2276,6 +2316,96 @@ function saveDimsFromSheet() {
   });
   closeSheet();
   toast('Dimensions enregistrées');
+}
+
+/* ================= BOÎTE UTILE D'UNE PHOTO =================
+   Effacer le fond blanc ne suffit pas : il reste une marge, variable d'un packshot à
+   l'autre, et le produit flotte dans son cadre. On mesure donc une fois pour toutes
+   l'endroit exact qu'occupe le produit dans l'image, en proportions, puis on fait
+   coïncider cette zone avec le cadre. La marge tombe hors du cadre et disparaît, sans
+   rogner le produit et sans réglage à la main.
+*/
+const BOXKEY = 'bubiplan_photobox';
+let PBOX = {};
+try { PBOX = JSON.parse(lsGet(BOXKEY) || '{}'); } catch (e) {}
+
+function savePBox() {
+  try { lsSet(BOXKEY, JSON.stringify(PBOX)); } catch (e) {}
+}
+
+/* Renvoie { bx, by, bw, bh, ar } en proportions de l'image, ou null si illisible. */
+function measurePhoto(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+        if (!W || !H) return resolve(null);
+        const max = 220, sc = Math.min(1, max / Math.max(W, H));
+        const cw = Math.max(1, Math.round(W * sc)), ch = Math.max(1, Math.round(H * sc));
+        const c = document.createElement('canvas');
+        c.width = cw; c.height = ch;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, cw, ch);
+        const px = ctx.getImageData(0, 0, cw, ch).data;
+        let minX = cw, minY = ch, maxX = -1, maxY = -1;
+        for (let y = 0; y < ch; y++) {
+          for (let x = 0; x < cw; x++) {
+            const i = (y * cw + x) * 4;
+            const a = px[i + 3];
+            if (a < 16) continue;                                   // transparent
+            if (px[i] > 242 && px[i + 1] > 242 && px[i + 2] > 242) continue;  // blanc
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+        if (maxX < 0) return resolve(null);
+        resolve({
+          bx: minX / cw,
+          by: minY / ch,
+          bw: (maxX - minX + 1) / cw,
+          bh: (maxY - minY + 1) / ch,
+          ar: W / H
+        });
+      } catch (e) {
+        resolve(null);   // image d'une autre origine : pixels illisibles
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+function ensureBox(ref) {
+  if (PBOX[ref] !== undefined) return;
+  const src = photoURL(ref);
+  if (!src) return;
+  PBOX[ref] = null;                                   // évite de relancer en boucle
+  measurePhoto(src).then(box => {
+    PBOX[ref] = box;
+    savePBox();
+    if (box) { refreshPhoto(ref); }
+  });
+}
+
+/* Place l'image de façon que sa zone utile remplisse exactement le cadre. */
+function photoPlacement(ref, fx, fy, fw, fh) {
+  const b = PBOX[ref];
+  if (!b || !b.bw || !b.bh) {
+    // zone utile inconnue : on retombe sur le cadrage réglable
+    const z = FIT.zoom || 1;
+    return { x: fx - fw * (z - 1) / 2, y: fy - fh * (z - 1) / 2, w: fw * z, h: fh * z,
+             par: FIT.mode === 'fill' ? 'xMidYMid slice' : 'xMidYMid meet' };
+  }
+  // le produit tient entier dans le cadre, la marge passe dehors et sera découpée
+  const Dw = Math.min(fw / b.bw, (fh / b.bh) * b.ar);
+  const Dh = Dw / b.ar;
+  const cx = (b.bx + b.bw / 2) * Dw;                  // centre du produit dans l'image
+  const cy = (b.by + b.bh / 2) * Dh;
+  return { x: fx + fw / 2 - cx, y: fy + fh / 2 - cy, w: Dw, h: Dh, par: 'none' };
 }
 
 /* ================= AJUSTEMENT DES VISUELS =================
@@ -2417,11 +2547,11 @@ function setProxy(on) {
 async function fetchAndDetour(refs, onProgress) {
   let done = 0, ok = 0, cut = 0;
   for (const ref of refs) {
-    const direct = (BY_REF[ref] && BY_REF[ref].imageCandidates) || photoCandidates(ref);
+    const direct = photoCandidates(ref);
     const known = PHOTO[ref] && PHOTO[ref] !== 'none' ? [PHOTO[ref]] : [];
     // si l'adresse exacte est déjà connue on n'essaie qu'elle, sinon les trois
     // variantes les plus probables : inutile de multiplier les tentatives
-    const base = known.length ? known : direct.slice(0, 3);
+    const base = known.length ? [...localPhotos(ref), ...known] : direct.slice(0, 4);
     const urls = useProxy ? [...base, ...base.map(proxyURL)] : base;
     for (const url of urls) {
       try {
@@ -2437,6 +2567,7 @@ async function fetchAndDetour(refs, onProgress) {
         });
         const clean = await detourImage(raw);
         UPHOTO[ref] = clean;
+        delete PBOX[ref];     // la photo a changé : sa zone utile est à remesurer
         ok++;
         if (clean !== raw) cut++;
         break;
@@ -2529,6 +2660,7 @@ function importPhotos(files, forceRef) {
       // détourage sur fond transparent + recadrage, puis stockage
       detourImage(rd.result).then(clean => {
         UPHOTO[ref] = clean;
+        delete PBOX[ref];
         ok++;
         fin();
       }).catch(fin);
@@ -2630,6 +2762,7 @@ function pumpDetour() {
 }
 
 function refreshPhoto(ref) {
+  ensureBox(ref);
   document.querySelectorAll(`img[data-ph="${ref}"]`).forEach(im => {
     im.src = photoSrc(ref);
   });
@@ -3969,15 +4102,13 @@ function gondolaSVG(interactive, photos, scene) {
           }
           s += `<rect x="${x+.5}" y="${yy+.5}" width="${wOne-1}" height="${hOne-1}" rx="2.5" fill="url(#grad${gradId(p.cat)})" stroke="${dark?'#1c1c1e':'#fff'}" stroke-width="1"/>`;
           if (url) {
-            // la photo occupe toute la boîte ; le zoom rogne ce qui resterait de marge
+            // le produit est calé sur le cadre : plus aucune marge blanche visible
             const bw = wOne - 2, bh = hOne - 2, bx = x + 1, by = yy + 1;
-            const z = FIT.zoom || 1;
-            const iw = bw * z, ih = bh * z;
+            const pl = photoPlacement(it.ref, bx, by, bw, bh);
             const cid = 'clip' + (clipSeq++);
-            const cut = UPHOTO[it.ref];   // photo déjà détourée : fond transparent
             s += `<clipPath id="${cid}"><rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5"/></clipPath>`;
-            s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5" fill="${cut ? 'url(#grad'+gradId(p.cat)+')' : '#fff'}"/>`;
-            s += `<image href="${url}" xlink:href="${url}" x="${bx-(iw-bw)/2}" y="${by-(ih-bh)/2}" width="${iw}" height="${ih}" preserveAspectRatio="${FIT.mode==='fill'?'xMidYMid slice':'xMidYMid meet'}" clip-path="url(#${cid})"/>`;
+            s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5" fill="url(#grad${gradId(p.cat)})"/>`;
+            s += `<image href="${url}" xlink:href="${url}" x="${pl.x}" y="${pl.y}" width="${pl.w}" height="${pl.h}" preserveAspectRatio="${pl.par}" clip-path="url(#${cid})"/>`;
           } else if (wOne > 16 && hOne > 10) {
             // pas de photo : le logo de la marque tient lieu de repère
             const lg = LOGOS[p.cat], lw2 = Math.min(wOne - 6, 26), lh2 = lw2 * lg.h / lg.w;
@@ -5734,6 +5865,9 @@ renderHome();
 
 // premier lancement : on propose le guide plutôt qu'un écran vide
 if (!S.projects.length && lsGet('bubiplan_seen') !== '1') setTimeout(onboarding, 400);
+
+// corrections éventuellement publiées dans le dépôt
+loadCatalogueOverlay();
 </script>
 </body>
 </html>

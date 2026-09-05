@@ -1,0 +1,61 @@
+name: Publier BubiPlan
+
+# À chaque envoi sur la branche principale : on vérifie que l'application démarre,
+# on force la mise à jour du cache pour que l'iPad prenne bien la nouvelle version,
+# puis on publie sur GitHub Pages. Plus besoin de changer le numéro de cache à la main.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  verifier-et-publier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Numéro de cache unique
+        run: |
+          sed -i "s/const CACHE = '[^']*'/const CACHE = 'bubiplan-${GITHUB_SHA::7}'/" sw.js
+          grep -n "const CACHE" sw.js
+
+      - name: Vérifier que l'application démarre
+        run: |
+          npm install jsdom --no-save --silent
+          node -e "
+          const {JSDOM}=require('jsdom'),fs=require('fs');
+          const errs=[];
+          const dom=new JSDOM(fs.readFileSync('index.html','utf8'),{
+            runScripts:'dangerously', pretendToBeVisual:true, url:'https://local.test/a.html',
+            beforeParse(w){ w.matchMedia=()=>({matches:false,addEventListener(){}});
+                            w.addEventListener('error',e=>errs.push(e.message)); }});
+          const app=dom.window.document.getElementById('app');
+          if(errs.length) { console.error('Erreurs au chargement :', errs); process.exit(1); }
+          if(!app || app.innerHTML.length < 50) { console.error('Écran vide'); process.exit(1); }
+          console.log('Application chargée, accueil rendu.');
+          "
+
+      - name: Compter les visuels disponibles
+        run: |
+          n=$(ls photos 2>/dev/null | wc -l)
+          echo "Visuels dans le dépôt : $n"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - uses: actions/deploy-pages@v4
