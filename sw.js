@@ -1,5 +1,5 @@
 /* Service worker BubiPlan : cache de l'application pour l'usage hors ligne. */
-const CACHE = 'bubiplan-v14';
+const CACHE = 'bubiplan-v17b';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
