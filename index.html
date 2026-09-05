@@ -624,40 +624,54 @@ a.chip {
   flex-shrink: 0
 }
 
+/* ===== Tablette et grand écran : plus dense, panneau produits plus large ===== */
 @media (min-width:900px) {
-  .body {
-    flex-direction: row
-  }
+  .body { flex-direction: row; }
 
   .dr {
-    width: 360px;
+    width: 420px;
     height: auto !important;
     border-radius: 0;
     box-shadow: none;
     border-left: .5px solid var(--sep);
     order: -1;
-    padding-bottom: 0
+    padding-bottom: 0;
   }
 
   .grab,
-  .dr .sb .tg {
-    display: none
-  }
+  .dr .sb .tg { display: none; }
 
   .dr.min .chips,
-  .dr.min .pl,
-  .dr.min .seg {
-    display: flex
-  }
+  .dr.min .seg { display: flex; }
 
-  .dr.min .pl {
-    display: grid
-  }
+  .dr.min .pl { display: grid; }
 
-  .pl {
-    grid-template-columns: 1fr
-  }
+  /* grille de produits : autant de colonnes que la largeur le permet */
+  .pl { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 7px; }
+
+  .pi { min-height: 60px; padding: 6px; }
+  .pi .ph { width: 44px; height: 44px; }
+  .pi .n { font-size: 12.5px; }
+
+  /* barre du haut plus compacte pour laisser la place au rayon */
+  .nav { min-height: calc(var(--sat) + 46px); padding-top: calc(var(--sat) + 4px); }
+  .lvl, .stats { padding-top: 4px; padding-bottom: 2px; }
+  .st { padding: 4px 9px; }
+  .cw { padding: 6px 12px; }
+
+  /* les feuilles s'affichent centrées, comme une fenêtre */
+  .ov { align-items: center; padding: 24px; }
+  .sh { border-radius: 16px; max-width: 560px; }
+  .sh .grab { display: none; }
 }
+
+/* ===== Grand iPad en paysage : deux colonnes de produits et rayon plus haut ===== */
+@media (min-width:1180px) {
+  .dr { width: 470px; }
+  .pl { grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); }
+  .nav h1 { font-size: 19px; }
+}
+
 
 /* PRO V10 */
 .sh select {
@@ -1146,10 +1160,7 @@ a.chip {
 */
 'use strict';
 
-/* ================= INSTALLATION HORS LIGNE =================
-   Servie par une adresse https, l'application enregistre un service worker : une fois
-   ajoutée à l'écran d'accueil, elle fonctionne sans réseau.
-*/
+/* ================= INSTALLATION HORS LIGNE ================= */
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -1330,12 +1341,12 @@ const CATALOGUE_RAW = [
   ["chat",  "9062", "Bubi Nature Vitality Care, thon/poulet, 70g",             "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
   ["chat",  "9063", "Bubi Nature Junior, poulet, 70g",                         "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
   ["chat",  "9064", "Bubi Nature Sterilised, filet de poulet, 70g",            "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9013", "Bubi Nature Complet, thon/crevettes en gelée, 85g",       "Bubi Nature", "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "9014", "Bubi Nature Complet, thon/œufs de thon en gelée, 85g",    "Bubi Nature", "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "9015", "Bubi Nature Complet, thon/maquereau en gelée, 85g",       "Bubi Nature", "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "9016", "Bubi Nature Complet, thon/bar en gelée, 85g",             "Bubi Nature", "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "9017", "Bubi Nature Complet, poulet en bouillon sterilised, 85g", "Bubi Nature", "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "9018", "Bubi Nature Complet, poulet/thon en bouillon, 85g",       "Bubi Nature", "85g",  10,  2.6, 7.5, 2, 4],
+  ["chat",  "9013", "Bubi Nature Complet, thon/crevettes en gelée, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
+  ["chat",  "9014", "Bubi Nature Complet, thon/œufs de thon en gelée, 85g",    "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
+  ["chat",  "9015", "Bubi Nature Complet, thon/maquereau en gelée, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
+  ["chat",  "9016", "Bubi Nature Complet, thon/bar en gelée, 85g",             "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
+  ["chat",  "9017", "Bubi Nature Complet, poulet en bouillon sterilised, 85g", "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
+  ["chat",  "9018", "Bubi Nature Complet, poulet/thon en bouillon, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
   ["chat",  "9070", "Bubi Nature, thon, 140g",                                 "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
   ["chat",  "9071", "Bubi Nature, thon/crevettes, 140g",                       "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
   ["chat",  "9072", "Bubi Nature, thon/poulet, 140g",                          "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
@@ -1346,10 +1357,10 @@ const CATALOGUE_RAW = [
   ["chat",  "9077", "Bubi Nature, poulet/crevettes, 140g",                     "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
   ["chat",  "9078", "Bubi Nature, cuisse de poulet, 140g",                     "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
   ["chat",  "9080", "Bubi Nature, filet de poulet, 140g",                      "Bubi Nature", "140g", 10,  3.2, 7.5, 2, 4],
-  ["chat",  "9082", "Bubi Nature Mousse, poulet, 50g",                         "Bubi Nature", "50g",  6,   2.5, 8,   2, 4],
-  ["chat",  "9083", "Bubi Nature Mousse, saumon, 50g",                         "Bubi Nature", "50g",  6,   2.5, 8,   2, 4],
-  ["chat",  "9084", "Bubi Nature Mousse, lapin, 50g",                          "Bubi Nature", "50g",  6,   2.5, 8,   2, 4],
-  ["chat",  "9085", "Bubi Nature Mousse, bœuf, 50g",                           "Bubi Nature", "50g",  6,   2.5, 8,   2, 4],
+  ["chat",  "9082", "Bubi Nature Mousse, poulet, 50g",                         "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
+  ["chat",  "9083", "Bubi Nature Mousse, saumon, 50g",                         "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
+  ["chat",  "9084", "Bubi Nature Mousse, lapin, 50g",                          "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
+  ["chat",  "9085", "Bubi Nature Mousse, bœuf, 50g",                           "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
   ["chat",  "9056", "Bubi Nature Soupe au saumon, 50g",                        "Bubi Nature", "50g",  6,   11,  2,   2, 1],
   ["chat",  "9057", "Bubi Nature Soupe au poulet, 50g",                        "Bubi Nature", "50g",  6,   11,  2,   2, 1],
   ["chat",  "9058", "Bubi Nature Soupe au thon, 50g",                          "Bubi Nature", "50g",  6,   11,  2,   2, 1],
@@ -1358,20 +1369,20 @@ const CATALOGUE_RAW = [
   ["chat",  "9067", "Bubi Nature Soupe au canard, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
   ["chat",  "9068", "Bubi Nature Soupe au thon, 135g",                         "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
   ["chat",  "9069", "Bubi Nature Soupe au poulet, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
-  ["chat",  "G500", "Gustav Mousse, canard, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G501", "Gustav Mousse, bœuf, 85g",                                "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G502", "Gustav Mousse, poulet, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G503", "Gustav Mousse, saumon, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G504", "Gustav Mousse, volaille et foie, 85g",                    "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G510", "Gustav Mousse Junior, poulet, 85g",                       "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G511", "Gustav Mousse Stérilisé, lapin, 85g",                     "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G515", "Gustav Mousse Senior, dinde, 85g",                        "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G531", "Gustav Fondant, bœuf, 85g",                               "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G532", "Gustav Fondant, poulet, 85g",                             "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G533", "Gustav Fondant, saumon, 85g",                             "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G551", "Gustav Ragoût, veau, 85g",                                "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G552", "Gustav Ragoût, poulet, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
-  ["chat",  "G553", "Gustav Ragoût, saumon, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 4],
+  ["chat",  "G500", "Gustav Mousse, canard, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G501", "Gustav Mousse, bœuf, 85g",                                "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G502", "Gustav Mousse, poulet, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G503", "Gustav Mousse, saumon, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G504", "Gustav Mousse, volaille et foie, 85g",                    "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G510", "Gustav Mousse Junior, poulet, 85g",                       "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G511", "Gustav Mousse Stérilisé, lapin, 85g",                     "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G515", "Gustav Mousse Senior, dinde, 85g",                        "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G531", "Gustav Fondant, bœuf, 85g",                               "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G532", "Gustav Fondant, poulet, 85g",                             "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G533", "Gustav Fondant, saumon, 85g",                             "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G551", "Gustav Ragoût, veau, 85g",                                "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G552", "Gustav Ragoût, poulet, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G553", "Gustav Ragoût, saumon, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
   ["chat",  "40",   "William's Optimal, poulet, 85g",                          "William's",   "85g",  7,   11,  2,   1, 1],
   ["chat",  "41",   "William's Optimal, cochon, 85g",                          "William's",   "85g",  7,   11,  2,   1, 1],
   ["chat",  "42",   "William's Optimal, bœuf, 85g",                            "William's",   "85g",  7,   11,  2,   1, 1],
@@ -1757,10 +1768,33 @@ function detourCanvas(img) {
 /* Récupère les visuels depuis bubimex.eu, les détoure et les stocke sur l'appareil.
    Nécessite du réseau. Si le site refuse la lecture des pixels (CORS), l'image est
    conservée telle quelle et comptée comme non détourée. */
+/* bubimex.eu accepte d'afficher ses visuels mais refuse qu'on les recopie : sans
+   autorisation explicite du serveur, le navigateur interdit la lecture des pixels,
+   donc pas de detourage, pas d'enregistrement et pas d'export. Le relais d'images
+   ci-dessous recupere la photo a notre place et la renvoie avec l'autorisation
+   manquante. Il ne sert qu'une fois : ensuite la photo vit dans l'appareil. */
+const PROXY = 'https://images.weserv.nl/?n=-1&w=420&url=';
+
+function proxyURL(url) {
+  return PROXY + encodeURIComponent(url.replace(/^https?:\/\//, ''));
+}
+
+let useProxy = lsGet('bubiplan_proxy') !== '0';
+
+function setProxy(on) {
+  useProxy = on;
+  lsSet('bubiplan_proxy', on ? '1' : '0');
+}
+
 async function fetchAndDetour(refs, onProgress) {
   let done = 0, ok = 0, cut = 0;
   for (const ref of refs) {
-    const urls = (BY_REF[ref] && BY_REF[ref].imageCandidates) || photoCandidates(ref);
+    const direct = (BY_REF[ref] && BY_REF[ref].imageCandidates) || photoCandidates(ref);
+    const known = PHOTO[ref] && PHOTO[ref] !== 'none' ? [PHOTO[ref]] : [];
+    // si l'adresse exacte est déjà connue on n'essaie qu'elle, sinon les trois
+    // variantes les plus probables : inutile de multiplier les tentatives
+    const base = known.length ? known : direct.slice(0, 3);
+    const urls = useProxy ? [...base, ...base.map(proxyURL)] : base;
     for (const url of urls) {
       try {
         const res = await fetch(url, { mode: 'cors', referrerPolicy: 'no-referrer' });
@@ -2798,7 +2832,54 @@ function commercialSheetNow() {
   const occ = Math.round(used / (W * N) * 100),
     date = new Date().toLocaleDateString('fr-FR');
   const svg = gondolaSVG(false, true);
-  const html = `<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${esc(S.cur.store)} - ${esc(S.cur.name)}</title><style>body{font-family:-apple-system,Arial,sans-serif;margin:32px;color:#111}h1{margin:0;color:#156b56}.sub{color:#666;margin:6px 0 24px}.k{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.k div{padding:12px 16px;background:#f2f2f7;border-radius:12px}.k b{display:block;font-size:22px}.plan{max-width:100%;height:auto;border:1px solid #ddd;border-radius:12px}table{width:100%;border-collapse:collapse;margin-top:24px;font-size:12px}th,td{padding:7px;border-bottom:1px solid #ddd;text-align:left}@media print{body{margin:12mm}.noprint{display:none}}</style><body><h1>Proposition d’implantation Bubimex</h1><div class="sub">${esc(S.cur.store)} · ${esc(S.cur.name)} · ${UNIV[S.cur.univ]} · ${S.cur.W}×${S.cur.H} cm · ${date}</div><div class="k"><div>Occupation<b>${occ}%</b></div><div>Références<b>${refs.size}</b></div><div>Facings<b>${fac}</b></div><div>Linéaire<b>${Math.round(used)} cm</b></div></div><div class="plan">${svg}</div><table><tr><th>Niveau</th><th>Réf.</th><th>Produit</th><th>Facing</th></tr>${S.cur.shelves.flatMap((sh,i)=>sh.items.map(it=>`<tr><td>N${i+1}</td><td>${it.ref}</td><td>${esc(BY_REF[it.ref].name)}</td><td>${it.f}</td></tr>`)).join('')}</table><p class="noprint"><button onclick="print()">Imprimer / Enregistrer en PDF</button></p></body></html>`;
+  const remote = [...new Set(S.cur.shelves.flatMap(sh => sh.items.map(i => i.ref)))]
+    .filter(r => !UPHOTO[r] && PHOTO[r] && PHOTO[r] !== 'none').length;
+  const html = `<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>${esc(S.cur.store)} - ${esc(S.cur.name)}</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Arial, sans-serif; margin: 24px; color: #111; }
+  h1 { margin: 0; color: #249A6D; font-size: 22px; }
+  .sub { color: #666; margin: 4px 0 14px; font-size: 13px; }
+  .k { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+  .k div { padding: 8px 12px; background: #f2f2f7; border-radius: 10px; font-size: 12px; }
+  .k b { display: block; font-size: 18px; }
+  /* le plan occupe la première page, en entier et sans coupure */
+  .page { page-break-after: always; break-after: page; }
+  .plan { width: 100%; text-align: center; }
+  .plan svg { max-width: 100%; max-height: 62vh; height: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th, td { padding: 5px 6px; border-bottom: 1px solid #ddd; text-align: left; }
+  th { background: #f2f2f7; }
+  tr { page-break-inside: avoid; }
+  h2 { font-size: 15px; margin: 0 0 8px; color: #249A6D; }
+  .warn { background: #fff4dd; border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #8a5a00; margin-bottom: 10px; }
+  @media print {
+    body { margin: 0; }
+    .noprint { display: none; }
+    .plan svg { max-height: 165mm; }
+  }
+</style></head><body>
+<div class="page">
+  <h1>Proposition d'implantation Bubimex</h1>
+  <div class="sub">${esc(S.cur.store)} · ${esc(S.cur.name)} · ${UNIV[S.cur.univ]} · ${S.cur.W}×${S.cur.H} cm · ${date}</div>
+  <div class="k"><div>Occupation<b>${occ}%</b></div><div>Références<b>${refs.size}</b></div><div>Facings<b>${fac}</b></div><div>Linéaire<b>${Math.round(used)} cm</b></div></div>
+  ${remote ? `<div class="warn noprint">${remote} visuel${remote>1?'s':''} n'a pas pu être incorporé et sera absent si vous imprimez hors ligne. Dans l'app : Photos produits → Importer.</div>` : ''}
+  <div class="plan">${svg}</div>
+</div>
+<div>
+  <h2>Détail de l'implantation</h2>
+  <table><tr><th>Niveau</th><th>Réf.</th><th>Produit</th><th>Format</th><th>Facings</th><th>Empil.</th><th>Linéaire</th></tr>
+  ${S.cur.shelves.flatMap((sh, i) => sh.items.map(it => {
+    const p = BY_REF[it.ref];
+    return `<tr><td>N${i+1}</td><td>${it.ref}</td><td>${esc(p.name)}</td><td>${p.fmt}</td><td>${it.f}</td><td>${it.s||1}</td><td>${(p.w*it.f).toFixed(1)} cm</td></tr>`;
+  })).join('')}
+  </table>
+</div>
+<p class="noprint" style="margin-top:18px"><button onclick="print()" style="padding:12px 18px;font-size:16px;border-radius:10px;border:0;background:#249A6D;color:#fff">Imprimer / Enregistrer en PDF</button></p>
+</body></html>`;
   shareOrDownload(new Blob([html], {
     type: 'text/html'
   }), fileName('html'), () => '<pre>Fiche commerciale prête à imprimer en PDF.</pre>');
@@ -3030,10 +3111,12 @@ function photoSheet() {
   const miss = list.filter(p => !photoURL(p.ref));
   const pend = miss.filter(p => PHOTO[p.ref] === undefined).length;
   sheet(`<h2>Photos ${UNIV[S.univ]}</h2>
-   <div class="stats" style="padding:0 0 10px"><div class="st">Importées<b>${imp}</b></div><div class="st">Web<b>${web}</b></div><div class="st">Manquantes<b>${miss.length-pend}</b></div>${pend?`<div class="st">En cours<b>${pend}</b></div>`:''}</div>
+   <div class="stats" style="padding:0 0 10px"><div class="st">Incorporées<b>${imp}</b></div><div class="st">Affichage seul<b>${web}</b></div><div class="st">Sans visuel<b>${miss.length-pend}</b></div>${pend?`<div class="st">En cours<b>${pend}</b></div>`:''}</div>
+   ${web ? `<div class="warn" style="margin:0 0 10px">${web} visuel${web>1?'s sont affichés':' est affiché'} depuis bubimex.eu : ${web>1?'ils apparaissent':'il apparaît'} dans l'app mais ${web>1?'ne peuvent':'ne peut'} pas être ${web>1?'inclus':'inclus'} dans un export. Importe-les pour les avoir dans le PDF et hors ligne.</div>` : ''}
    <p>Les visuels officiels sont recherchés automatiquement sur bubimex.eu, y compris les variantes WordPress (réf.jpg, réf-700x700.jpg, etc.). Les familles contrôlées sur les fiches Bubimex utilisent maintenant leurs dimensions de face réelles (boîtes, barquettes et pochons), et l'image est contenue sans recadrage dans cette empreinte physique. Pour un usage hors ligne, tu peux toujours importer tes propres fichiers nommés par référence.</p>
-   <button class="btn p" data-act="pickall">📷 Importer des photos (plusieurs fichiers)</button>
-   <button class="btn" data-act="fetchdetour">🌐 Récupérer et détourer depuis bubimex.eu</button>
+   <button class="btn" data-act="pickall">📷 Importer des photos depuis l'iPad</button>
+   <button class="btn p" data-act="fetchdetour">💾 Enregistrer les visuels dans l'app</button>
+   <div class="qs"><button data-act="proxy" data-v="1" class="${useProxy?'on':''}">Relais d'images actif</button><button data-act="proxy" data-v="0" class="${useProxy?'':'on'}">Sans relais</button></div>
    <button class="btn" data-act="redetour">✂️ Détourer à nouveau les photos présentes</button>
    <p style="margin:16px 0 4px"><b>Cadrage dans la boîte</b> — agrandit la photo et rogne la marge blanche.</p>
    <div class="qs">${[1,1.2,1.35,1.6,2].map(z => `<button data-act="fit-zoom" data-v="${z}" class="${Math.abs((FIT.zoom||1)-z)<0.01?'on':''}">${Math.round(z*100)}%</button>`).join('')}</div>
@@ -3042,6 +3125,264 @@ function photoSheet() {
    ${miss.length-pend?`<p style="margin-top:14px"><b>Sans photo :</b> tu peux importer manuellement un visuel si aucune des variantes officielles n'est disponible.</p><div class="chips" style="flex-wrap:wrap;padding:0">${miss.filter(p=>PHOTO[p.ref]!==undefined).map(p=>`<a class="chip" href="${PHOTO_BASE+p.ref}.jpg" target="_blank" rel="noreferrer">${p.ref}</a>`).join('')}</div>`:''}
    ${imp?`<button class="btn d" data-act="clearphotos" style="margin-top:14px">Supprimer les ${imp} photos importées</button>`:''}
    <button class="btn" data-act="close">Fermer</button>`);
+}
+
+/* ================= IMPORT D'UNE PROFORMA =================
+   On accepte un fichier CSV, TSV ou texte, ou un simple copier-coller. On y cherche
+   les références du catalogue, avec la quantité qui les accompagne éventuellement.
+   La quantité sert de poids : plus une référence est commandée, plus elle reçoit de
+   facings dans l'implantation proposée.
+*/
+let PROFORMA = null;
+
+function parseProforma(text) {
+  const found = new Map();
+  const known = new Set(PRODUCTS.map(p => p.ref));
+  text.split(/[\r\n]+/).forEach(line => {
+    const cells = line.split(/[;,\t|]/).map(c => c.trim());
+    let ref = null;
+    for (const c of cells) {
+      const t = c.replace(/^réf\.?\s*/i, '').replace(/\s+/g, '').toUpperCase();
+      if (known.has(t)) { ref = t; break; }
+    }
+    if (!ref) {
+      const m = line.toUpperCase().match(/\b(G\d{3}|\d{2,4})\b/g);
+      if (m) for (const c of m) if (known.has(c)) { ref = c; break; }
+    }
+    if (!ref) return;
+    // quantité : le premier nombre entier plausible qui n'est pas la référence
+    let qty = 0;
+    for (const c of cells) {
+      const v = parseInt(String(c).replace(/\s/g, ''), 10);
+      if (Number.isInteger(v) && String(v) !== ref && v > 0 && v < 10000) { qty = v; break; }
+    }
+    found.set(ref, (found.get(ref) || 0) + (qty || 1));
+  });
+  return [...found.entries()].map(([ref, qty]) => ({ ref, qty }));
+}
+
+function proformaSheet() {
+  sheet(`<h2>Implantation depuis une proforma</h2>
+   <p>Charge ta proforma en CSV ou texte, ou colle simplement son contenu. L'app y repère les références du catalogue et les quantités, puis te propose une implantation.</p>
+   <button class="btn p" data-act="prof-file">📄 Choisir un fichier</button>
+   <p style="margin:14px 0 6px"><b>ou colle le contenu ici</b></p>
+   <textarea id="profText" rows="6" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--sep);font-size:13px;font-family:inherit;background:var(--card)" placeholder="8050 ; 24&#10;G640 ; 12&#10;130 ; 6"></textarea>
+   <button class="btn" data-act="prof-paste">Analyser le texte collé</button>
+   <button class="btn" data-act="close">Fermer</button>`);
+}
+
+function proformaLoaded(text) {
+  const rows = parseProforma(text);
+  if (!rows.length) {
+    sheet(`<h2>Aucune référence reconnue</h2><p>Le fichier ne contient aucune référence du catalogue. Vérifie qu'une colonne porte bien les références, du type 8050, G640 ou 130.</p><button class="btn" data-act="prof-open">Réessayer</button><button class="btn" data-act="close">Fermer</button>`);
+    return;
+  }
+  const univs = {};
+  rows.forEach(r => { const u = BY_REF[r.ref].univ; univs[u] = (univs[u] || 0) + 1; });
+  PROFORMA = rows;
+  const lin = rows.reduce((a, r) => a + BY_REF[r.ref].w, 0);
+  const cap = S.cur.W * S.cur.shelves.length;
+  sheet(`<h2>${rows.length} références reconnues</h2>
+   <div class="stats" style="padding:0 0 10px">
+     ${Object.entries(univs).map(([u, n]) => `<div class="st">${UNIV[u]}<b>${n}</b></div>`).join('')}
+     <div class="st">1 facing chacune<b>${Math.round(lin)} cm</b></div>
+     <div class="st">Gondole<b>${cap} cm</b></div>
+   </div>
+   ${Object.keys(univs).length > 1 ? `<div class="warn" style="margin:0 0 10px">La proforma mélange chien et chat. Seules les références ${UNIV[S.cur.univ]} seront implantées.</div>` : ''}
+   <p><b>Comment organiser le rayon ?</b></p>
+   <button class="btn p" data-act="prof-run" data-v="descente">⬇︎ Descentes par marque<br><span style="font-size:12px;opacity:.75">chaque marque occupe une colonne verticale, du haut en bas</span></button>
+   <button class="btn" data-act="prof-run" data-v="etagere">➡︎ Une gamme par étagère<br><span style="font-size:12px;opacity:.75">les niveaux se lisent par marque, gros formats en bas</span></button>
+   <button class="btn" data-act="prof-run" data-v="bloc">▦ Blocs de marques<br><span style="font-size:12px;opacity:.75">chaque marque forme un bloc compact, formats regroupés</span></button>
+   <button class="btn" data-act="close">Annuler</button>`);
+}
+
+/* Répartit les facings selon les quantités de la proforma, dans la limite du linéaire. */
+function proformaFacings(rows) {
+  const W = S.cur.W, N = S.cur.shelves.length, cap = W * N * 0.94;
+  const items = rows.map(r => ({ ref: r.ref, qty: r.qty, p: BY_REF[r.ref], f: 1 }));
+  let used = items.reduce((a, i) => a + i.p.w * i.p.df, 0);
+  items.forEach(i => i.f = i.p.df);
+  const totalQty = items.reduce((a, i) => a + i.qty, 0) || 1;
+  // on ajoute des facings au prorata des quantités, tant qu'il reste du linéaire
+  let guard = 0;
+  while (used < cap && guard++ < 4000) {
+    const cand = items
+      .filter(i => used + i.p.w <= cap && i.f < 12)
+      .sort((a, b) => (b.qty / totalQty) / (a.f) - (a.qty / totalQty) / (b.f))[0];
+    if (!cand) break;
+    cand.f += 1;
+    used += cand.p.w;
+  }
+  return items;
+}
+
+/* Remplit une colonne de largeur colW, du bas vers le haut, en coupant les facings
+   d'une référence sur plusieurs niveaux quand elle ne tient pas d'un bloc. */
+function fillColumn(list, N, colW) {
+  const rows = Array.from({ length: N }, () => []);
+  let si = N - 1, x = 0;
+  list.forEach(it => {
+    let left = it.f;
+    while (left > 0) {
+      if (si < 0) { si = 0; x = 0; }
+      let room = Math.floor((colW - x) / it.p.w + 1e-6);
+      // plus de place nulle part : on pose sur le niveau du haut, l'alerte de
+      // dépassement préviendra plutôt que de perdre la référence
+      if (room <= 0 && si === 0) room = left;
+      if (room <= 0) { si--; x = 0; continue; }
+      const take = Math.min(room, left);
+      rows[si].push({ id: uid(), ref: it.ref, f: take, s: it.p.st });
+      x += take * it.p.w;
+      left -= take;
+      if (left > 0) { si--; x = 0; }
+    }
+  });
+  return rows;
+}
+
+/* Dernier passage : si un niveau déborde, on retire des facings aux références qui en
+   ont le plus, jamais en dessous d'un facing. Aucune référence n'est supprimée. */
+function trimOverflow(shelves, W) {
+  shelves.forEach(sh => {
+    let guard = 0;
+    const width = () => sh.items.reduce((a, it) => a + BY_REF[it.ref].w * it.f, 0);
+    while (width() > W && guard++ < 500) {
+      const c = sh.items.filter(it => it.f > 1)
+        .sort((a, b) => BY_REF[b.ref].w * b.f - BY_REF[a.ref].w * a.f)[0];
+      if (!c) break;
+      c.f--;
+    }
+  });
+}
+
+function runProforma(mode) {
+  const rows = PROFORMA.filter(r => BY_REF[r.ref].univ === S.cur.univ);
+  if (!rows.length) { toast('Aucune référence de cet univers'); return; }
+  const items = proformaFacings(rows);
+  const N = S.cur.shelves.length, W = S.cur.W;
+  const shelves = Array.from({ length: N }, () => ({ items: [] }));
+  const lin = it => it.p.w * it.f;
+  // les marques aux plus gros formats sont traitées en premier, donc placées en bas
+  const brands = BRANDS.filter(b => items.some(i => i.p.cat === b))
+    .sort((a, b) => Math.max(...items.filter(i => i.p.cat === b).map(i => i.p.h)) -
+                    Math.max(...items.filter(i => i.p.cat === a).map(i => i.p.h)));
+  const byBrand = b => items.filter(i => i.p.cat === b)
+    .sort((a, c) => parseInt(c.p.fmt) - parseInt(a.p.fmt) || a.ref.localeCompare(c.ref));
+
+  if (mode === 'descente') {
+    // chaque marque tient une colonne verticale, large au prorata de son linéaire
+    const tot = {};
+    brands.forEach(b => tot[b] = byBrand(b).reduce((a, i) => a + lin(i), 0));
+    const grand = Object.values(tot).reduce((a, b) => a + b, 0) || 1;
+    const cols = brands.map(b => ({ b, w: Math.max(tot[b] / grand * W, 12) }));
+    const sum = cols.reduce((a, c) => a + c.w, 0);
+    cols.forEach(c => c.w = c.w / sum * W);           // ramené à la largeur réelle
+    cols.forEach(c => {
+      const part = fillColumn(byBrand(c.b), N, c.w);
+      part.forEach((row, si) => row.forEach(it => shelves[si].items.push(it)));
+    });
+  } else if (mode === 'etagere') {
+    // une marque ne partage jamais un niveau avec une autre : changement de marque,
+    // changement d'étagère. Les gros formats restent en bas.
+    let si = N - 1, x = 0;
+    brands.forEach((b, bi) => {
+      if (bi > 0 && x > 0) { si = Math.max(0, si - 1); x = 0; }
+      byBrand(b).forEach(it => {
+        let left = it.f;
+        while (left > 0) {
+          if (si < 0) { si = 0; x = 0; }
+          let room = Math.floor((W - x) / it.p.w + 1e-6);
+          if (room <= 0 && si === 0) room = left;
+          if (room <= 0) { si--; x = 0; continue; }
+          const take = Math.min(room, left);
+          shelves[si].items.push({ id: uid(), ref: it.ref, f: take, s: it.p.st });
+          x += take * it.p.w;
+          left -= take;
+          if (left > 0) { si--; x = 0; }
+        }
+      });
+    });
+  } else {
+    // blocs : marque après marque, format par format, en remplissant de bas en haut
+    const list = brands.flatMap(byBrand);
+    fillColumn(list, N, W).forEach((row, si) => shelves[si].items = row);
+  }
+
+  trimOverflow(shelves, W);
+  S.cur.shelves = shelves;
+  S.shelf = 0;
+  closeSheet();
+  commit('Implantation proposée depuis la proforma');
+  refreshCounts();
+}
+
+/* ================= IMPLANTATIONS ENREGISTRÉES =================
+   Une implantation validée peut être gardée sous un nom, puis rappelée sur n'importe
+   quel projet du même univers. Les dimensions de la gondole sont mémorisées avec.
+*/
+const LAYKEY = 'bubiplan_layouts';
+
+function loadLayouts() {
+  try { return JSON.parse(lsGet(LAYKEY) || '[]'); } catch (e) { return []; }
+}
+
+function saveLayouts(l) { lsSet(LAYKEY, JSON.stringify(l)); }
+
+function layoutSheet() {
+  const list = loadLayouts().sort((a, b) => b.date - a.date);
+  const mine = list.filter(l => l.univ === S.cur.univ);
+  sheet(`<h2>Mes implantations</h2>
+   <p>Garde une implantation réussie sous un nom, puis rappelle-la sur un autre magasin.</p>
+   <div class="grp"><div class="f"><label>Nom</label><input id="layName" placeholder="ex : Gamm Vert 133 cm chien" autocapitalize="sentences"></div></div>
+   <button class="btn p" data-act="lay-save">💾 Enregistrer l'implantation en cours</button>
+   ${mine.length ? `<p style="margin:16px 0 6px"><b>Enregistrées — ${UNIV[S.cur.univ]}</b></p>` + mine.map(l => `
+     <div class="grp"><div class="f" style="min-height:56px">
+       <div style="flex:1;min-width:0">
+         <div style="font-size:15px;font-weight:500">${esc(l.name)}</div>
+         <div style="font-size:12px;color:var(--mut)">${l.W}×${l.H} cm · ${l.shelves.length} niv. · ${l.refs} réf. · ${fmtDate(l.date)}</div>
+       </div>
+       <button class="btn" style="width:auto;padding:8px 12px;margin:0" data-act="lay-apply" data-id="${l.id}">Appliquer</button>
+       <button class="btn d" style="width:auto;padding:8px 12px;margin:0" data-act="lay-del" data-id="${l.id}">✕</button>
+     </div></div>`).join('') : '<p style="margin-top:14px">Aucune implantation enregistrée pour cet univers.</p>'}
+   <button class="btn" data-act="close">Fermer</button>`);
+}
+
+function saveLayout() {
+  const name = ($('layName').value || '').trim() ||
+    `${S.cur.store} — ${S.cur.name}`;
+  const list = loadLayouts();
+  list.push({
+    id: uid(),
+    name,
+    univ: S.cur.univ,
+    W: S.cur.W,
+    H: S.cur.H,
+    D: S.cur.D,
+    shelves: JSON.parse(JSON.stringify(S.cur.shelves)),
+    refs: countRefs(S.cur),
+    date: Date.now()
+  });
+  saveLayouts(list);
+  toast('Implantation enregistrée');
+  layoutSheet();
+}
+
+function applyLayout(id) {
+  const l = loadLayouts().find(x => x.id === id);
+  if (!l) return;
+  confirmBox('Appliquer cette implantation ?', `« ${l.name} » remplacera les produits actuellement placés. La gondole passera en ${l.W}×${l.H} cm.`, 'Appliquer', () => {
+    S.cur.W = l.W;
+    S.cur.H = l.H;
+    S.cur.D = l.D || S.cur.D;
+    S.cur.shelves = JSON.parse(JSON.stringify(l.shelves));
+    S.cur.shelves.forEach(sh => {
+      sh.items = sh.items.filter(i => BY_REF[i.ref]);
+      sh.items.forEach(i => i.id = uid());
+    });
+    S.shelf = 0;
+    renderEditor();
+    commit('Implantation « ' + l.name +' » appliquée');
+  });
 }
 
 /* ---- menu / exports ---- */
@@ -3054,7 +3395,7 @@ function menu() {
   <button class="btn" data-act="performance">↗︎ Ventes & contraintes</button>
   <button class="btn" data-act="optimize">✨ Implantation intelligente</button>
   <button class="btn" data-act="templates">▦ Templates Bubimex</button>
-  <button class="btn" data-act="commercial">📑 Fiche commerciale / PDF</button>
+  <button class="btn" data-act="commercial">📄 Fiche PDF — plan sur une page</button>
   <button class="btn" data-act="present">▤ Mode présentation</button>
   <button class="btn" data-act="edit-project">⚙︎ Dimensions de la gondole</button>
   <button class="btn" data-act="png">🖼 Exporter en image</button>
@@ -3064,6 +3405,8 @@ function menu() {
   <button class="btn" data-act="dup">⧉ Dupliquer</button>
   <button class="btn" data-act="photosheet">📷 Photos produits</button>
   <button class="btn" data-act="dims">📐 Dimensions des boîtes</button>
+  <button class="btn" data-act="prof-open">📥 Implantation depuis une proforma</button>
+  <button class="btn" data-act="layouts">🗂 Mes implantations enregistrées</button>
   <button class="btn d" data-act="clear">Vider la gondole</button>
   <button class="btn d" data-act="delete-project">Supprimer le projet</button>
   <button class="btn" data-act="close" style="margin-top:14px">Fermer</button>`);
@@ -3078,6 +3421,7 @@ async function inlinePhotosForExport() {
   if (!refs.length) return 0;
   toast('Préparation des visuels…');
   const r = await fetchAndDetour(refs);
+  if (!r.ok) toast("Visuels non incorporables — importe-les pour les avoir dans l'export");
   return r.ok;
 }
 
@@ -3268,6 +3612,10 @@ document.addEventListener('click', e => {
     case 'pick1':
       pickPhotos(el.dataset.ref);
       break;
+    case 'proxy':
+      setProxy(v === '1');
+      photoSheet();
+      break;
     case 'fetchdetour': {
       closeSheet();
       const refs = PRODUCTS.filter(p => p.univ === S.univ && !UPHOTO[p.ref]).map(p => p.ref);
@@ -3276,7 +3624,8 @@ document.addEventListener('click', e => {
       fetchAndDetour(refs, (done, total) => {
         if (done % 10 === 0 || done === total) toast(done + ' / ' + total + ' traités');
       }).then(r => {
-        toast(r.ok ? r.ok + ' visuels récupérés, ' + r.cut + ' détourés' : 'Aucun visuel récupéré (réseau ou site indisponible)');
+        if (r.ok) toast(r.ok + ' visuels enregistrés dans l\'app, ' + r.cut + ' détourés');
+        else toast(useProxy ? 'Aucun visuel récupéré — réessaie avec du réseau' : 'Aucun visuel récupéré — active le relais d\'images');
       });
       break;
     }
@@ -3301,6 +3650,47 @@ document.addEventListener('click', e => {
     case 'pickall':
       pickPhotos(null);
       break;
+    case 'prof-open':
+      proformaSheet();
+      break;
+    case 'prof-file': {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = '.csv,.txt,.tsv,text/plain,text/csv';
+      inp.onchange = () => {
+        const f = inp.files[0];
+        if (!f) return;
+        const rd = new FileReader();
+        rd.onload = () => proformaLoaded(String(rd.result));
+        rd.readAsText(f, 'utf-8');
+      };
+      inp.click();
+      break;
+    }
+    case 'prof-paste':
+      proformaLoaded($('profText') ? $('profText').value : '');
+      break;
+    case 'prof-run':
+      runProforma(v);
+      break;
+    case 'layouts':
+      layoutSheet();
+      break;
+    case 'lay-save':
+      saveLayout();
+      break;
+    case 'lay-apply':
+      applyLayout(el.dataset.id);
+      break;
+    case 'lay-del': {
+      const id = el.dataset.id;
+      const l = loadLayouts().find(x => x.id === id);
+      confirmBox('Supprimer ?', '« ' + (l ? l.name : '') + ' » sera supprimée.', 'Supprimer', () => {
+        saveLayouts(loadLayouts().filter(x => x.id !== id));
+        layoutSheet();
+      }, true);
+      break;
+    }
     case 'dims':
       dimsSheet();
       break;

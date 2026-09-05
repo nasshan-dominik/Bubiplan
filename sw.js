@@ -1,5 +1,5 @@
 /* Service worker BubiPlan : cache de l'application pour l'usage hors ligne. */
-const CACHE = 'bubiplan-v17b';
+const CACHE = 'bubiplan-v20';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -17,7 +17,21 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  if (new URL(e.request.url).origin !== location.origin) return;
+  const u = new URL(e.request.url);
+  if (u.origin !== location.origin) {
+    // visuels produits : on les garde en cache pour qu'ils s'affichent hors ligne
+    if (/\.(jpe?g|png|webp)$/i.test(u.pathname) || u.host.includes('weserv')) {
+      e.respondWith(
+        caches.open('bubiplan-photos').then(c =>
+          c.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+            c.put(e.request, res.clone()).catch(() => {});
+            return res;
+          }).catch(() => hit))
+        )
+      );
+    }
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
       const copy = res.clone();
