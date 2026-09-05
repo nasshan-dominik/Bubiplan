@@ -1566,6 +1566,88 @@ body.dragging .pl, body.dragging .cw { overflow: hidden; }
 
 /* le glissement doit rester possible même dans une liste qui défile */
 .pi { touch-action: manipulation; }
+
+/* ===== Comparaison avant / après ===== */
+.cmp {
+  display: flex;
+  gap: 10px;
+  margin: 4px 0 16px;
+}
+
+.cmp > div {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.cmp span {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mut);
+  margin-bottom: 5px;
+}
+
+.cmp svg {
+  width: 100%;
+  height: 120px;
+  border-radius: 10px;
+  border: .5px solid var(--sep);
+}
+
+.grp .f span:not(.unit) {
+  margin-left: auto;
+  font-size: 15px;
+}
+
+/* ===== Lignes de commande ===== */
+.ordl {
+  margin: 4px 0 14px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--fill);
+  max-height: 40vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ol {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+}
+
+.ol + .ol { border-top: .5px solid var(--sep); }
+
+.ol .r {
+  font-family: ui-monospace, Menlo, monospace;
+  font-weight: 700;
+  color: var(--tint);
+  min-width: 46px;
+}
+
+.ol .n {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ol .q {
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ol .q small {
+  display: block;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--mut);
+}
 </style>
 </head>
 <body>
@@ -1838,8 +1920,7 @@ const CATALOGUE_RAW = [
   ["chat",  "72",   "William's Terrine, saumon/aneth, 80g",                    "William's",   "80g",  9.5, 9.5, 3,   1, 1],
   ["chat",  "73",   "William's Terrine, truite/épinards, 80g",                 "William's",   "80g",  9.5, 9.5, 3,   1, 1],
   ["chat",  "74",   "William's Terrine, truite/poivron, 80g",                  "William's",   "80g",  9.5, 9.5, 3,   1, 1],
-  ["chien", "MP70", "Bubi Nature Multipack, 6 × 70g",                        "Bubi Nature", "6×70g", 22,  8,   8,   1, 2],
-  ["chat",  "MP71", "Bubi Nature Multipack chat, 6 × 70g",                   "Bubi Nature", "6×70g", 22,  8,   8,   1, 2],
+  ["chat",  "9099", "Bubi Nature Multi-Pack, 6 saveurs, 6 × 70g",             "Bubi Nature", "6×70g", 23,  8,   16,  1, 2],
 ];
 
 const IMAGE_BASE = "https://bubimex.eu/wp-content/uploads/";
@@ -3726,30 +3807,51 @@ function drawContainer(p, x, y, w, h, url, dark, idSeed) {
   const g = shapeGeometry(kind, x, y, w, h);
   const cid = 'sh' + idSeed;
   let s = `<clipPath id="${cid}"><path d="${g.body}"/></clipPath>`;
-  s += `<path d="${g.body}" fill="url(#grad${gradId(p.cat)})"/>`;
 
+  if (kind === 'canette') {
+    // corps en fer-blanc : gris métal, pas la couleur de la marque
+    s += `<path d="${g.body}" fill="url(#metal)"/>`;
+    const ph = g.photo;
+    // l'étiquette ne couvre pas toute la boîte : un anneau de métal reste visible
+    const inset = Math.max(1, h * .06);
+    const ly = ph.y + inset, lh = ph.h - inset * 2;
+    const lid = 'lb' + idSeed;
+    s += `<clipPath id="${lid}"><rect x="${x}" y="${ly}" width="${w}" height="${lh}"/></clipPath>`;
+    if (url) {
+      // la photo est étirée sur la largeur de la boîte, comme une étiquette enroulée :
+      // on la resserre légèrement sur les bords pour suivre la courbure
+      s += `<image href="${url}" xlink:href="${url}" x="${x - w * .10}" y="${ly - lh * .18}" width="${w * 1.20}" height="${lh * 1.36}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${lid})"/>`;
+      s += `<rect x="${x}" y="${ly}" width="${w}" height="${lh}" fill="url(#cyl)" clip-path="url(#${lid})" opacity=".55"/>`;
+    } else {
+      s += `<rect x="${x}" y="${ly}" width="${w}" height="${lh}" fill="url(#grad${gradId(p.cat)})" clip-path="url(#${lid})"/>`;
+      s += `<rect x="${x}" y="${ly}" width="${w}" height="${lh}" fill="url(#cyl)" clip-path="url(#${lid})" opacity=".5"/>`;
+    }
+    // liserés du haut et du bas de l'étiquette
+    s += `<line x1="${x}" y1="${ly}" x2="${x+w}" y2="${ly}" stroke="rgba(0,0,0,.22)" stroke-width=".5"/>`;
+    s += `<line x1="${x}" y1="${ly+lh}" x2="${x+w}" y2="${ly+lh}" stroke="rgba(0,0,0,.22)" stroke-width=".5"/>`;
+    // reflet du métal sur toute la boîte
+    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#cyl)" clip-path="url(#${cid})" opacity=".38"/>`;
+    // couvercle bombé
+    if (g.lidPath) s += `<path d="${g.lidPath}" fill="url(#lidg)"/>`;
+    s += `<path d="${g.body}" fill="none" stroke="rgba(0,0,0,.28)" stroke-width=".7"/>`;
+    return s;
+  }
+
+  // autres contenants : la photo occupe toute la face
+  s += `<path d="${g.body}" fill="url(#grad${gradId(p.cat)})"/>`;
   if (url) {
     const ph = g.photo;
-    // la photo est légèrement resserrée : les bords fuient comme sur un cylindre
-    const squeeze = g.curve ? ph.w * .06 : 0;
-    s += `<image href="${url}" xlink:href="${url}" x="${ph.x + squeeze}" y="${ph.y}" width="${ph.w - squeeze*2}" height="${ph.h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cid})"/>`;
+    s += `<image href="${url}" xlink:href="${url}" x="${ph.x}" y="${ph.y}" width="${ph.w}" height="${ph.h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cid})"/>`;
   }
-
-  // lumière du cylindre : reflet clair à gauche, ombre à droite
-  if (g.curve) {
-    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#cyl)" clip-path="url(#${cid})" opacity=".85"/>`;
-  } else {
-    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#flat)" clip-path="url(#${cid})" opacity=".5"/>`;
-  }
-
-  if (g.lidPath) s += `<path d="${g.lidPath}" fill="${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}"/>`;
+  s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#flat)" clip-path="url(#${cid})" opacity=".45"/>`;
+  if (g.lidPath) s += `<path d="${g.lidPath}" fill="${dark ? 'rgba(255,255,255,.20)' : 'rgba(0,0,0,.13)'}"/>`;
   s += `<path d="${g.body}" fill="none" stroke="${dark ? 'rgba(0,0,0,.5)' : 'rgba(0,0,0,.18)'}" stroke-width=".7"/>`;
   return s;
 }
 
 let clipSeq = 0;
 
-function gondolaSVG(interactive, photos) {
+function gondolaSVG(interactive, photos, scene) {
   const sc = 3,
     W = S.cur.W * sc,
     H = S.cur.H * sc,
@@ -3761,15 +3863,24 @@ function gondolaSVG(interactive, photos) {
   clipSeq = 0;
   // pas de largeur fixe : le rayon s'étire pour occuper toute la place disponible
   let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W+L+8} ${H+B+8}" preserveAspectRatio="xMidYMid meet" font-family="-apple-system,system-ui,sans-serif" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <defs><linearGradient id="cyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgba(0,0,0,.28)"/><stop offset=".18" stop-color="rgba(255,255,255,.30)"/><stop offset=".45" stop-color="rgba(255,255,255,.06)"/><stop offset="1" stop-color="rgba(0,0,0,.30)"/></linearGradient><linearGradient id="flat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.26)"/><stop offset="1" stop-color="rgba(0,0,0,.16)"/></linearGradient>${BRANDS.map((b, i) => `<linearGradient id="grad${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${BRAND_LIGHT[b]}"/><stop offset="1" stop-color="${BRAND_DARK[b]}"/></linearGradient>`).join('')}</defs>
-  <rect x="${L}" y="4" width="${W}" height="${H}" fill="${dark?'#2c2c2e':'#fff'}" stroke="${dark?'#8e8e93':'#8d8b82'}" stroke-width="1.5"/>`;
+  <defs><linearGradient id="backpanel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#54585d"/><stop offset="1" stop-color="#3a3d42"/></linearGradient><linearGradient id="shelfedge" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2f3f5"/><stop offset="1" stop-color="#c6cacf"/></linearGradient><linearGradient id="metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8d9196"/><stop offset=".16" stop-color="#e3e6e9"/><stop offset=".42" stop-color="#c3c7cc"/><stop offset=".72" stop-color="#a8adb3"/><stop offset="1" stop-color="#7e8288"/></linearGradient><linearGradient id="lidg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9aa0a6"/><stop offset=".3" stop-color="#eceef0"/><stop offset="1" stop-color="#8b9096"/></linearGradient><linearGradient id="cyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgba(0,0,0,.28)"/><stop offset=".18" stop-color="rgba(255,255,255,.30)"/><stop offset=".45" stop-color="rgba(255,255,255,.06)"/><stop offset="1" stop-color="rgba(0,0,0,.30)"/></linearGradient><linearGradient id="flat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.26)"/><stop offset="1" stop-color="rgba(0,0,0,.16)"/></linearGradient>${BRANDS.map((b, i) => `<linearGradient id="grad${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${BRAND_LIGHT[b]}"/><stop offset="1" stop-color="${BRAND_DARK[b]}"/></linearGradient>`).join('')}</defs>
+  ${scene
+    ? `<rect x="${L}" y="4" width="${W}" height="${H}" fill="url(#backpanel)"/>`
+    : `<rect x="${L}" y="4" width="${W}" height="${H}" fill="${dark?'#2c2c2e':'#fff'}" stroke="${dark?'#8e8e93':'#8d8b82'}" stroke-width="1.5"/>`}`;
   S.cur.shelves.forEach((shelf, i) => {
     const y0 = 4 + i * sh,
       y1 = y0 + sh,
       act = interactive && i === S.shelf;
     s += `<rect x="${L}" y="${y0}" width="${W}" height="${sh}" fill="${act?'rgba(21,107,86,.09)':'transparent'}" data-act="shelf" data-i="${i}"/>`;
-    s += `<line x1="${L}" y1="${y1}" x2="${L+W}" y2="${y1}" stroke="${dark?'#8e8e93':'#3a3a3c'}" stroke-width="2.5"/>`;
-    s += `<text x="${L-6}" y="${y0+sh/2+5}" font-size="13" font-weight="${act?'700':'500'}" fill="${act?'#156b56':'#8e8e93'}" text-anchor="end" data-act="shelf" data-i="${i}">N${i+1}</text>`;
+    if (scene) {
+      // vraie tablette : chant clair, tranche sombre, ombre projetée au-dessous
+      s += `<rect x="${L-2}" y="${y1}" width="${W+4}" height="5" rx="1" fill="url(#shelfedge)"/>`;
+      s += `<rect x="${L-2}" y="${y1+5}" width="${W+4}" height="2.5" fill="rgba(0,0,0,.22)"/>`;
+      s += `<rect x="${L}" y="${y1-3}" width="${W}" height="3" fill="rgba(0,0,0,.10)"/>`;
+    } else {
+      s += `<line x1="${L}" y1="${y1}" x2="${L+W}" y2="${y1}" stroke="${dark?'#8e8e93':'#3a3a3c'}" stroke-width="2.5"/>`;
+    }
+    if (!scene) s += `<text x="${L-6}" y="${y0+sh/2+5}" font-size="13" font-weight="${act?'700':'500'}" fill="${act?'#156b56':'#8e8e93'}" text-anchor="end" data-act="shelf" data-i="${i}">N${i+1}</text>`;
     let x = L;
     const over = shelfW(shelf) >S.cur.W;
     shelf.items.forEach(it => {
@@ -3783,6 +3894,7 @@ function gondolaSVG(interactive, photos) {
         const bad = over && x + wOne > L + W;
         s += `<g data-act="item" data-id="${it.id}" style="cursor:pointer">`;
         const picked = S.selMode && S.sel.includes(it.id);
+        if (scene) s += `<ellipse cx="${x+wOne/2}" cy="${y1-1}" rx="${wOne*.46}" ry="1.6" fill="rgba(0,0,0,.28)"/>`;
         for (let j2 = 0; j2 < st; j2++) {
           const yy = y1 - (j2 + 1) * hOne;
           if (bad) {
@@ -3802,7 +3914,7 @@ function gondolaSVG(interactive, photos) {
       }
     });
     // bandeau du niveau : la liste des références placées, à l'aplomb de chaque produit
-    if (shelf.items.length) {
+    if (shelf.items.length && !scene) {
       const bh2 = 11;
       s += `<rect x="${L}" y="${y0 + 1}" width="${W}" height="${bh2}" fill="${dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.05)'}"/>`;
       let bx2 = L;
@@ -3831,6 +3943,7 @@ function gondolaSVG(interactive, photos) {
       if (rest > 0) s += `<text x="${L+W-4}" y="${y0+11}" font-size="8" fill="#aaa" text-anchor="end" pointer-events="none">${rest.toFixed(0)} cm</text>`;
     }
   });
+  if (scene) return s + '</svg>';
   for (let c = 0; c <= S.cur.W; c += 10) {
     const x = L + c * sc;
     s += `<line x1="${x}" y1="${H+4}" x2="${x}" y2="${H+8}" stroke="#999"/>${c%50===0?`<text x="${x}" y="${H+18}" font-size="8" fill="#8e8e93" text-anchor="middle">${c}</text>`:''}`;
@@ -4292,6 +4405,12 @@ function toggleScene() {
   if (old) old.remove();
   if (sceneOn) el.insertAdjacentHTML('afterbegin', storeScene(1600, 1000));
   el.classList.toggle('withScene', sceneOn);
+  // le rayon est redessiné : tablettes réelles au lieu du plan technique
+  const wrap = $('presWrap');
+  if (wrap) {
+    wrap.innerHTML = gondolaSVG(false, true, sceneOn);
+    presApply();
+  }
 }
 
 /* ================= AJOUTER UNE GAMME ENTIÈRE ================= */
@@ -4347,12 +4466,300 @@ function addAll(brand) {
     : `${list.length} références posées`);
 }
 
+/* ================= AVANT / APRÈS =================
+   Ce que font Store360 ou Planorama à grande échelle : confronter le rayon réel au
+   rayon proposé. Ici, en version simple et utile sur le terrain : on fige l'existant
+   au début de la visite, on retravaille, et on montre l'écart au client.
+*/
+function saveBefore() {
+  S.cur.before = {
+    shelves: JSON.parse(JSON.stringify(S.cur.shelves)),
+    W: S.cur.W, H: S.cur.H,
+    date: Date.now()
+  };
+  persist();
+  closeSheet();
+  toast("État actuel enregistré");
+}
+
+function planStats(shelves) {
+  const refs = new Set(), byBrand = {};
+  let lin = 0, fac = 0;
+  shelves.forEach(sh => sh.items.forEach(it => {
+    if (it.gap || !BY_REF[it.ref]) return;
+    const p = BY_REF[it.ref];
+    refs.add(it.ref);
+    fac += it.f;
+    lin += p.w * it.f;
+    byBrand[p.cat] = (byBrand[p.cat] || 0) + p.w * it.f;
+  }));
+  return { refs: refs.size, fac, lin, byBrand, set: refs };
+}
+
+function compareSheet() {
+  if (!S.cur.before) {
+    sheet(`<h2>Avant / après</h2>
+     <p>Fige d'abord le rayon tel qu'il est aujourd'hui chez ton client. Tu pourras ensuite lui montrer précisément ce que ta proposition change.</p>
+     <button class="btn p" data-act="save-before">Enregistrer l'état actuel</button>
+     <button class="btn" data-act="close">Fermer</button>`);
+    return;
+  }
+  const a = planStats(S.cur.before.shelves), b = planStats(S.cur.shelves);
+  const gained = [...b.set].filter(r => !a.set.has(r));
+  const lost = [...a.set].filter(r => !b.set.has(r));
+  const d = (x, y, u) => {
+    const v = y - x;
+    return `<b style="color:${v>0?'var(--tint)':v<0?'var(--red)':'inherit'}">${v>0?'+':''}${Math.round(v)}${u}</b>`;
+  };
+  sheet(`<h2>Avant / après</h2>
+   <p>Relevé du ${fmtDate(S.cur.before.date)} comparé à ta proposition.</p>
+   <div class="cmp">
+     <div><span>Existant</span>${miniPlan(S.cur.before.shelves, S.cur.before.W, S.cur.before.H)}</div>
+     <div><span>Proposition</span>${miniPlan(S.cur.shelves, S.cur.W, S.cur.H)}</div>
+   </div>
+   <div class="grp">
+     <div class="f"><label>Références</label><span>${a.refs} → ${b.refs}</span><span class="unit">${d(a.refs,b.refs,'')}</span></div>
+     <div class="f"><label>Boîtes de face</label><span>${a.fac} → ${b.fac}</span><span class="unit">${d(a.fac,b.fac,'')}</span></div>
+     <div class="f"><label>Largeur occupée</label><span>${Math.round(a.lin)} → ${Math.round(b.lin)} cm</span><span class="unit">${d(a.lin,b.lin,' cm')}</span></div>
+   </div>
+   ${gained.length ? `<p><b>${gained.length} référence${gained.length>1?'s':''} en plus</b><br><span style="font-size:13px;color:var(--mut)">${gained.slice(0,14).join(', ')}${gained.length>14?'…':''}</span></p>` : ''}
+   ${lost.length ? `<p><b>${lost.length} référence${lost.length>1?'s':''} retirée${lost.length>1?'s':''}</b><br><span style="font-size:13px;color:var(--mut)">${lost.slice(0,14).join(', ')}${lost.length>14?'…':''}</span></p>` : ''}
+   <button class="btn" data-act="save-before">Remplacer l'état actuel par le rayon en cours</button>
+   <button class="btn" data-act="close">Fermer</button>`);
+}
+
+/* Petit plan de comparaison, sans détail : on veut lire l'équilibre d'un coup d'œil. */
+function miniPlan(shelves, W, H) {
+  const sh = H / shelves.length;
+  let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet"><rect width="${W}" height="${H}" fill="var(--card2)" rx="2"/>`;
+  shelves.forEach((shelf, i) => {
+    const y = (i + 1) * sh;
+    s += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="rgba(128,128,128,.45)" stroke-width="1.2"/>`;
+    let x = 0;
+    shelf.items.forEach(it => {
+      if (it.gap) { x += it.gap; return; }
+      const p = BY_REF[it.ref];
+      if (!p) return;
+      const w = p.w * it.f, h = Math.min(p.h * (it.s || 1), sh * .92);
+      s += `<rect x="${x}" y="${y-h}" width="${w-.3}" height="${h}" fill="${BRAND[p.cat]}" rx=".6"/>`;
+      x += w;
+    });
+  });
+  return s + '</svg>';
+}
+
+/* ================= ÉTIQUETTES DE GONDOLE =================
+   Ce que Quant et LEAFIO appellent shelf edge labels : la bande à glisser sous chaque
+   produit, pour que le rayon reste conforme après notre passage.
+*/
+function labelsSheet() {
+  const rows = [];
+  S.cur.shelves.forEach((sh, i) => sh.items.forEach(it => {
+    if (it.gap || !BY_REF[it.ref]) return;
+    const p = BY_REF[it.ref];
+    rows.push({ n: i + 1, p, f: it.f, s: it.s || 1 });
+  }));
+  if (!rows.length) { toast('Aucun produit à étiqueter'); return; }
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+  <title>Étiquettes ${esc(S.cur.store)}</title><style>
+    @page { size: A4; margin: 8mm; }
+    body { font-family: -apple-system, Arial, sans-serif; margin: 0; }
+    h1 { font-size: 15px; margin: 0 0 8px; color: #249A6D; }
+    .grid { display: flex; flex-wrap: wrap; gap: 3mm; }
+    .lab { width: 62mm; border: .4mm solid #999; border-radius: 1.5mm; padding: 2.5mm 3mm; page-break-inside: avoid; }
+    .lab .b { font-size: 8pt; font-weight: 700; letter-spacing: .4pt; text-transform: uppercase; }
+    .lab .n { font-size: 10pt; font-weight: 600; line-height: 1.15; margin: .6mm 0 1.2mm; }
+    .lab .m { display: flex; justify-content: space-between; font-size: 8pt; color: #555; }
+    .lab .r { font-family: ui-monospace, Menlo, monospace; font-weight: 700; color: #111; }
+    .noprint button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 8px; background: #249A6D; color: #fff; margin-bottom: 10px; }
+    @media print { .noprint { display: none; } }
+  </style></head><body>
+  <div class="noprint"><button onclick="print()">Imprimer les étiquettes</button></div>
+  <h1>${esc(S.cur.store)} — ${esc(S.cur.name)} · ${rows.length} étiquettes</h1>
+  <div class="grid">${rows.map(r => `<div class="lab">
+    <div class="b" style="color:${BRAND[r.p.cat]}">${esc(r.p.cat)}</div>
+    <div class="n">${esc(r.p.name)}</div>
+    <div class="m"><span class="r">${r.p.ref}</span><span>Niv. ${r.n} · ${r.f} de face${r.s>1?' × '+r.s:''}</span></div>
+  </div>`).join('')}</div></body></html>`;
+  shareOrDownload(new Blob([html], { type: 'text/html' }), fileName('etiquettes.html'),
+    () => `<pre>${rows.length} étiquettes prêtes à imprimer.</pre>`);
+}
+
+/* ================= FICHE DE MONTAGE =================
+   La consigne que le chef de rayon suit pour reproduire l'implantation, niveau par
+   niveau, de gauche à droite.
+*/
+function buildSheet() {
+  const lines = S.cur.shelves.map((sh, i) => {
+    const items = sh.items.filter(it => !it.gap && BY_REF[it.ref]);
+    if (!items.length) return `<li><b>Niveau ${i+1}</b><br><span class="mut">à laisser libre</span></li>`;
+    return `<li><b>Niveau ${i+1}</b><br>` + items.map(it => {
+      const p = BY_REF[it.ref];
+      return `${p.ref} <span class="mut">${esc(p.name)}</span> — ${it.f} de face${(it.s||1)>1?', '+it.s+' superposées':''}`;
+    }).join('<br>') + '</li>';
+  }).join('');
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+  <title>Montage ${esc(S.cur.store)}</title><style>
+    @page { size: A4; margin: 12mm; }
+    body { font-family: -apple-system, Arial, sans-serif; color: #111; }
+    h1 { color: #249A6D; font-size: 19px; margin: 0; }
+    .sub { color: #666; font-size: 13px; margin: 4px 0 16px; }
+    ol { padding-left: 18px; }
+    li { margin-bottom: 12px; font-size: 13px; line-height: 1.5; page-break-inside: avoid; }
+    .mut { color: #777; }
+    .noprint button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 8px; background: #249A6D; color: #fff; }
+    @media print { .noprint { display: none; } }
+  </style></head><body>
+  <h1>Fiche de montage</h1>
+  <div class="sub">${esc(S.cur.store)} · ${esc(S.cur.name)} · ${UNIV[S.cur.univ]} · gondole ${S.cur.W}×${S.cur.H} cm · ${new Date().toLocaleDateString('fr-FR')}</div>
+  <p style="font-size:13px">Chaque niveau se monte de gauche à droite, en partant du montant gauche de la gondole. Le niveau 1 est celui du haut.</p>
+  <ol>${lines}</ol>
+  <p class="noprint" style="margin-top:18px"><button onclick="print()">Imprimer</button></p>
+  </body></html>`;
+  shareOrDownload(new Blob([html], { type: 'text/html' }), fileName('montage.html'),
+    () => `<pre>Fiche de montage prête à imprimer.</pre>`);
+}
+
+/* ================= PARTAGE =================
+   Un seul endroit pour tout ce qui sort de l'app.
+*/
+function shareSheet() {
+  sheet(`<h2>Partager</h2>
+  <button class="btn p" data-act="commercial">${ic('doc')} Fiche client, plan sur une page</button>
+  <button class="btn" data-act="build">${ic('grid')} Fiche de montage pour le rayon</button>
+  <button class="btn" data-act="labels">${ic('ruler')} Étiquettes de gondole</button>
+  <button class="btn" data-act="order-export">${ic('tray')} Bon de commande</button>
+  <button class="btn" data-act="png">${ic('photo')} Image du rayon</button>
+  <button class="btn" data-act="csv">${ic('doc')} Liste des produits</button>
+  <button class="btn" data-act="close">Fermer</button>`);
+}
+
+/* ================= COMMANDE À PASSER =================
+   Le planogramme n'est pas une fin : ce qu'il faut, c'est la commande qui remplit le
+   rayon. On calcule combien d'unités chaque référence demande pour tenir sa place,
+   faces × superposées × ce qui rentre en profondeur, puis on arrondit au colis. Le
+   client repart avec un bon de commande, pas seulement avec un joli plan.
+*/
+const CARTONKEY = 'bubiplan_cartons';
+let CARTON = { defaut: 6 };
+try { Object.assign(CARTON, JSON.parse(lsGet(CARTONKEY) || '{}')); } catch (e) {}
+
+function cartonFor(p) {
+  return Math.max(1, +CARTON[p.fmt] || +CARTON.defaut || 1);
+}
+
+function orderLines() {
+  const byRef = {};
+  S.cur.shelves.forEach(sh => sh.items.forEach(it => {
+    if (it.gap || !BY_REF[it.ref]) return;
+    const p = BY_REF[it.ref];
+    const units = it.f * (it.s || 1) * depthCapacity(p);
+    byRef[it.ref] = (byRef[it.ref] || 0) + units;
+  }));
+  return Object.entries(byRef).map(([ref, units]) => {
+    const p = BY_REF[ref];
+    const carton = cartonFor(p);
+    const colis = Math.ceil(units / carton);
+    const d = perf(ref);
+    return { p, units, carton, colis, qty: colis * carton, price: +d.price || 0 };
+  }).sort((a, b) =>
+    BRANDS.indexOf(a.p.cat) - BRANDS.indexOf(b.p.cat) ||
+    parseInt(b.p.fmt) - parseInt(a.p.fmt) ||
+    a.p.ref.localeCompare(b.p.ref));
+}
+
+function orderSheet() {
+  const lines = orderLines();
+  if (!lines.length) { toast('Pose d\'abord des produits'); return; }
+  const totUnits = lines.reduce((a, l) => a + l.qty, 0);
+  const totColis = lines.reduce((a, l) => a + l.colis, 0);
+  const totVal = lines.reduce((a, l) => a + l.qty * l.price, 0);
+  const fmts = [...new Set(lines.map(l => l.p.fmt))];
+  sheet(`<h2>Commande à passer</h2>
+   <p>Ce qu'il faut livrer pour remplir cette gondole une fois, profondeur comprise.</p>
+   <div class="stats" style="padding:0 0 12px">
+     <div class="st">Références<b>${lines.length}</b></div>
+     <div class="st">Unités<b>${totUnits}</b></div>
+     <div class="st">Colis<b>${totColis}</b></div>
+     ${totVal ? `<div class="st">Valeur<b>${totVal.toFixed(0)} €</b></div>` : ''}
+   </div>
+   <p style="margin-bottom:6px"><b>Nombre d'unités par colis</b></p>
+   <div class="grp">
+     <div class="f"><label>Par défaut</label><input class="cart" data-f="defaut" type="number" inputmode="numeric" value="${CARTON.defaut}"></div>
+     ${fmts.map(f => `<div class="f"><label>${f}</label><input class="cart" data-f="${f}" type="number" inputmode="numeric" value="${CARTON[f] || ''}" placeholder="${CARTON.defaut}"></div>`).join('')}
+   </div>
+   <button class="btn" data-act="carton-save">Recalculer</button>
+   <div class="ordl">${lines.map(l => `<div class="ol">
+     <span class="r">${l.p.ref}</span>
+     <span class="n">${esc(l.p.name)}</span>
+     <span class="q">${l.colis} × ${l.carton}<small>${l.qty} u.</small></span>
+   </div>`).join('')}</div>
+   <button class="btn p" data-act="order-export">${ic('doc')} Bon de commande à imprimer</button>
+   <button class="btn" data-act="order-csv">${ic('doc')} Bon de commande en tableur</button>
+   <button class="btn" data-act="close">Fermer</button>`);
+}
+
+function saveCartons() {
+  document.querySelectorAll('.cart').forEach(i => {
+    const v = parseInt(i.value, 10);
+    if (v > 0) CARTON[i.dataset.f] = v;
+    else if (i.dataset.f !== 'defaut') delete CARTON[i.dataset.f];
+  });
+  lsSet(CARTONKEY, JSON.stringify(CARTON));
+  orderSheet();
+}
+
+function orderExport() {
+  const lines = orderLines();
+  const totUnits = lines.reduce((a, l) => a + l.qty, 0);
+  const totVal = lines.reduce((a, l) => a + l.qty * l.price, 0);
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+  <title>Commande ${esc(S.cur.store)}</title><style>
+    @page { size: A4; margin: 14mm; }
+    body { font-family: -apple-system, Arial, sans-serif; color: #111; font-size: 12px; }
+    h1 { color: #249A6D; font-size: 20px; margin: 0; }
+    .sub { color: #666; margin: 4px 0 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 6px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: #f2f2f7; }
+    td.n, th.n { text-align: right; }
+    tr { page-break-inside: avoid; }
+    tfoot td { font-weight: 700; border-top: 2px solid #249A6D; border-bottom: 0; }
+    .sig { margin-top: 26px; display: flex; gap: 40px; font-size: 12px; color: #444; }
+    .sig div { flex: 1; border-top: 1px solid #999; padding-top: 6px; }
+    .noprint button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 8px; background: #249A6D; color: #fff; }
+    @media print { .noprint { display: none; } }
+  </style></head><body>
+  <h1>Bon de commande</h1>
+  <div class="sub">${esc(S.cur.store)} · ${esc(S.cur.name)} · ${UNIV[S.cur.univ]} · gondole ${S.cur.W}×${S.cur.H}×${S.cur.D} cm · ${new Date().toLocaleDateString('fr-FR')}</div>
+  <table>
+    <thead><tr><th>Réf.</th><th>Produit</th><th>Format</th><th class="n">Colis</th><th class="n">Par colis</th><th class="n">Unités</th>${totVal ? '<th class="n">Montant</th>' : ''}</tr></thead>
+    <tbody>${lines.map(l => `<tr><td>${l.p.ref}</td><td>${esc(l.p.name)}</td><td>${l.p.fmt}</td><td class="n">${l.colis}</td><td class="n">${l.carton}</td><td class="n">${l.qty}</td>${totVal ? `<td class="n">${(l.qty*l.price).toFixed(2)} €</td>` : ''}</tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="5">${lines.length} références</td><td class="n">${totUnits}</td>${totVal ? `<td class="n">${totVal.toFixed(2)} €</td>` : ''}</tr></tfoot>
+  </table>
+  <div class="sig"><div>Date et signature du client</div><div>Dominik — Bubimex</div></div>
+  <p class="noprint" style="margin-top:20px"><button onclick="print()">Imprimer / Enregistrer en PDF</button></p>
+  </body></html>`;
+  shareOrDownload(new Blob([html], { type: 'text/html' }), fileName('commande.html'),
+    () => `<pre>Bon de commande prêt à imprimer.</pre>`);
+}
+
+function orderCSV() {
+  const lines = orderLines();
+  const rows = [['Référence', 'Produit', 'Gamme', 'Format', 'Colis', 'Unités par colis', 'Unités']];
+  lines.forEach(l => rows.push([l.p.ref, l.p.name, l.p.cat, l.p.fmt, l.colis, l.carton, l.qty]));
+  const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
+  shareOrDownload(new Blob([csv], { type: 'text/csv' }), fileName('commande.csv'),
+    () => `<pre>${rows.length - 1} lignes de commande.</pre>`);
+}
+
 /* ---- menu / exports ---- */
 
 function menu() {
   sheet(`<h2>Actions</h2>
   <button class="btn p" data-act="wizard">${ic('wand')} Composer le rayon</button>
-  <button class="btn" data-act="commercial">${ic('doc')} Fiche PDF</button>
+  <button class="btn p" data-act="order">${ic('tray')} Commande à passer</button>
+  <button class="btn" data-act="share">${ic('doc')} Partager</button>
   <button class="btn" data-act="present">${ic('play')} Mode présentation</button>
   <button class="btn" data-act="layouts">${ic('folder')} Mes implantations</button>
   <button class="btn" data-act="settings">${ic('cog')} Réglages</button>
@@ -4369,6 +4776,7 @@ function wizardSheet() {
   <button class="btn" data-act="optimize">${ic('grid')} Réorganiser l'existant</button>
   <button class="btn" data-act="spaceplanner">${ic('ruler')} Calculer la place nécessaire</button>
   <p style="margin-top:16px"><b>Vérifier</b></p>
+  <button class="btn" data-act="compare">${ic('chart')} Avant / après</button>
   <button class="btn" data-act="analysis">${ic('chart')} Diagnostic du rayon</button>
   <button class="btn" data-act="performance">${ic('chart')} Ventes et contraintes</button>
   <button class="btn" data-act="close">Fermer</button>`);
@@ -4381,9 +4789,6 @@ function settingsSheet() {
   <button class="btn" data-act="dims">${ic('ruler')} Dimensions des boîtes</button>
   <button class="btn" data-act="edit-project">${ic('cog')} Dimensions de la gondole</button>
   <button class="btn" data-act="templates">${ic('grid')} Gabarits de gondole</button>
-  <p style="margin-top:16px"><b>Exporter</b></p>
-  <button class="btn" data-act="png">${ic('photo')} Image du rayon</button>
-  <button class="btn" data-act="csv">${ic('doc')} Liste des produits</button>
   <p style="margin-top:16px"><b>Ce projet</b></p>
   <button class="btn" data-act="dup">${ic('copy')} Dupliquer</button>
   <button class="btn d" data-act="clear">${ic('undo')} Vider la gondole</button>
@@ -4511,7 +4916,7 @@ function presentation() {
   const d = document.createElement('div');
   d.className = 'pres';
   d.id = 'pres';
-  d.innerHTML = `<div class="presWrap" id="presWrap">${gondolaSVG(false, true)}</div>
+  d.innerHTML = `<div class="presWrap" id="presWrap">${gondolaSVG(false, true, sceneOn)}</div>
     <div class="presBar">
       <button class="nb" data-act="pres-zoom" data-v="-1">−</button>
       <span id="presPct">100 %</span>
@@ -4659,6 +5064,33 @@ document.addEventListener('click', e => {
     case 'onb-new':
       lsSet('bubiplan_seen', '1');
       projectForm(false);
+      break;
+    case 'order':
+      orderSheet();
+      break;
+    case 'carton-save':
+      saveCartons();
+      break;
+    case 'order-export':
+      orderExport();
+      break;
+    case 'order-csv':
+      orderCSV();
+      break;
+    case 'share':
+      shareSheet();
+      break;
+    case 'compare':
+      compareSheet();
+      break;
+    case 'save-before':
+      saveBefore();
+      break;
+    case 'labels':
+      labelsSheet();
+      break;
+    case 'build':
+      buildSheet();
       break;
     case 'wizard':
       wizardSheet();
