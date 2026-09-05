@@ -593,81 +593,14 @@ a.chip {
   display: none
 }
 
-.pl {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 12px 8px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px;
-  align-content: start
-}
 
-.pi {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  background: var(--card2);
-  border-radius: 12px;
-  min-height: 66px
-}
 
-.pi:active {
-  background: var(--fill2);
-  transform: scale(.98)
-}
 
-.pi .ph {
-  width: 48px;
-  height: 48px;
-  border-radius: 9px;
-  flex-shrink: 0;
-  background: #fff;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: .5px solid var(--sep)
-}
 
-.pi .ph img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain
-}
 
-.pi .tx {
-  flex: 1;
-  min-width: 0
-}
 
-.pi .n {
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.25;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden
-}
 
-.pi .r {
-  font-size: 11px;
-  color: var(--mut);
-  margin-top: 2px
-}
 
-.pi .bd {
-  background: var(--tint);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 10px;
-  padding: 2px 7px;
-  flex-shrink: 0
-}
 
 /* ===== Tablette et grand écran : plus dense, panneau produits plus large ===== */
 @media (min-width:900px) {
@@ -1258,17 +1191,8 @@ a.chip {
 .row .th { width: 72px; height: 50px; border-radius: 10px; }
 .row .n { font-weight: 600; }
 
-.pi {
-  border-radius: 14px;
-  transition: transform .12s, background .12s;
-}
 
-.pi:active { transform: scale(.96); }
 
-.pi .ph {
-  border-radius: 11px;
-  background: var(--bubi-surface);
-}
 
 .chip, .seg button {
   transition: background .15s, color .15s;
@@ -1389,11 +1313,10 @@ a.chip {
 
 /* ===== Accessibilité : les tailles suivent les réglages du système ===== */
 body { font-size: 100%; }
-.nav .t h1 { font-size: clamp(16px, 1.05rem, 22px); }
-.row .n { font-size: clamp(15px, .98rem, 20px); }
-.pi .n { font-size: clamp(12px, .8rem, 16px); }
-.btn { font-size: clamp(15px, 1rem, 20px); }
-.sh h2 { font-size: clamp(18px, 1.2rem, 26px); }
+.nav .t h1 { font-size: clamp(16px, 1.02rem, 19px); }
+.row .n { font-size: clamp(15px, .95rem, 17px); }
+.btn { font-size: clamp(15px, .98rem, 17px); }
+.sh h2 { font-size: clamp(18px, 1.15rem, 22px); }
 
 /* ===== Mouvement : chaque geste a sa conséquence visible ===== */
 @media (prefers-reduced-motion: no-preference) {
@@ -1468,7 +1391,6 @@ body { font-size: 100%; }
 }
 
 /* le glissement doit rester possible même dans une liste qui défile */
-.pi { touch-action: manipulation; }
 
 /* ===== Comparaison avant / après ===== */
 .cmp {
@@ -1729,51 +1651,13 @@ html, body {
 .dr { background: var(--bubi-surface); }
 .grab { background: var(--bubi-border); }
 
-.pl { gap: 8px; }
 
-.pi {
-  background: var(--bubi-surface);
-  border: .5px solid var(--bubi-border);
-  border-radius: 14px;
-  padding: 8px;
-  gap: 10px;
-  min-height: 84px;
-}
 
-.pi .ph {
-  width: 68px;
-  height: 68px;
-  border-radius: 10px;
-  background: var(--bubi-surface-2);
-  border: 0;
-}
 
-.pi .ph img { object-fit: contain; transform: none !important; padding: 3px; }
 
-.pi .b {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .3px;
-  text-transform: uppercase;
-  color: var(--bubi-text-secondary);
-}
 
-.pi .n { font-size: 14px; font-weight: 500; line-height: 1.25; }
-.pi .r { font-size: 12px; color: var(--bubi-text-secondary); margin-top: 3px; }
 
-.pi .add {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  border: .5px solid var(--bubi-border);
-  color: var(--bubi-graphite);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
 
-.pi .bd { background: var(--bubi-sage); }
 
 /* ============================================================
    MES PLANS
@@ -1866,13 +1750,166 @@ html, body {
 }
 .chip, .l { display: inline-flex; align-items: center; padding-top: 0; padding-bottom: 0; }
 .seg button, .fb, .qs button, .sb2 { min-height: 44px; }
-.pi .add { min-width: 44px; min-height: 44px; width: 44px; height: 44px; }
 .nb { min-width: 44px; }
 .stp button { min-width: 56px; min-height: 48px; }
 .cart, .dimin { min-height: 44px; }
 
 /* les listes de puces gardent leur hauteur de ligne malgré la cible agrandie */
 .chips { align-items: center; }
+
+/* ============================================================
+   CARTE PRODUIT — une seule définition, plus de règles concurrentes
+   ============================================================ */
+.pl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+  align-content: start;
+  padding: 0 12px 10px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+}
+
+.pi {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 44px;   /* la colonne texte ne déborde jamais */
+  align-items: center;
+  gap: 10px;
+  min-height: 76px;
+  padding: 8px;
+  background: var(--bubi-surface);
+  border: .5px solid var(--bubi-border);
+  border-radius: 14px;
+  overflow: hidden;
+  touch-action: manipulation;
+  transition: transform .12s, background .12s;
+}
+
+.pi:active { transform: scale(.97); background: var(--bubi-surface-2); }
+
+.pi .ph {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  background: var(--bubi-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.pi .ph img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 3px;
+  transform: none;
+}
+
+.pi .tx {
+  min-width: 0;              /* indispensable : sans cela le texte pousse la grille */
+  overflow: hidden;
+}
+
+.pi .b,
+.pi .n,
+.pi .r {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.pi .b {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  color: var(--bubi-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.pi .n {
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.25;
+  max-height: 2.5em;                 /* deux lignes, puis coupure nette */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 1px 0;
+}
+
+.pi .r {
+  font-size: 11.5px;
+  color: var(--bubi-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.pi .add,
+.pi .bd {
+  justify-self: end;
+  align-self: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pi .add { border: .5px solid var(--bubi-border); color: var(--bubi-graphite); }
+.pi .bd { background: var(--bubi-sage); color: #fff; }
+
+/* Sur téléphone, une seule colonne : le texte a toute la largeur */
+@media (max-width: 620px) {
+  .pl { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   ANTI-CHEVAUCHEMENT — règles générales
+   Un texte long ne doit jamais sortir de sa colonne ni recouvrir
+   son voisin, quelle que soit la taille de police du système.
+   ============================================================ */
+
+/* toute cellule de grille ou de flex peut rétrécir */
+.pi .tx, .row .tx, .resume .rtx, .ol .n, .st, .bar .bl, .grp .f, .grp label, .lvl, .stats {
+  min-width: 0;
+}
+
+/* les libellés qui doivent tenir sur une ligne la tiennent, avec des points de suite */
+.row .n, .row .s, .resume .rn, .resume .rs, .ol .n, .nav .t h1, .nav .t small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* les KPI et les puces ne se compriment pas les uns sur les autres */
+.stats, .lvl, .chips { flex-wrap: nowrap; }
+.st, .l, .chip, .seg button { flex: 0 0 auto; }
+
+/* les champs des formulaires gardent leur libellé lisible */
+.grp .f { flex-wrap: wrap; row-gap: 2px; }
+.grp label { flex: 0 0 auto; }
+.grp input { min-width: 80px; }
+
+/* les feuilles ne débordent jamais en largeur */
+.sh, .sh * { max-width: 100%; }
+.sh pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* le titre de la barre de navigation cède la place aux boutons */
+.nav .t { min-width: 0; overflow: hidden; }
 </style>
 </head>
 <body>
