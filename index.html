@@ -429,17 +429,16 @@ button {
 .cw {
   flex: 1;
   min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   padding: 8px 12px;
   display: flex;
-  align-items: flex-start;
-  justify-content: center
+  align-items: stretch;
+  justify-content: center;
 }
 
 .cw svg {
-  max-width: 100%;
-  height: auto;
+  width: 100%;
+  height: 100%;
   background: var(--gond);
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, .08)
@@ -1139,6 +1138,117 @@ a.chip {
   max-width: 92px;
   object-fit: contain;
 }
+
+/* ===== Sélection multiple ===== */
+.selbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0 12px 6px;
+  padding: 8px 10px;
+  background: var(--card);
+  border: 1.5px solid var(--tint);
+  border-radius: 14px;
+}
+
+.selbar .c {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tint);
+  margin-right: auto;
+}
+
+.sb2 {
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: var(--fill);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--txt);
+}
+
+.sb2:active { background: var(--fill2); }
+.sb2[disabled] { opacity: .35; pointer-events: none; }
+.sb2.d { color: var(--red); }
+
+.l.selbtn { background: var(--fill); }
+.l.selbtn.on { background: var(--tint); color: #fff; }
+
+.nb.side {
+  font-size: 19px;
+  min-width: 34px;
+  background: var(--fill);
+}
+
+/* ===== Refonte visuelle : plus rond, plus lisible, plus vivant ===== */
+.cw svg {
+  background: var(--gond);
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+}
+
+.nav {
+  background: linear-gradient(180deg, var(--nav), var(--nav));
+}
+
+.big {
+  font-size: 36px;
+  letter-spacing: -.5px;
+}
+
+.pcard, .list, .grp, .sh, .dr {
+  border-radius: 18px;
+}
+
+.row { min-height: 70px; }
+.row .th { width: 72px; height: 50px; border-radius: 10px; }
+.row .n { font-weight: 600; }
+
+.pi {
+  border-radius: 14px;
+  transition: transform .12s, background .12s;
+}
+
+.pi:active { transform: scale(.96); }
+
+.pi .ph {
+  border-radius: 11px;
+  background: linear-gradient(180deg, #fff, #f4f4f6);
+}
+
+.chip, .seg button {
+  transition: background .15s, color .15s;
+}
+
+.l {
+  padding: 8px 14px;
+  font-size: 14px;
+  border-radius: 18px;
+  transition: background .15s;
+}
+
+.l.on { box-shadow: 0 2px 6px rgba(21, 107, 86, .3); }
+
+.st {
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+}
+
+.btn { border-radius: 14px; }
+
+.btn.p {
+  box-shadow: 0 2px 8px rgba(36, 154, 109, .35);
+}
+
+.empty .i { font-size: 64px; }
+
+.pill {
+  border-radius: 18px;
+  box-shadow: 0 3px 12px rgba(36, 154, 109, .35);
+}
+
+.toast { border-radius: 22px; }
 </style>
 </head>
 <body>
@@ -1336,11 +1446,11 @@ const CATALOGUE_RAW = [
   ["chat",  "9046", "Bubi Nature Gelée, thon, 70g",                            "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
   ["chat",  "9053", "Bubi Nature Gelée, thon/rouget, 70g",                     "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
   ["chat",  "9055", "Bubi Nature Gelée, thon/saumon, 70g",                     "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9060", "Bubi Nature Beauty, thon/crevettes, 70g",                 "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9061", "Bubi Nature Health Care, saumon/maquereau, 70g",          "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9062", "Bubi Nature Vitality Care, thon/poulet, 70g",             "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9063", "Bubi Nature Junior, poulet, 70g",                         "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9064", "Bubi Nature Sterilised, filet de poulet, 70g",            "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
+  ["chat",  "9060", "Bubi Nature Beauty, thon/crevettes, 70g",                 "Bubi Nature", "70g",  6.5, 10,  2,   1, 1],
+  ["chat",  "9061", "Bubi Nature Health Care, saumon/maquereau, 70g",          "Bubi Nature", "70g",  6.5, 10,  2,   1, 1],
+  ["chat",  "9062", "Bubi Nature Vitality Care, thon/poulet, 70g",             "Bubi Nature", "70g",  6.5, 10,  2,   1, 1],
+  ["chat",  "9063", "Bubi Nature Junior, poulet, 70g",                         "Bubi Nature", "70g",  6.5, 10,  2,   1, 1],
+  ["chat",  "9064", "Bubi Nature Sterilised, filet de poulet, 70g",            "Bubi Nature", "70g",  6.5, 10,  2,   1, 1],
   ["chat",  "9013", "Bubi Nature Complet, thon/crevettes en gelée, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
   ["chat",  "9014", "Bubi Nature Complet, thon/œufs de thon en gelée, 85g",    "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
   ["chat",  "9015", "Bubi Nature Complet, thon/maquereau en gelée, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
@@ -1361,9 +1471,9 @@ const CATALOGUE_RAW = [
   ["chat",  "9083", "Bubi Nature Mousse, saumon, 50g",                         "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
   ["chat",  "9084", "Bubi Nature Mousse, lapin, 50g",                          "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
   ["chat",  "9085", "Bubi Nature Mousse, bœuf, 50g",                           "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9056", "Bubi Nature Soupe au saumon, 50g",                        "Bubi Nature", "50g",  6,   11,  2,   2, 1],
-  ["chat",  "9057", "Bubi Nature Soupe au poulet, 50g",                        "Bubi Nature", "50g",  6,   11,  2,   2, 1],
-  ["chat",  "9058", "Bubi Nature Soupe au thon, 50g",                          "Bubi Nature", "50g",  6,   11,  2,   2, 1],
+  ["chat",  "9056", "Bubi Nature Soupe au saumon, 50g",                        "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
+  ["chat",  "9057", "Bubi Nature Soupe au poulet, 50g",                        "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
+  ["chat",  "9058", "Bubi Nature Soupe au thon, 50g",                          "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
   ["chat",  "9065", "Bubi Nature Soupe au crevettes, 135g",                    "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
   ["chat",  "9066", "Bubi Nature Soupe au saumon, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
   ["chat",  "9067", "Bubi Nature Soupe au canard, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
@@ -1405,6 +1515,8 @@ const CATALOGUE_RAW = [
   ["chat",  "72",   "William's Terrine, saumon/aneth, 80g",                    "William's",   "80g",  9.5, 9.5, 3,   1, 1],
   ["chat",  "73",   "William's Terrine, truite/épinards, 80g",                 "William's",   "80g",  9.5, 9.5, 3,   1, 1],
   ["chat",  "74",   "William's Terrine, truite/poivron, 80g",                  "William's",   "80g",  9.5, 9.5, 3,   1, 1],
+  ["chien", "MP70", "Bubi Nature Multipack, 6 × 70g",                        "Bubi Nature", "6×70g", 22,  8,   8,   1, 2],
+  ["chat",  "MP71", "Bubi Nature Multipack chat, 6 × 70g",                   "Bubi Nature", "6×70g", 22,  8,   8,   1, 2],
 ];
 
 const IMAGE_BASE = "https://bubimex.eu/wp-content/uploads/";
@@ -2048,7 +2160,10 @@ const S = {
   cat: '',
   fmt: '',
   univ: 'chien',
-  min: false
+  min: false,
+  side: 'right',   // côté où viennent se poser les nouveaux produits
+  sel: [],         // emplacements sélectionnés
+  selMode: false
 };
 S.projects.forEach(p => {
   if (!p.univ) p.univ = 'chien';
@@ -2185,8 +2300,6 @@ function renderHome() {
     ${list.length?`<div class="sec">${list.length} gondole${list.length>1?'s':''} · ${PRODUCTS.length} références</div><div class="list">${list.map(p=>`
       <div class="row" data-act="open" data-id="${p.id}"><div class="th">${thumb(p)}</div><div class="tx"><div class="n">${esc(p.store)}</div><div class="s">${UNIV[p.univ]} · ${esc(p.name)} · ${p.W}×${p.H} cm · ${countRefs(p)} réf.</div></div><span class="chev">›</span></div>`).join('')}</div>`
     :`<div class="empty"><div class="i">🧺</div>Aucune gondole pour l'instant.<br><button class="pill" data-act="new">＋ Nouvelle gondole</button></div>`}
-    <div class="note" style="margin-top:8px">📷 Les photos produits se chargent depuis bubimex.eu quand tu as du réseau. Pour les garder hors ligne : menu ••• → Photos produits → Importer.</div>
-    <div class="note">📲 Pour installer l'app : ouvre ce fichier dans <b>Safari</b>, puis Partager → <b>Sur l'écran d'accueil</b>.</div>
     <div style="height:40px"></div>
   </div>`;
 }
@@ -2338,7 +2451,7 @@ function renderEditor() {
       <div class="cw" id="cw"></div>
       <div class="dr${S.min?' min':''}" id="dr">
         <div class="grab" data-act="drawer"></div>
-        <div class="sb"><button class="nb tg" data-act="drawer" id="bDr">${S.min?'▲':'▼'}</button><div class="in">🔍<input id="q" placeholder="Réf. ou nom" value="${esc(S.q)}" autocomplete="off" autocorrect="off"></div><span class="cnt" id="cnt"></span></div>
+        <div class="sb"><button class="nb tg" data-act="drawer" id="bDr">${S.min?'▲':'▼'}</button><div class="in">🔍<input id="q" placeholder="Réf. ou nom" value="${esc(S.q)}" autocomplete="off" autocorrect="off"></div><button class="nb side" data-act="side" id="bSide" title="Côté d'insertion">${S.side==='left'?'⇤':'⇥'}</button><span class="cnt" id="cnt"></span></div>
         <div class="seg" id="segb"></div>
         <div class="chips" id="chips"></div>
         <div class="pl" id="pl"></div>
@@ -2420,15 +2533,13 @@ function addProduct(ref) {
     S.shelf = next;
   }
   const items = S.cur.shelves[S.shelf].items;
-  const last = items[items.length - 1];
+  // le produit se pose du côté choisi dans la barre du tiroir
+  const last = S.side === 'left' ? items[0] : items[items.length - 1];
   const df = Math.max(1, Math.min(p.df, Math.floor((S.cur.W - shelfW(S.cur.shelves[S.shelf])) / p.w)));
+  const nouveau = { id: uid(), ref, f: df, s: p.st };
   if (last && last.ref === ref) last.f += df;
-  else items.push({
-    id: uid(),
-    ref,
-    f: df,
-    s: p.st
-  });
+  else if (S.side === 'left') items.unshift(nouveau);
+  else items.push(nouveau);
   let msg = `${p.ref} → niveau ${S.shelf+1}`;
   if (S.cur.W - shelfW(S.cur.shelves[S.shelf]) < 6.5 && S.shelf < S.cur.shelves.length - 1) {
     S.shelf++;
@@ -2885,6 +2996,61 @@ function commercialSheetNow() {
   }), fileName('html'), () => '<pre>Fiche commerciale prête à imprimer en PDF.</pre>');
 }
 
+/* ================= SÉLECTION MULTIPLE =================
+   Premier appui : point de départ. Deuxième appui sur le même niveau : toute la plage
+   comprise entre les deux est prise. On règle ensuite les facings et la hauteur de
+   tout le groupe d'un seul geste.
+*/
+function toggleSelect(id) {
+  const f = findItem(id);
+  if (!f) return;
+  if (S.sel.includes(id)) {
+    S.sel = S.sel.filter(x => x !== id);
+  } else if (S.sel.length) {
+    const first = findItem(S.sel[S.sel.length - 1]);
+    if (first && first.si === f.si) {
+      const a = Math.min(first.k, f.k), b = Math.max(first.k, f.k);
+      const range = S.cur.shelves[f.si].items.slice(a, b + 1).map(i => i.id);
+      S.sel = [...new Set([...S.sel, ...range])];
+    } else {
+      S.sel.push(id);
+    }
+  } else {
+    S.sel.push(id);
+  }
+  update();
+}
+
+function selApply(key, delta) {
+  if (!S.sel.length) return;
+  S.sel.forEach(id => {
+    const f = findItem(id);
+    if (!f) return;
+    const cur = key === 'f' ? f.it.f : (f.it.s || 1);
+    const val = Math.max(1, Math.min(key === 'f' ? 30 : 8, cur + delta));
+    if (key === 'f') f.it.f = val; else f.it.s = val;
+  });
+  snap();
+  persist();
+  update();
+  refreshCounts();
+}
+
+function selBar() {
+  if (!S.selMode) return '';
+  const n = S.sel.length;
+  return `<div class="selbar">
+    <span class="c">${n ? n + ' sélectionné' + (n > 1 ? 's' : '') : 'Appuie sur un produit, puis sur un autre'}</span>
+    <button class="sb2" data-act="sel-f" data-v="-1" ${n?'':'disabled'}>− facing</button>
+    <button class="sb2" data-act="sel-f" data-v="1" ${n?'':'disabled'}>＋ facing</button>
+    <button class="sb2" data-act="sel-s" data-v="-1" ${n?'':'disabled'}>− hauteur</button>
+    <button class="sb2" data-act="sel-s" data-v="1" ${n?'':'disabled'}>＋ hauteur</button>
+    <button class="sb2" data-act="sel-all">Tout le niveau</button>
+    <button class="sb2 d" data-act="sel-del" ${n?'':'disabled'}>Retirer</button>
+    <button class="sb2" data-act="selmode">Terminer</button>
+  </div>`;
+}
+
 /* ---- rendu incrémental ---- */
 
 function update() {
@@ -2909,7 +3075,7 @@ function update() {
     });
     if (w > W) warns.push(`Niveau ${i+1} : dépassement de ${(w-W).toFixed(1)} cm`);
   });
-  $('lvl').innerHTML = `<span class="lbl">Placer sur</span>` + S.cur.shelves.map((sh, i) => {
+  $('lvl').innerHTML = `<button class="l selbtn${S.selMode?' on':''}" data-act="selmode">${S.selMode?'✓ Sélection':'☐ Sélection'}</button><span class="lbl">Placer sur</span>` + S.cur.shelves.map((sh, i) => {
     const w = shelfW(sh);
     return `<span class="l${i===S.shelf?' on':''}" data-act="shelf" data-i="${i}">N${i+1}<small>${w>W?'⚠︎':Math.round(w/W*100)+'%'}</small></span>`;
   }).join('');
@@ -2922,7 +3088,7 @@ function update() {
     const d = itemDOS(it);
     if (d != null && d < 7) warns.push(`${it.ref} : seulement ${d.toFixed(1)} jours de stock estimés`);
   });
-  $('warns').innerHTML = [...new Set(warns)].map(w => `<div class="warn">⚠️ ${esc(w)}</div>`).join('');
+  $('warns').innerHTML = selBar() + [...new Set(warns)].map(w => `<div class="warn">⚠️ ${esc(w)}</div>`).join('');
   drawGondola();
   $('bU').disabled = S.hi <= 0;
   $('bR').disabled = S.hi >= S.hist.length - 1;
@@ -2949,7 +3115,8 @@ function gondolaSVG(interactive, photos) {
     B = 20;
   const dark = matchMedia('(prefers-color-scheme:dark)').matches;
   clipSeq = 0;
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W+L+8} ${H+B+8}" width="${W+L+8}" height="${H+B+8}" font-family="-apple-system,system-ui,sans-serif" xmlns:xlink="http://www.w3.org/1999/xlink">
+  // pas de largeur fixe : le rayon s'étire pour occuper toute la place disponible
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W+L+8} ${H+B+8}" preserveAspectRatio="xMidYMid meet" font-family="-apple-system,system-ui,sans-serif" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>${BRANDS.map((b, i) => `<linearGradient id="grad${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${BRAND_LIGHT[b]}"/><stop offset="1" stop-color="${BRAND_DARK[b]}"/></linearGradient>`).join('')}</defs>
   <rect x="${L}" y="4" width="${W}" height="${H}" fill="${dark?'#2c2c2e':'#fff'}" stroke="${dark?'#8e8e93':'#8d8b82'}" stroke-width="1.5"/>`;
   S.cur.shelves.forEach((shelf, i) => {
@@ -2969,6 +3136,7 @@ function gondolaSVG(interactive, photos) {
       const url = photos ? photoURL(it.ref) : null;
       for (let k = 0; k < it.f; k++) {
         const bad = over && x + wOne > L + W;
+        const picked = S.selMode && S.sel.includes(it.id);
         s += `<g data-act="item" data-id="${it.id}" style="cursor:pointer">`;
         for (let j = 0; j < st; j++) {
           const y = y1 - (j + 1) * hOne;
@@ -2994,6 +3162,7 @@ function gondolaSVG(interactive, photos) {
           const yt = y1 - st * hOne;
           s += `<text x="${x+2.5}" y="${yt+9}" font-size="7" font-weight="700" fill="#fff" opacity=".85" pointer-events="none">${p.ref}</text>`;
         }
+        if (picked) s += `<rect x="${x+1}" y="${y1-st*hOne+1}" width="${wOne-2}" height="${st*hOne-2}" rx="3" fill="rgba(36,154,109,.3)" stroke="#249A6D" stroke-width="2"/>`;
         s += `</g>`;
         x += wOne;
       }
@@ -3601,7 +3770,36 @@ document.addEventListener('click', e => {
       update();
       break;
     case 'item':
-      editItem(el.dataset.id);
+      if (S.selMode) toggleSelect(el.dataset.id);
+      else editItem(el.dataset.id);
+      break;
+    case 'selmode':
+      S.selMode = !S.selMode;
+      S.sel = [];
+      update();
+      break;
+    case 'sel-all':
+      S.sel = S.cur.shelves[S.shelf].items.map(i => i.id);
+      update();
+      break;
+    case 'sel-f':
+      selApply('f', +v);
+      break;
+    case 'sel-s':
+      selApply('s', +v);
+      break;
+    case 'sel-del':
+      confirmBox('Retirer la sélection ?', S.sel.length + ' emplacement(s) quitteront le rayon.', 'Retirer', () => {
+        S.cur.shelves.forEach(sh => sh.items = sh.items.filter(i => !S.sel.includes(i.id)));
+        S.sel = [];
+        commit('Sélection retirée');
+        refreshCounts();
+      }, true);
+      break;
+    case 'side':
+      S.side = S.side === 'left' ? 'right' : 'left';
+      if ($('bSide')) $('bSide').textContent = S.side === 'left' ? '⇤' : '⇥';
+      toast(S.side === 'left' ? 'Les produits se posent à gauche' : 'Les produits se posent à droite');
       break;
     case 'fac':
       setF(el.dataset.id, +v);
