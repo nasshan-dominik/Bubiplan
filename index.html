@@ -1234,41 +1234,7 @@ a.chip {
 .nb .ic { vertical-align: middle; }
 .seg button .ic { vertical-align: -.2em; margin-right: 3px; }
 
-/* ===== Glisser-déposer ===== */
-.ghost {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 500;
-  pointer-events: none;
-  width: 68px;
-  padding: 6px;
-  border-radius: 14px;
-  background: var(--card);
-  box-shadow: var(--shadow-subtle);
-  text-align: center;
-  transform-origin: center;
-  animation: pop .16s cubic-bezier(.2, .9, .3, 1.4);
-}
-
-.ghost img {
-  width: 100%;
-  height: 46px;
-  object-fit: contain;
-  border-radius: 8px;
-}
-
-.ghost span {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--tint);
-  margin-top: 2px;
-}
-
-@keyframes pop {
-  from { transform: scale(.8); opacity: .4; }
-  to { opacity: 1; }
+to { opacity: 1; }
 }
 
 /* ===== Bandeau Annuler ===== */
@@ -1978,7 +1944,10 @@ html, body {
    CATALOGUE : TROIS HAUTEURS SUR TÉLÉPHONE
    ============================================================ */
 .dr {
-  transition: height .22s cubic-bezier(.2, .8, .2, 1);
+  /* la hauteur est une propriété de mise en page : on l'anime brièvement et on
+     prévient le navigateur, plutôt que de laisser une transition longue */
+  transition: height .18s cubic-bezier(.2, .8, .2, 1);
+  will-change: height;
 }
 
 .dr.min { height: calc(62px + var(--sab)); }
@@ -2030,6 +1999,266 @@ html, body {
   .dr .chips { padding-bottom: 5px; }
   .pi { min-height: 72px; padding: 7px; }
   .pi .ph { width: 54px; height: 54px; }
+}
+
+/* ============================================================
+   ACCUEIL — présence iOS : grand titre, recherche, filtres comptés,
+   en-têtes de magasin, bouton flottant.
+   ============================================================ */
+.big {
+  padding: 10px 16px 2px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -.4px;
+}
+
+.hsb { padding: 8px 16px 2px; }
+
+.hsb .in {
+  background: var(--bubi-surface-2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  border: .5px solid var(--bubi-border);
+}
+
+.hchips { padding: 8px 16px 2px; }
+
+.hchips .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  min-height: 44px;
+  background: var(--bubi-surface);
+  border: .5px solid var(--bubi-border);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.hchips .chip i {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9px;
+  background: var(--bubi-surface-2);
+  color: var(--bubi-text-secondary);
+}
+
+.hchips .chip.on { border-color: var(--bubi-sage); }
+.hchips .chip.on i { background: rgba(255, 255, 255, .22); color: #fff; }
+
+.storeHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 20px 20px 8px;
+}
+
+.storeHead span {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -.2px;
+}
+
+.storeHead small {
+  font-size: 13px;
+  color: var(--bubi-text-secondary);
+  margin-left: auto;
+}
+
+.row.plan .badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.row.plan .badges .s { white-space: nowrap; }
+
+.pill2 {
+  background: var(--bubi-surface-2);
+  border: .5px solid var(--bubi-border);
+}
+
+/* Bouton flottant : l'action principale toujours sous le pouce */
+.fab {
+  position: fixed;
+  right: 18px;
+  bottom: calc(20px + var(--sab));
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  background: var(--bubi-graphite);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(40, 50, 56, .22);
+  z-index: 20;
+  transition: transform .14s cubic-bezier(.2, .9, .3, 1.1);
+}
+
+.fab:active { transform: scale(.92); }
+
+@media (prefers-color-scheme: dark) {
+  .fab { background: var(--bubi-blueprint-strong); color: #111516; }
+}
+
+@media (min-width: 900px) {
+  .fab { display: none; }
+}
+
+.empty .es {
+  font-size: 14px;
+  color: var(--bubi-text-secondary);
+  margin: 2px 0 14px;
+  line-height: 1.45;
+}
+
+/* la puce sélectionnée doit rester lisible : le texte blanc sur Sage, pas invisible */
+.hchips .chip.on {
+  background: var(--bubi-sage);
+  color: #fff;
+  border-color: var(--bubi-sage);
+}
+
+.hchips .chip.on i { background: rgba(255, 255, 255, .25); color: #fff; }
+
+/* la rangée de filtres défile proprement, sans être coupée au bord */
+.hchips {
+  scroll-padding-inline: 16px;
+  scroll-snap-type: x proximity;
+}
+
+.hchips .chip { scroll-snap-align: start; }
+.hchips::after { content: ""; flex: 0 0 4px; }
+
+/* ============================================================
+   DESCENTES TYPES — bibliothèque de modules, sur l'accueil
+   ============================================================ */
+.descRow {
+  display: flex;
+  gap: 10px;
+  padding: 2px 16px 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+
+.descRow::-webkit-scrollbar { display: none; }
+
+.descCard {
+  flex: 0 0 152px;
+  scroll-snap-align: start;
+  background: var(--bubi-surface);
+  border: .5px solid var(--bubi-border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  min-height: 44px;
+  transition: transform .14s;
+}
+
+.descCard:active { transform: scale(.97); }
+
+.dcTh {
+  height: 92px;
+  border-radius: 10px;
+  background: var(--bubi-surface-2);
+  overflow: hidden;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dcTh svg { width: 100%; height: 100%; }
+
+.dcN {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.dcS {
+  font-size: 12px;
+  color: var(--bubi-text-secondary);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.simPrev {
+  height: 190px;
+  border-radius: var(--radius-sm);
+  border: .5px solid var(--bubi-border);
+  background: var(--bubi-surface);
+  padding: 8px;
+  margin: 10px 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.simPrev svg { width: 100%; height: 100%; }
+
+/* ============================================================
+   FLUIDITÉ — d'après les recommandations de performance web 2026
+   Trois règles suivies partout :
+   1. n'animer que transform et opacity, jamais une largeur ou une hauteur,
+      qui obligent le navigateur à tout recalculer ;
+   2. laisser le navigateur ignorer ce qui est hors écran ;
+   3. isoler chaque carte pour qu'une modification n'en repeigne pas mille.
+   ============================================================ */
+
+/* Les cartes hors écran ne sont plus dessinées : une liste de 175 produits
+   coûte alors le prix de ce qui est visible. */
+.pi {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 76px;
+  contain: layout paint style;
+}
+
+.row.plan,
+.descCard {
+  contain: layout paint style;
+}
+
+/* Le rayon est un gros dessin : on l'isole du reste de la page. */
+.cw { contain: layout paint; }
+
+/* Les surfaces qui glissent le font sur le compositeur, sans repeindre. */
+.ov { will-change: opacity; }
+.sh { will-change: transform; }
+
+/* Le défilement reste vertical et ne remonte pas à la page parente. */
+.scroll, .pl, .sh, .ordl {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+
+.chips, .stats, .lvl, .descRow, .tb {
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+}
+
+/* Texte net sur écran Retina. */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Appui : réponse immédiate puis retour souple, comme un bouton physique. */
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .pill, .fab, .chip, .l, .pi, .row, .descCard, .st, .nb {
+    transition: transform 120ms cubic-bezier(.34, 1.4, .64, 1), background 140ms ease-out, box-shadow 140ms ease-out;
+  }
+
+  .btn:active, .nb:active { transform: scale(.96); }
 }
 </style>
 </head>
@@ -2254,11 +2483,11 @@ const CATALOGUE_RAW = [
   ["chat",  "9056", "Bubi Nature Soupe au saumon, 50g",                        "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
   ["chat",  "9057", "Bubi Nature Soupe au poulet, 50g",                        "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
   ["chat",  "9058", "Bubi Nature Soupe au thon, 50g",                          "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9065", "Bubi Nature Soupe au crevettes, 135g",                    "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
-  ["chat",  "9066", "Bubi Nature Soupe au saumon, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
-  ["chat",  "9067", "Bubi Nature Soupe au canard, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
-  ["chat",  "9068", "Bubi Nature Soupe au thon, 135g",                         "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
-  ["chat",  "9069", "Bubi Nature Soupe au poulet, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 2, 1],
+  ["chat",  "9065", "Bubi Nature Soupe au crevettes, 135g",                    "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
+  ["chat",  "9066", "Bubi Nature Soupe au saumon, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
+  ["chat",  "9067", "Bubi Nature Soupe au canard, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
+  ["chat",  "9068", "Bubi Nature Soupe au thon, 135g",                         "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
+  ["chat",  "9069", "Bubi Nature Soupe au poulet, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
   ["chat",  "G500", "Gustav Mousse, canard, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
   ["chat",  "G501", "Gustav Mousse, bœuf, 85g",                                "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
   ["chat",  "G502", "Gustav Mousse, poulet, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
@@ -2497,18 +2726,6 @@ function itemDOS(it) {
   return u > 0 ? itemCapacity(it) / (u / 7) : null;
 }
 
-function targetFacings(ref, targetDays = 14, minF = 1, maxF = 6) {
-  const p = BY_REF[ref],
-    d = perf(ref);
-  let f = Math.max(minF, +d.minF || 1);
-  if ((+d.unitsWeek || 0) > 0) {
-    const perFacing = Math.max(1, (p.st || 1) * depthCapacity(p));
-    f = Math.ceil((+d.unitsWeek / 7 * targetDays) / perFacing);
-  }
-  f = Math.max(f, +d.minF || 1, minF);
-  f = Math.min(f, +d.maxF || maxF, maxF);
-  return Math.max(1, f);
-}
 const FMTS = (u, c) => [...new Set(PRODUCTS.filter(p => p.univ === u && (!c || p.cat === c)).map(p => p.fg))].sort((a, b) => parseInt(a) - parseInt(b));
 
 /* ================= PHOTOS (chargées depuis bubimex.eu, cache statut) ================= */
@@ -3475,15 +3692,13 @@ function renderHome() {
     : statusOf(p) === filt;
   const list = all.filter(p => keep(p) && (!q || (p.store + ' ' + p.name).toLowerCase().includes(q)));
   const last = all[0];
-
-  // rangement par magasin : un plan est fait pour une gondole précise
   const groups = {};
   list.forEach(p => (groups[p.store] = groups[p.store] || []).push(p));
+  const compte = k => all.filter(p => k === 'tous' ? true : k === 'encours' ? statusOf(p) !== 'pose' : statusOf(p) === k).length;
 
   $('app').innerHTML = `<div class="nav">
-      <span class="nb" style="visibility:hidden">·</span>
-      <div class="t"><h1>BubiPlan</h1></div>
-      <button class="nb b" data-act="new">${ic('plus', 18)} Nouveau plan</button>
+      <div class="t"></div>
+      <button class="nb b" data-act="new">${ic('plus', 18)} Nouveau</button>
     </div>
   <div class="scroll">
     <div class="big">Mes plans</div>
@@ -3498,41 +3713,60 @@ function renderHome() {
       <span class="chev">›</span>
     </div>` : ''}
 
-    ${all.length > 1 ? `
-      <div class="sb" style="padding:10px 16px 4px">
+    ${layouts().length ? `
+      <div class="storeHead"><span>Descentes types</span><small>${layouts().length}</small></div>
+      <div class="descRow">${layouts().map(l => `
+        <div class="descCard" data-act="sim" data-id="${l.id}">
+          <div class="dcTh">${miniPlan(l.shelves, l.W, l.H)}</div>
+          <div class="dcN">${esc(l.name)}</div>
+          <div class="dcS">${esc(layoutBrand(l))} · ${l.shelves.length} tablettes · ${l.W} cm</div>
+        </div>`).join('')}</div>` : ''}
+
+    ${all.length ? `
+      <div class="sb hsb">
         <div class="in">${ic('search', 18)}<input id="hq" placeholder="Magasin ou plan" value="${esc(S.homeQ || '')}" autocomplete="off"></div>
       </div>
-      <div class="chips" style="padding:6px 16px 4px">
+      <div class="chips hchips">
         ${[['encours', 'En cours'], ['propose', 'Proposés'], ['valide', 'Validés'], ['pose', 'Posés'], ['tous', 'Tous']]
-          .map(([k, l]) => `<span class="chip${filt === k ? ' on' : ''}" data-act="hfilter" data-v="${k}">${l}</span>`).join('')}
+          .filter(([k]) => k === 'tous' || k === filt || compte(k))
+          .map(([k, l]) => `<span class="chip${filt === k ? ' on' : ''}" data-act="hfilter" data-v="${k}">${l}<i>${compte(k)}</i></span>`).join('')}
       </div>` : ''}
 
     ${list.length ? Object.entries(groups).map(([store, ps]) => `
-      <div class="sec">${esc(store)}</div>
+      <div class="storeHead"><span>${esc(store)}</span><small>${ps.length} plan${ps.length > 1 ? 's' : ''}</small></div>
       <div class="list">${ps.map(p => `
         <div class="row plan" data-act="open" data-id="${p.id}">
           <div class="th big">${thumb(p)}</div>
           <div class="tx">
             <div class="n">${esc(p.name)}</div>
             <div class="s dim">${UNIV[p.univ]} · ${p.W} × ${p.H} cm · ${countRefs(p)} réf.</div>
-            <div class="s">${fmtDate(p.updated)}</div>
+            <div class="badges">
+              <span class="pill2" style="color:${STATUS[statusOf(p)].c}">${STATUS[statusOf(p)].l}</span>
+              <span class="s">${fmtDate(p.updated)}</span>
+            </div>
           </div>
-          <span class="pill2" style="color:${STATUS[statusOf(p)].c}">${STATUS[statusOf(p)].l}</span>
           <span class="chev">›</span>
         </div>`).join('')}</div>`).join('')
       : all.length
-        ? `<div class="empty">Aucun plan dans cette vue.</div>`
-        : `<div class="empty">${blueprintIllustration()}<div class="et">Ta première gondole t'attend.</div><button class="pill" data-act="new">Créer un plan</button></div>`}
-    <div style="height:40px"></div>
-  </div>`;
+        ? `<div class="empty"><div class="et">Aucun plan dans cette vue.</div></div>`
+        : `<div class="empty">${blueprintIllustration()}<div class="et">Ta première gondole t'attend.</div><div class="es">Choisis ses dimensions, pose tes produits, montre le résultat.</div><button class="pill" data-act="new">Créer un plan</button></div>`}
+    <div style="height:90px"></div>
+  </div>
+  ${all.length ? `<button class="fab" data-act="new" aria-label="Nouveau plan">${ic('plus', 24)}</button>` : ''}`;
 
   const hq = $('hq');
-  if (hq) hq.addEventListener('input', e => {
-    S.homeQ = e.target.value;
-    renderHome();
-    const f = $('hq');
-    if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
-  });
+  if (hq) {
+    let t = null;
+    hq.addEventListener('input', e => {
+      S.homeQ = e.target.value;
+      clearTimeout(t);
+      t = setTimeout(() => {
+        renderHome();
+        const f = $('hq');
+        if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+      }, 120);
+    });
+  }
 }
 
 /* Couleur de famille pour les miniatures : merchandising, pas blueprint. */
@@ -3743,7 +3977,7 @@ function renderList() {
   const counts = placedCounts();
   const list = PRODUCTS.filter(p => p.univ === S.univ && (!S.cat || p.cat === S.cat) && (!S.fmt || p.fg === S.fmt) && (!q || p.name.toLowerCase().includes(q) || p.ref.toLowerCase().includes(q)));
   $('cnt').textContent = list.length + ' réf.';
-  $('pl').innerHTML = list.length ? list.map(p => `<div class="pi" data-act="add" data-ref="${p.ref}">
+  const card = p => `<div class="pi" data-act="add" data-ref="${p.ref}">
       <div class="ph"><img data-ph="${p.ref}" src="${photoSrc(p.ref)}" alt="" loading="lazy"></div>
       <div class="tx">
         <div class="b">${esc(p.cat)}</div>
@@ -3751,8 +3985,20 @@ function renderList() {
         <div class="r dim">Réf. ${p.ref} · ${p.w} × ${p.h} cm${p.st > 1 || p.df > 1 ? ' · display ' + p.df + '×' + p.st : ''}</div>
       </div>
       ${counts[p.ref] ? `<span class="bd">${counts[p.ref]}</span>` : `<span class="add">${plusIcon()}</span>`}
-    </div>`).join('') :
-    '<div style="padding:20px;color:var(--mut);font-size:13px;grid-column:1/-1;text-align:center">Aucun produit</div>';
+    </div>`;
+  // on affiche d'abord ce qui tient à l'écran, le reste suit juste après : la liste
+  // apparaît instantanément même avec cent soixante-quinze références
+  const PREMIERS = 14;
+  $('pl').innerHTML = list.length
+    ? list.slice(0, PREMIERS).map(card).join('')
+    : '<div style="padding:20px;color:var(--mut);font-size:13px;grid-column:1/-1;text-align:center">Aucun produit</div>';
+  if (list.length > PREMIERS) {
+    clearTimeout(renderList._t);
+    renderList._t = setTimeout(() => {
+      const el = $('pl');
+      if (el && el.children.length === PREMIERS) el.insertAdjacentHTML('beforeend', list.slice(PREMIERS).map(card).join(''));
+    }, 16);
+  }
 }
 
 function placedCounts() {
@@ -3892,7 +4138,7 @@ function spacePlannerSheet() {
   <div class="f"><label>Jours de stock</label><input id="sp_days" type="number" inputmode="numeric" value="14"><span class="unit">jours</span></div>
   <div class="f"><label>Facing mini</label><input id="sp_min" type="number" value="1"></div><div class="f"><label>Facing maxi</label><input id="sp_max" type="number" value="6"></div>
   <div class="f"><label>Remplissage</label><input id="sp_occ" type="number" value="92"><span class="unit">%</span></div></div>
-  <button class="btn p" data-act="spacecalc">Calculer la place nécessaire</button><button class="btn" data-act="autofill-sheet">Remplissage automatique</button><button class="btn" data-act="close">Fermer</button>`);
+  <button class="btn p" data-act="spacecalc">Calculer la place nécessaire</button><button class="btn" data-act="close">Fermer</button>`);
 }
 
 function showSpaceResult() {
@@ -3910,74 +4156,10 @@ function showSpaceResult() {
   const sales = r.rows.filter(x => (+x.dos || 0) > 0).length;
   sheet(`<h2>Besoin d’espace</h2><div class="kpiGrid"><div><small>Linéaire cumulé</small><b>${r.linear.toFixed(0)} cm</b></div><div><small>Niveaux de ${S.cur.W} cm</small><b>${r.levels}</b></div><div><small>Références</small><b>${r.rows.length}</b></div><div><small>Capacité faciale</small><b>${r.rows.reduce((a,x)=>a+x.cap,0)} u.</b></div></div><p><b>Recommandation :</b> pour ${Math.round(occ*100)} % d’occupation, il faut environ <b>${r.linear.toFixed(0)} cm de linéaire tablette</b>, soit <b>${r.levels} niveau${r.levels>1?'x':''} de ${S.cur.W} cm</b>. Données de vente renseignées pour ${sales}/${r.rows.length} références.</p>
   <div class="miniTable">${r.rows.slice().sort((a,b)=>b.lin-a.lin).slice(0,12).map(x=>`<div><span>${x.ref} · ${esc(x.p.name)}</span><b>${x.f} F · ${x.lin.toFixed(0)} cm${x.dos?` · ${x.dos.toFixed(1)} j`:''}</b></div>`).join('')}</div>
-  <button class="btn p" data-act="autofill-run" data-scope="${scope}" data-days="${days}" data-min="${minF}" data-max="${maxF}">Construire automatiquement</button><button class="btn" data-act="close">Fermer</button>`);
+  <button class="btn" data-act="close">Fermer</button>`);
 }
 
-function autoFillSheet() {
-  const cur = scopeRefs('current').length,
-    fil = scopeRefs('filtered').length;
-  sheet(`<h2>Remplissage automatique</h2><p>Génère une gondole complète à partir d’un assortiment. Les facings peuvent être calculés avec les ventes et les jours de stock, puis les produits sont placés selon les contraintes physiques.</p><div class="grp"><div class="f"><label>Assortiment</label><select id="af_scope"><option value="filtered">Filtre actuel (${fil})</option><option value="current">Déjà placés (${cur})</option><option value="all">Tout ${UNIV[S.univ]}</option></select></div><div class="f"><label>Stratégie</label><select id="af_mode"><option value="sales">Ventes / disponibilité</option><option value="balanced">Recommandée Bubimex</option><option value="brands">Blocs de marques</option><option value="references">Maximum de références</option><option value="margin">Marge</option></select></div><div class="f"><label>Jours cible</label><input id="af_days" type="number" value="14"></div><div class="f"><label>Facing mini</label><input id="af_min" type="number" value="1"></div><div class="f"><label>Facing maxi</label><input id="af_max" type="number" value="6"></div></div><button class="btn p" data-act="autofill-go">Générer le planogramme</button><button class="btn" data-act="close">Annuler</button>`);
-}
 
-function smartAutoFill(scope = 'filtered', mode = 'sales', days = 14, minF = 1, maxF = 6) {
-  const refs = scopeRefs(scope);
-  if (!refs.length) {
-    toast('Aucune référence à placer');
-    return;
-  }
-  const N = S.cur.shelves.length,
-    W = S.cur.W,
-    H = shelfH(),
-    shelves = Array.from({
-      length: N
-    }, () => ({
-      items: []
-    }));
-  const eye = Math.max(0, Math.min(N - 1, Math.round(N * .42)));
-  let ordered = refs.slice();
-  const score = r => {
-    const d = perf(r);
-    if (mode === 'sales') return +d.unitsWeek || 0;
-    if (mode === 'margin') return (+d.unitsWeek || 0) * (+d.price || 0) * (+d.margin || 0) / 100;
-    return +d.priority || 3;
-  };
-  if (mode === 'brands') ordered.sort((a, b) =>BRANDS.indexOf(BY_REF[a].cat) - BRANDS.indexOf(BY_REF[b].cat) || parseInt(BY_REF[a].fg) - parseInt(BY_REF[b].fg) || a.localeCompare(b));
-  else if (mode === 'references') ordered.sort((a, b) =>BY_REF[a].w - BY_REF[b].w || a.localeCompare(b));
-  else ordered.sort((a, b) => score(b) - score(a) || parseInt(BY_REF[b].fg) - parseInt(BY_REF[a].fg) || a.localeCompare(b));
-  const sw = sh => sh.items.reduce((a, it) => a + BY_REF[it.ref].w * it.f, 0);
-  for (const ref of ordered) {
-    const p = BY_REF[ref];
-    let f = (mode === 'sales' || mode === 'margin') ? targetFacings(ref, days, minF, maxF) : Math.max(minF, Math.min(maxF, perf(ref).minF || p.df || 1));
-    const gram = parseInt(p.fg) || 0;
-    let pref = gram >= 400 ? N - 1 : (gram <= 100 ? eye : Math.min(N - 1, eye + 1));
-    const seq = [];
-    for (let d = 0; d < N; d++) {
-      for (const si of [pref + d, pref - d])
-        if (si >= 0 && si < N && !seq.includes(si)) seq.push(si);
-    }
-    for (const si of seq) {
-      if (f <= 0) break;
-      if (p.h * (p.st || 1) >H) continue;
-      const fit = Math.floor((W - sw(shelves[si])) / p.w);
-      if (fit > 0) {
-        const take = Math.min(fit, f);
-        shelves[si].items.push({
-          id: uid(),
-          ref,
-          f: take,
-          s: p.st
-        });
-        f -= take;
-      }
-    }
-  }
-  S.cur.shelves = shelves;
-  S.shelf = 0;
-  closeSheet();
-  commit('Remplissage automatique');
-  refreshCounts();
-  toast(`${refs.length} références analysées`);
-}
 
 function performanceSheet() {
   const refs = scopeRefs('current');
@@ -4001,157 +4183,10 @@ function savePerformance() {
   toast('Données merchandising enregistrées');
 }
 
-function analysisSheet() {
-  const rows = [];
-  S.cur.shelves.forEach((sh, si) => sh.items.forEach(it => {
-    const p = BY_REF[it.ref],
-      d = perf(it.ref),
-      cap = itemCapacity(it),
-      dos = itemDOS(it),
-      lin = p.w * it.f,
-      weekly = +d.unitsWeek || 0,
-      rev = weekly * (+d.price || 0),
-      margin = rev * (+d.margin || 0) / 100;
-    rows.push({
-      si,
-      it,
-      p,
-      d,
-      cap,
-      dos,
-      lin,
-      weekly,
-      rev,
-      margin
-    });
-  }));
-  if (!rows.length) {
-    toast('Gondole vide');
-    return;
-  }
-  const cap = rows.reduce((a, x) => a + x.cap, 0),
-    avgDOS = rows.filter(x => x.dos != null).length ? rows.filter(x => x.dos != null).reduce((a, x) => a + x.dos, 0) / rows.filter(x => x.dos != null).length : null,
-    rev = rows.reduce((a, x) => a + x.rev, 0),
-    marg = rows.reduce((a, x) => a + x.margin, 0);
-  const risks = rows.filter(x => x.dos != null && x.dos < 7),
-    over = rows.filter(x => x.dos != null && x.dos > 28);
-  sheet(`<h2>Diagnostic planogramme</h2><div class="kpiGrid"><div><small>Capacité rayon</small><b>${cap} u.</b></div><div><small>DOS moyen</small><b>${avgDOS?avgDOS.toFixed(1)+' j':'—'}</b></div><div><small>CA hebdo estimé</small><b>${rev?rev.toFixed(0)+' €':'—'}</b></div><div><small>Marge hebdo</small><b>${marg?marg.toFixed(0)+' €':'—'}</b></div></div>${risks.length?`<div class="err">${risks.length} référence${risks.length>1?'s':''} sous 7 jours de stock : ${risks.map(x=>x.p.ref).join(', ')}</div>`:''}${over.length?`<p>Sur-allocation possible : ${over.map(x=>x.p.ref+' ('+x.dos.toFixed(0)+' j)').join(', ')}</p>`:''}<div class="miniTable">${rows.sort((a,b)=>(a.dos??999)-(b.dos??999)).map(x=>`<div><span>N${x.si+1} · ${x.p.ref}</span><b>${x.it.f} F · cap. ${x.cap}${x.dos!=null?' · '+x.dos.toFixed(1)+' j':''}</b></div>`).join('')}</div><button class="btn" data-act="close">Fermer</button>`);
-}
 
-function smartOptimize(mode = 'balanced') {
-  const groups = {};
-  S.cur.shelves.forEach(s => s.items.forEach(i => groups[i.ref] = (groups[i.ref] || 0) + i.f));
-  const refs = Object.keys(groups);
-  if (!refs.length) {
-    toast('Ajoute d\'abord des produits');
-    return;
-  }
-  const N = S.cur.shelves.length,
-    W = S.cur.W,
-    H = shelfH();
-  const shelves = Array.from({
-    length: N
-  }, () => ({
-    items: []
-  }));
-  const eye = Math.max(0, Math.min(N - 1, Math.round(N * .42)));
-  const fitOn = (si, p) =>Math.floor((W - shelfW(shelves[si])) / p.w);
-  const add = (si, r, f) => {
-    if (f > 0) shelves[si].items.push({
-      id: uid(),
-      ref: r,
-      f,
-      s: BY_REF[r].st
-    });
-  };
-  let ordered = refs.slice();
-  if (mode === 'brands') ordered.sort((a, b) =>BRANDS.indexOf(BY_REF[a].cat) - BRANDS.indexOf(BY_REF[b].cat) || parseInt(BY_REF[a].fg) - parseInt(BY_REF[b].fg) || a.localeCompare(b));
-  else if (mode === 'references') ordered.sort((a, b) =>BY_REF[a].w - BY_REF[b].w || BY_REF[a].h - BY_REF[b].h || a.localeCompare(b));
-  else if (mode === 'compact') ordered.sort((a, b) => (BY_REF[a].w * BY_REF[a].h) - (BY_REF[b].w * BY_REF[b].h) || a.localeCompare(b));
-  else ordered.sort((a, b) => parseInt(BY_REF[b].fg) - parseInt(BY_REF[a].fg) || (BY_REF[b].w * BY_REF[b].h) - (BY_REF[a].w * BY_REF[a].h) || a.localeCompare(b));
-  for (const r of ordered) {
-    const p = BY_REF[r];
-    let f = groups[r];
-    // Formats lourds/grands en bas, petits formats plutôt zone des yeux.
-    const gram = parseInt(p.fg) || 0;
-    let pref = gram >= 400 ? N - 1 : (gram <= 100 ? eye : Math.min(N - 1, eye + 1));
-    if (mode === 'compact') pref = N - 1;
-    const seq = [];
-    for (let d = 0; d < N; d++) {
-      const a = pref + d,
-        b = pref - d;
-      if (a < N && !seq.includes(a)) seq.push(a);
-      if (b >= 0 && !seq.includes(b)) seq.push(b);
-    }
-    for (const si of seq) {
-      if (f <= 0) break;
-      if (p.h * (p.st || 1) >H) continue;
-      const fit = fitOn(si, p);
-      if (fit > 0) {
-        const take = Math.min(fit, f);
-        add(si, r, take);
-        f -= take;
-      }
-    }
-  }
-  // Complète intelligemment le linéaire sans dépasser 96 %.
-  shelves.forEach(sh => {
-    if (!sh.items.length) return;
-    let used = shelfW(sh),
-      target = W * .96,
-      g = 0;
-    while (used < target && g++ < 300) {
-      let grew = false;
-      for (const it of sh.items) {
-        const p = BY_REF[it.ref];
-        if (used + p.w <= target) {
-          it.f++;
-          used += p.w;
-          grew = true;
-        }
-      }
-      if (!grew) break;
-    }
-  });
-  S.cur.shelves = shelves;
-  S.shelf = 0;
-  commit('Implantation optimisée');
-  refreshCounts();
-}
 
-function optimizeSheet() {
-  sheet(`<h2>Implantation intelligente</h2><p>Choisis la logique de construction. Pour une optimisation par ventes, marge ou jours de stock, utilise le remplissage automatique PRO.</p>
-  <button class="btn p" data-act="autofill-sheet">Remplissage automatique PRO</button>
-  <button class="btn" data-act="optmode" data-v="balanced">️ Recommandée Bubimex</button>
-  <button class="btn" data-act="optmode" data-v="brands">${ic('box')} Blocs de marques</button>
-  <button class="btn" data-act="optmode" data-v="references">▤ Maximum de références</button>
-  <button class="btn" data-act="optmode" data-v="compact">↔︎ Implantation compacte</button>
-  <button class="btn" data-act="close">Annuler</button>`);
-}
 
-function templateSheet() {
-  sheet(`<h2>Templates Bubimex</h2><p>Adapte instantanément la largeur et le nombre de niveaux. Les produits déjà placés sont conservés autant que possible.</p>
-  ${[[66,150,5],[100,150,5],[133,150,5],[133,180,6],[200,150,5]].map(x=>`<button class="btn" data-act="template" data-v="${x.join(',')}">${x[0]} × ${x[1]} cm · ${x[2]} niveaux</button>`).join('')}
-  <button class="btn" data-act="close">Fermer</button>`);
-}
 
-function applyTemplate(v) {
-  const [W, H, N] = v.split(',').map(Number);
-  S.cur.W = W;
-  S.cur.H = H;
-  while (S.cur.shelves.length < N) S.cur.shelves.push({
-    items: []
-  });
-  if (S.cur.shelves.length >N) {
-    const keep = S.cur.shelves.slice(0, N);
-    S.cur.shelves.slice(N).forEach(sh => sh.items.forEach(it => keep[N - 1].items.push(it)));
-    S.cur.shelves = keep;
-  }
-  S.shelf = Math.min(S.shelf, N - 1);
-  closeSheet();
-  commit(`Template ${W} cm appliqué`);
-  refreshCounts();
-}
 
 function backupJSON() {
   const data = {
@@ -4330,12 +4365,21 @@ function bindDrawerDrag() {
     start = null;
     setDrawer(h < .22 ? 'min' : h < .68 ? 'half' : 'full');
   };
-  document.addEventListener('touchstart', onDown, { passive: false });
-  document.addEventListener('mousedown', onDown);
-  document.addEventListener('touchmove', onMove, { passive: false });
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('touchend', onUp);
-  document.addEventListener('mouseup', onUp);
+  const armer = () => {
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mousemove', onMove);
+  };
+  const desarmer = () => {
+    document.removeEventListener('touchmove', onMove, { passive: false });
+    document.removeEventListener('mousemove', onMove);
+  };
+  const down = e => { onDown(e); if (start) armer(); };
+  const up = () => { onUp(); desarmer(); };
+
+  document.addEventListener('touchstart', down, { passive: false });
+  document.addEventListener('mousedown', down);
+  document.addEventListener('touchend', up);
+  document.addEventListener('mouseup', up);
 }
 bindDrawerDrag();
 
@@ -4394,18 +4438,12 @@ function selBar() {
   </div>`;
 }
 
-/* ================= GLISSER-DÉPOSER =================
-   On attrape un produit dans le tiroir ou une pile déjà posée, une vignette suit le
-   doigt, et le niveau survolé s'éclaire. Au relâcher, le produit se pose exactement
-   là où on l'a lâché, à la position horizontale visée.
-*/
-const drag = { on: false, ref: null, moveId: null, ghost: null, shelf: -1, x: 0 };
-
+/* Petit retour tactile à chaque action confirmée. */
 function haptic(ms) {
   if (navigator.vibrate) try { navigator.vibrate(ms || 8); } catch (e) {}
 }
 
-/* Position en centimètres visée par un clic sur le rayon. */
+/* Position en centimètres visée par un appui sur le rayon. */
 function shelfPointFromEvent(e) {
   const p = shelfAtPoint(e.clientX, e.clientY);
   return p ? Math.max(0, Math.min(S.cur.W, p.cm)) : null;
@@ -4416,128 +4454,20 @@ function shelfAtPoint(clientX, clientY) {
   if (!svg) return null;
   const r = svg.getBoundingClientRect();
   if (clientY < r.top || clientY > r.bottom || clientX < r.left || clientX > r.right) return null;
-  // conversion écran -> repère du dessin
   const vb = svg.viewBox.baseVal;
   const scale = Math.min(r.width / vb.width, r.height / vb.height);
   const offX = (r.width - vb.width * scale) / 2;
   const offY = (r.height - vb.height * scale) / 2;
   const ux = (clientX - r.left - offX) / scale;
   const uy = (clientY - r.top - offY) / scale;
-  const L = 56, sc = 3;   // marge gauche : étiquettes de niveau + cote verticale
+  const L = 56, sc = 3;
   const N = S.cur.shelves.length;
   const H = S.cur.H * sc, sh = H / N;
   const si = Math.max(0, Math.min(N - 1, Math.floor((uy - 4) / sh)));
-  const cm = Math.max(0, (ux - L) / sc);
-  return { si, cm };
+  return { si, cm: Math.max(0, (ux - L) / sc) };
 }
 
-function startDrag(e, ref, moveId) {
-  const t = e.touches ? e.touches[0] : e;
-  drag.on = true;
-  drag.ref = ref;
-  drag.moveId = moveId || null;
-  const p = BY_REF[ref];
-  const g = document.createElement('div');
-  g.className = 'ghost';
-  g.innerHTML = `<img src="${photoSrc(ref)}" alt=""><span>${p.ref}</span>`;
-  document.body.appendChild(g);
-  drag.ghost = g;
-  document.body.classList.add('dragging');   // fige le défilement pendant le glissement
-  moveGhost(t.clientX, t.clientY);
-  haptic(10);
-  e.preventDefault();
-}
 
-function moveGhost(x, y) {
-  if (!drag.ghost) return;
-  drag.ghost.style.transform = `translate(${x - 34}px, ${y - 44}px)`;
-  const hit = shelfAtPoint(x, y);
-  const si = hit ? hit.si : -1;
-  if (si !== drag.shelf) {
-    drag.shelf = si;
-    if (si >= 0) { S.shelf = si; haptic(6); }
-    update();
-  }
-  drag.x = hit ? hit.cm : 0;
-}
-
-function endDrag() {
-  if (!drag.on) return;
-  const { ref, moveId, shelf, x } = drag;
-  drag.on = false;
-  if (drag.ghost) drag.ghost.remove();
-  drag.ghost = null;
-  document.body.classList.remove('dragging');
-  drag.shelf = -1;
-  if (shelf < 0) { update(); return; }
-  const items = S.cur.shelves[shelf].items;
-  // position d'insertion : là où le doigt a lâché, en centimètres
-  let acc = 0, at = items.length;
-  for (let k = 0; k < items.length; k++) {
-    const w = BY_REF[items[k].ref].w * items[k].f;
-    if (x < acc + w / 2) { at = k; break; }
-    acc += w;
-  }
-  if (moveId) {
-    const f = findItem(moveId);
-    if (!f) return;
-    const [moved] = S.cur.shelves[f.si].items.splice(f.k, 1);
-    const dest = S.cur.shelves[shelf].items;
-    dest.splice(Math.min(at, dest.length), 0, moved);
-    commit('Produit déplacé');
-  } else {
-    const p = BY_REF[ref];
-    const df = Math.max(1, Math.min(p.df, Math.floor((S.cur.W - shelfW(S.cur.shelves[shelf])) / p.w) || 1));
-    const dropped = { id: uid(), ref, f: df, s: p.st };
-    items.splice(at, 0, dropped);
-    fresh = dropped.id;
-    setTimeout(() => { fresh = null; }, 400);
-    commit(`${p.ref} posé sur le niveau ${shelf + 1}`);
-  }
-  haptic(12);
-  refreshCounts();
-}
-
-/* Un appui maintenu démarre le glissement ; un appui simple garde son rôle habituel. */
-let pressTimer = null, pressStart = null;
-function bindDrag() {
-  const onDown = e => {
-    const tile = e.target.closest('#pl .pi');
-    const box = e.target.closest('#cw svg g[data-act="item"]');
-    if (!tile && !box) return;
-    if (box && S.selMode) return;
-    const t = e.touches ? e.touches[0] : e;
-    pressStart = { x: t.clientX, y: t.clientY, tile, box, e };
-    pressTimer = setTimeout(() => {
-      pressTimer = null;
-      if (tile) startDrag(pressStart.e, tile.dataset.ref, null);
-      else {
-        const f = findItem(box.dataset.id);
-        if (f) startDrag(pressStart.e, f.it.ref, box.dataset.id);
-      }
-    }, 200);
-  };
-  const onMove = e => {
-    const t = e.touches ? e.touches[0] : e;
-    if (pressTimer && pressStart) {
-      const d = Math.hypot(t.clientX - pressStart.x, t.clientY - pressStart.y);
-      if (d > 16) { clearTimeout(pressTimer); pressTimer = null; }
-    }
-    if (drag.on) { moveGhost(t.clientX, t.clientY); e.preventDefault(); }
-  };
-  const onUp = () => {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    endDrag();
-  };
-  document.addEventListener('touchstart', onDown, { passive: false });
-  document.addEventListener('mousedown', onDown);
-  document.addEventListener('touchmove', onMove, { passive: false });
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('touchend', onUp);
-  document.addEventListener('mouseup', onUp);
-  document.addEventListener('touchcancel', onUp);
-}
-bindDrag();
 
 /* ================= ANNULER =================
    Plutôt qu'une flèche toujours présente, un bandeau discret apparaît juste après une
@@ -4687,15 +4617,16 @@ function gondolaSVG(interactive, photos, scene) {
             s += `<rect x="${x+.5}" y="${yy+.5}" width="${wOne-1}" height="${hOne-1}" rx="2" fill="rgba(220,232,238,.5)" stroke="var(--bubi-blueprint)" stroke-width="1.2" stroke-dasharray="3 2"/>`;
             continue;
           }
-          s += `<rect x="${x+.5}" y="${yy+.5}" width="${wOne-1}" height="${hOne-1}" rx="2" fill="${familyColor(p)}" stroke="var(--bubi-surface)" stroke-width="1" class="${fresh===it.id?'pop':''}"/>`;
+          s += `<rect x="${x+.5}" y="${yy+.5}" width="${wOne-1}" height="${hOne-1}" rx="2" fill="${url ? 'var(--bubi-surface)' : familyColor(p)}" stroke="var(--bubi-border)" stroke-width=".6" class="${fresh===it.id?'pop':''}"/>`;
           if (url) {
             // le produit est calé sur le cadre : plus aucune marge blanche visible
             const bw = wOne - 2, bh = hOne - 2, bx = x + 1, by = yy + 1;
             const pl = photoPlacement(it.ref, bx, by, bw, bh);
             const cid = 'clip' + (clipSeq++);
             s += `<clipPath id="${cid}"><rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5"/></clipPath>`;
-            // produit entier et centré : le fond reste neutre, pas un cadre coloré
-            s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5" fill="${pl.cover === false ? 'var(--bubi-surface-2)' : familyColor(p)}"/>`;
+            // fond neutre derrière une photo : le débordement d'un visuel légèrement
+            // trop petit ne doit pas colorer la boîte. Blanc en clair, sombre en nuit.
+            s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="1.5" fill="var(--bubi-surface)"/>`;
             s += `<image href="${url}" xlink:href="${url}" x="${pl.x}" y="${pl.y}" width="${pl.w}" height="${pl.h}" preserveAspectRatio="${pl.par}" clip-path="url(#${cid})"/>`;
           } else if (wOne > 16 && hOne > 10) {
             // pas de photo : le logo de la marque tient lieu de repère
@@ -5108,9 +5039,9 @@ function saveLayouts(l) { lsSet(LAYKEY, JSON.stringify(l)); }
 function layoutSheet() {
   const list = loadLayouts().sort((a, b) => b.date - a.date);
   const mine = list.filter(l => l.univ === S.cur.univ);
-  sheet(`<h2>Mes implantations</h2>
-   <p>Garde une implantation réussie sous un nom, puis rappelle-la sur un autre magasin.</p>
-   <div class="grp"><div class="f"><label>Nom</label><input id="layName" placeholder="ex : Gamm Vert 133 cm chien" autocapitalize="sentences"></div></div>
+  sheet(`<h2>Descentes types</h2>
+   <p>Enregistre l'implantation en cours comme module réutilisable. Tu la retrouveras sur l'accueil, et tu pourras la simuler dans n'importe quelle gondole.</p>
+   <div class="grp"><div class="f"><label>Nom</label><input id="layName" placeholder="ex : Descente Gustav 5 tablettes" autocapitalize="sentences"></div></div>
    <button class="btn p" data-act="lay-save">${ic('save')} Enregistrer cette implantation</button>
    ${mine.length ? `<p style="margin:16px 0 6px"><b>Enregistrées — ${UNIV[S.cur.univ]}</b></p>` + mine.map(l => `
      <div class="grp"><div class="f" style="min-height:56px">
@@ -5200,33 +5131,8 @@ function onboardingDemo() {
    voisines floutées, éclairage de plafond. Rien de photographique, juste de quoi
    montrer au client à quoi ressemblera son rayon dans son magasin.
 */
-let sceneOn = false;
 
-function storeScene(w, h) {
-  // décor plat : mur, sol, gondoles voisines suggérées par des tablettes Shelf Beige
-  return `<svg class="scene" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice">
-    <rect width="${w}" height="${h*.74}" fill="var(--bubi-bg)"/>
-    <rect y="${h*.74}" width="${w}" height="${h*.26}" fill="var(--bubi-cream)" opacity=".55"/>
-    <line x1="0" y1="${h*.74}" x2="${w}" y2="${h*.74}" stroke="var(--bubi-border)" stroke-width="2"/>
-    ${[0,1,2,3].map(i => `<rect x="${-w*.02}" y="${h*(.28+i*.13)}" width="${w*.17}" height="${h*.02}" fill="var(--bubi-shelf)" opacity=".6"/><rect x="${w*.85}" y="${h*(.30+i*.13)}" width="${w*.19}" height="${h*.02}" fill="var(--bubi-shelf)" opacity=".6"/>`).join('')}
-  </svg>`;
-}
 
-function toggleScene() {
-  sceneOn = !sceneOn;
-  const el = $('pres');
-  if (!el) return;
-  const old = el.querySelector('.scene');
-  if (old) old.remove();
-  if (sceneOn) el.insertAdjacentHTML('afterbegin', storeScene(1600, 1000));
-  el.classList.toggle('withScene', sceneOn);
-  // le rayon est redessiné : tablettes réelles au lieu du plan technique
-  const wrap = $('presWrap');
-  if (wrap) {
-    wrap.innerHTML = gondolaSVG(false, true, sceneOn);
-    presApply();
-  }
-}
 
 /* ================= AJOUTER UNE GAMME ENTIÈRE ================= */
 /* Combien de linéaire réclame une sélection, et de combien on dispose. */
@@ -5811,6 +5717,150 @@ function dupToStoreGo() {
   toast('Plan copié vers ' + st);
 }
 
+/* ================= DESCENTES TYPES =================
+   Une descente type est un module d'implantation prêt à poser : une gamme, un nombre
+   de tablettes, une largeur. On la construit une fois, on la retrouve depuis l'accueil,
+   on la simule dans l'espace disponible chez le client, puis on l'installe. Les
+   facings s'ajustent à la largeur réelle et les niveaux excédentaires se replient.
+*/
+function layouts() {
+  return loadLayouts().sort((a, b) => b.date - a.date);
+}
+
+/* Gamme dominante d'une descente, pour la reconnaître d'un coup d'œil. */
+function layoutBrand(l) {
+  const w = {};
+  l.shelves.forEach(sh => sh.items.forEach(it => {
+    const p = BY_REF[it.ref];
+    if (p) w[p.cat] = (w[p.cat] || 0) + p.w * it.f;
+  }));
+  const e = Object.entries(w).sort((a, b) => b[1] - a[1])[0];
+  return e ? e[0] : '—';
+}
+
+function layoutRefs(l) {
+  return new Set(l.shelves.flatMap(sh => sh.items.filter(i => !i.gap).map(i => i.ref))).size;
+}
+
+/* Adapte une descente à une gondole donnée : on garde l'ordre et les proportions,
+   on réduit les facings si c'est plus étroit, on répartit si le nombre de tablettes
+   diffère. Rien n'est perdu tant qu'il reste de la place. */
+function fitLayout(l, W, N) {
+  const src = l.shelves.map(sh => sh.items.filter(i => !i.gap && BY_REF[i.ref]).map(i => ({ ...i, id: uid() })));
+  const out = Array.from({ length: N }, () => ({ items: [] }));
+  const flat = [];
+  src.forEach((row, i) => row.forEach(it => flat.push({ it, from: i })));
+  if (!flat.length) return { shelves: out, gardees: 0, perdues: 0 };
+
+  // on conserve la répartition d'origine, ramenée au nombre de tablettes demandé
+  const ratio = N / Math.max(1, l.shelves.length);
+  let perdues = 0;
+  flat.forEach(({ it, from }) => {
+    let cible = Math.min(N - 1, Math.round(from * ratio));
+    const p = BY_REF[it.ref];
+    let place = false;
+    for (let k = 0; k < N && !place; k++) {
+      const si = Math.min(N - 1, Math.max(0, cible + (k % 2 ? k : -k)));
+      const reste = W - shelfW(out[si]);
+      if (reste >= p.w) {
+        it.f = Math.max(1, Math.min(it.f, Math.floor(reste / p.w)));
+        out[si].items.push(it);
+        place = true;
+      }
+    }
+    if (!place) perdues++;
+  });
+  return { shelves: out, gardees: flat.length - perdues, perdues };
+}
+
+/* Écran de simulation : on entre la place dont on dispose, on voit le résultat. */
+function simulateLayout(id) {
+  const l = loadLayouts().find(x => x.id === id);
+  if (!l) return;
+  const W = S.simW || l.W;
+  const N = S.simN || l.shelves.length;
+  const r = fitLayout(l, W, N);
+  const preview = { W, H: l.H, shelves: r.shelves, univ: l.univ };
+  const lin = r.shelves.reduce((a, sh) => a + shelfW(sh), 0);
+  sheet(`<h2>${esc(l.name)}</h2>
+   <p>${esc(layoutBrand(l))} · ${layoutRefs(l)} références · conçue pour ${l.W} cm sur ${l.shelves.length} tablettes.</p>
+   <p class="lbl2">Place disponible chez le client</p>
+   <div class="grp">
+     <div class="f"><label>Largeur</label><input id="simW" type="number" inputmode="numeric" value="${W}"><span class="unit">cm</span></div>
+     <div class="f"><label>Tablettes</label><input id="simN" type="number" inputmode="numeric" value="${N}"></div>
+   </div>
+   <button class="btn" data-act="sim-run" data-id="${id}">Simuler</button>
+   <div class="simPrev">${miniPlan(r.shelves, W, l.H)}</div>
+   <div class="stats" style="padding:8px 0 4px">
+     <div class="st"><b>${r.gardees}</b>emplacements</div>
+     <div class="st"><b>${Math.round(lin)} cm</b>occupés</div>
+     <div class="st"><b>${Math.round(lin / (W * N) * 100)} %</b>remplissage</div>
+     ${r.perdues ? `<div class="st"><b>${r.perdues}</b>hors place</div>` : ''}
+   </div>
+   ${r.perdues ? `<p>${r.perdues} emplacement${r.perdues>1?'s ne rentrent':' ne rentre'} pas dans cette gondole. Élargis, ajoute une tablette, ou installe quand même : le reste sera posé.</p>` : ''}
+   <button class="btn p" data-act="sim-new" data-id="${id}">Créer un plan avec cette descente</button>
+   ${S.cur ? `<button class="btn" data-act="sim-insert" data-id="${id}">Installer dans le plan ouvert</button>` : ''}
+   <button class="btn d" data-act="lay-del" data-id="${id}">Supprimer cette descente</button>
+   <button class="btn" data-act="close">Fermer</button>`);
+}
+
+function runSimulation(id) {
+  S.simW = Math.max(30, Math.min(400, parseInt($('simW').value, 10) || 0));
+  S.simN = Math.max(1, Math.min(15, parseInt($('simN').value, 10) || 1));
+  simulateLayout(id);
+}
+
+/* Crée un plan neuf à partir de la descente, aux dimensions simulées. */
+function newFromLayout(id) {
+  const l = loadLayouts().find(x => x.id === id);
+  if (!l) return;
+  const W = S.simW || l.W, N = S.simN || l.shelves.length;
+  sheet(`<h2>Nouveau plan</h2>
+   <p>${esc(l.name)} · ${W} cm sur ${N} tablettes.</p>
+   <div class="grp">
+     <div class="f"><label>Magasin</label><input id="nlStore" placeholder="Gamm Vert Muret" autocapitalize="words"></div>
+     <div class="f"><label>Plan</label><input id="nlName" value="${esc(l.name)}"></div>
+   </div>
+   <button class="btn p" data-act="sim-create" data-id="${id}">Créer</button>
+   <button class="btn" data-act="close">Annuler</button>`);
+  setTimeout(() => { const e = $('nlStore'); if (e) e.focus(); }, 180);
+}
+
+function createFromLayout(id) {
+  const l = loadLayouts().find(x => x.id === id);
+  if (!l) return;
+  const st = ($('nlStore').value || '').trim();
+  if (!st) { toast('Indique le magasin'); return; }
+  const W = S.simW || l.W, N = S.simN || l.shelves.length;
+  const r = fitLayout(l, W, N);
+  const p = {
+    id: uid(), store: st, name: ($('nlName').value || '').trim() || l.name,
+    univ: l.univ, W, H: l.H, D: l.D || 40,
+    shelves: r.shelves, status: 'brouillon',
+    created: Date.now(), updated: Date.now()
+  };
+  S.projects.push(p);
+  store.save(S.projects);
+  closeSheet();
+  openProject(p.id);
+  toast(`${r.gardees} emplacements installés`);
+}
+
+/* Ajoute la descente au plan ouvert, dans la place restante. */
+function insertLayout(id) {
+  const l = loadLayouts().find(x => x.id === id);
+  if (!l || !S.cur) return;
+  const r = fitLayout(l, S.cur.W, S.cur.shelves.length);
+  let n = 0;
+  r.shelves.forEach((row, i) => row.items.forEach(it => {
+    const p = BY_REF[it.ref];
+    if (S.cur.W - shelfW(S.cur.shelves[i]) >= p.w) { S.cur.shelves[i].items.push(it); n++; }
+  }));
+  closeSheet();
+  commit(`${n} emplacements ajoutés depuis « ${l.name} »`);
+  refreshCounts();
+}
+
 /* ---- menu / exports ---- */
 
 function menu() {
@@ -5819,7 +5869,7 @@ function menu() {
   <button class="btn p" data-act="order">${ic('tray')} Commande à passer</button>
   <button class="btn" data-act="share">${ic('doc')} Partager</button>
   <button class="btn" data-act="present">${ic('play')} Mode présentation</button>
-  <button class="btn" data-act="layouts">${ic('folder')} Mes implantations</button>
+  <button class="btn" data-act="layouts">${ic('folder')} Descentes types</button>
   <button class="btn" data-act="settings">${ic('cog')} Réglages</button>
   <button class="btn" data-act="close" style="margin-top:14px">Fermer</button>`);
 }
@@ -5830,13 +5880,11 @@ function wizardSheet() {
   <p>Quatre façons de partir, de la plus guidée à la plus libre.</p>
   <button class="btn p" data-act="prof-open">${ic('tray')} Depuis une proforma</button>
   <button class="btn" data-act="addall-sheet">${ic('grid')} Ajouter une gamme entière</button>
-  <button class="btn" data-act="autofill-sheet">${ic('wand')} Remplissage automatique</button>
-  <button class="btn" data-act="optimize">${ic('grid')} Réorganiser l'existant</button>
+  <button class="btn" data-act="pick-layout">${ic('folder')} Installer une descente type</button>
   <button class="btn" data-act="spaceplanner">${ic('ruler')} Calculer la place nécessaire</button>
   <p style="margin-top:16px"><b>Vérifier</b></p>
   <button class="btn" data-act="compare">${ic('chart')} Avant / après</button>
   <button class="btn p" data-act="commercial-analysis">${ic('chart')} Analyse commerciale</button>
-  <button class="btn" data-act="analysis">${ic('chart')} Diagnostic du rayon</button>
   <button class="btn" data-act="performance">${ic('chart')} Ventes et contraintes</button>
   <button class="btn" data-act="close">Fermer</button>`);
 }
@@ -5847,7 +5895,6 @@ function settingsSheet() {
   <button class="btn" data-act="photosheet">${ic('photo')} Photos produits</button>
   <button class="btn" data-act="dims">${ic('ruler')} Dimensions des boîtes</button>
   <button class="btn" data-act="edit-project">${ic('cog')} Dimensions de la gondole</button>
-  <button class="btn" data-act="templates">${ic('grid')} Gabarits de gondole</button>
   <p style="margin-top:16px"><b>Où en est ce plan ?</b></p>
   <div class="qs">${Object.entries(STATUS).map(([k, v]) => `<button data-act="setstatus" data-v="${k}" class="${statusOf(S.cur) === k ? 'on' : ''}">${v.l}</button>`).join('')}</div>
   <p style="margin-top:16px"><b>Ce projet</b></p>
@@ -5978,13 +6025,12 @@ function presentation() {
   const d = document.createElement('div');
   d.className = 'pres';
   d.id = 'pres';
-  d.innerHTML = `<div class="presWrap" id="presWrap">${gondolaSVG(false, true, sceneOn)}</div>
+  d.innerHTML = `<div class="presWrap" id="presWrap">${gondolaSVG(false, true)}</div>
     <div class="presBar">
       <button class="nb" data-act="pres-zoom" data-v="-1">−</button>
       <span id="presPct">100 %</span>
       <button class="nb" data-act="pres-zoom" data-v="1">+</button>
       <button class="nb" data-act="pres-reset">Ajuster</button>
-      <button class="nb" data-act="pres-scene">Magasin</button>
     </div>
     <button class="presClose" data-act="close-pres" aria-label="Fermer">${ic('plus', 22)}</button>`;
   document.body.appendChild(d);
@@ -6331,6 +6377,32 @@ document.addEventListener('click', e => {
     case 'lay-save':
       saveLayout();
       break;
+    case 'pick-layout': {
+      const ls = layouts().filter(l => l.univ === S.cur.univ);
+      if (!ls.length) { toast('Aucune descente enregistrée pour cet univers'); break; }
+      sheet(`<h2>Installer une descente</h2>
+       <p>Elle sera adaptée à ta gondole : ${S.cur.W} cm sur ${S.cur.shelves.length} tablettes.</p>
+       ${ls.map(l => `<button class="btn" data-act="sim" data-id="${l.id}">${esc(l.name)}<br><span style="font-size:12px;opacity:.7">${esc(layoutBrand(l))} · ${l.shelves.length} tablettes · ${layoutRefs(l)} réf.</span></button>`).join('')}
+       <button class="btn" data-act="close">Annuler</button>`);
+      break;
+    }
+    case 'sim':
+      S.simW = S.cur ? S.cur.W : null;
+      S.simN = S.cur ? S.cur.shelves.length : null;
+      simulateLayout(el.dataset.id);
+      break;
+    case 'sim-run':
+      runSimulation(el.dataset.id);
+      break;
+    case 'sim-new':
+      newFromLayout(el.dataset.id);
+      break;
+    case 'sim-create':
+      createFromLayout(el.dataset.id);
+      break;
+    case 'sim-insert':
+      insertLayout(el.dataset.id);
+      break;
     case 'lay-apply':
       applyLayout(el.dataset.id);
       break;
@@ -6385,42 +6457,11 @@ document.addEventListener('click', e => {
     case 'spacecalc':
       showSpaceResult();
       break;
-    case 'autofill-sheet':
-      autoFillSheet();
-      break;
-    case 'autofill-go': {
-      const sc = $('af_scope').value,
-        mo = $('af_mode').value,
-        dy = Math.max(1, +$('af_days').value || 14),
-        mn = Math.max(1, +$('af_min').value || 1),
-        mx = Math.max(mn, +$('af_max').value || 6);
-      smartAutoFill(sc, mo, dy, mn, mx);
-      break;
-    }
-    case 'autofill-run':
-      smartAutoFill(el.dataset.scope, 'sales', +el.dataset.days || 14, +el.dataset.min || 1, +el.dataset.max || 6);
-      break;
     case 'performance':
       performanceSheet();
       break;
     case 'saveperf':
       savePerformance();
-      break;
-    case 'analysis':
-      analysisSheet();
-      break;
-    case 'optimize':
-      optimizeSheet();
-      break;
-    case 'optmode':
-      closeSheet();
-      smartOptimize(v);
-      break;
-    case 'templates':
-      templateSheet();
-      break;
-    case 'template':
-      applyTemplate(v);
       break;
     case 'commercial':
       commercialSheet();
@@ -6437,9 +6478,6 @@ document.addEventListener('click', e => {
       break;
     case 'pres-zoom':
       presZoom(+v > 0 ? 1.25 : 1 / 1.25);
-      break;
-    case 'pres-scene':
-      toggleScene();
       break;
     case 'addall-sheet':
       addAllSheet();
