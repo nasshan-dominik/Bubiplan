@@ -503,9 +503,6 @@ button {
   padding-bottom: var(--sab)
 }
 
-.dr.min {
-  height: calc(58px + var(--sab))
-}
 
 .grab {
   width: 36px;
@@ -1976,6 +1973,64 @@ html, body {
 
 .cwWrap .cw { flex: 1; min-height: 0; }
 .undobar { bottom: 10px; }
+
+/* ============================================================
+   CATALOGUE : TROIS HAUTEURS SUR TÉLÉPHONE
+   ============================================================ */
+.dr {
+  transition: height .22s cubic-bezier(.2, .8, .2, 1);
+}
+
+.dr.min { height: calc(62px + var(--sab)); }
+.dr.half { height: 52%; }
+.dr.full { height: 88%; }
+
+.dr.min .chips,
+.dr.min .pl,
+.dr.min .seg { display: none; }
+
+/* la poignée est le curseur de hauteur : on la rend explicite */
+.dr .grab { cursor: grab; touch-action: none; }
+.dr .grab:active { cursor: grabbing; }
+.dr .grab::before { width: 44px; height: 5px; }
+
+/* en plein écran, le catalogue passe devant le plan */
+.dr.full { box-shadow: 0 -6px 24px rgba(40, 50, 56, .10); }
+
+@media (min-width: 900px) {
+  .dr, .dr.min, .dr.half, .dr.full { height: auto !important; }
+  .dr.min .chips, .dr.min .seg { display: flex; }
+  .dr.min .pl { display: grid; }
+}
+
+/* ============================================================
+   BARRE DE FILTRES COMPACTE — le catalogue commence plus haut
+   ============================================================ */
+.dr .seg:empty { display: none; }
+
+.dr .sb { padding: 2px 12px 6px; }
+.dr .sb .in { padding: 9px 10px; }
+
+.dr .chips { padding: 0 12px 6px; gap: 6px; }
+.dr .chip { padding: 0 13px; min-height: 44px; font-size: 13.5px; }
+
+.chip.univ { font-weight: 600; }
+
+.sepv {
+  width: 1px;
+  align-self: center;
+  height: 22px;
+  background: var(--bubi-border);
+  flex: 0 0 auto;
+  margin: 0 2px;
+}
+
+@media (max-width: 620px) {
+  .dr .grab { height: 18px; }
+  .dr .chips { padding-bottom: 5px; }
+  .pi { min-height: 72px; padding: 7px; }
+  .pi .ph { width: 54px; height: 54px; }
+}
 </style>
 </head>
 <body>
@@ -2833,6 +2888,7 @@ async function fetchAndDetour(refs, onProgress) {
         });
         const clean = await detourImage(raw);
         UPHOTO[ref] = clean;
+        dropShortURL(ref);
         delete PBOX[ref];     // la photo a changé : sa zone utile est à remesurer
         ok++;
         if (clean !== raw) cut++;
@@ -2937,6 +2993,67 @@ function loadPhotoStore() {
   });
 }
 
+/* ================= RÉFÉRENCES LÉGÈRES AUX VISUELS =================
+   Une photo détourée, comme un logo de marque, pèse plusieurs dizaines de milliers de
+   caractères. Insérée telle quelle dans le dessin, elle y est recopiée une fois par
+   boîte : un rayon garni produisait un dessin de plus d'un mégaoctet, reconstruit à
+   chaque geste. D'où la lenteur. On enregistre donc chaque image une seule fois dans
+   le navigateur et on n'en manipule plus qu'une adresse courte. Les exports, eux, ont
+   besoin de l'image complète : on la remet au moment de l'export.
+*/
+const UURL = {};        // clé → adresse courte
+const URL2REF = {};     // adresse courte → clé, pour retrouver l'image aux exports
+
+function shortData(key, data) {
+  if (UURL[key]) return UURL[key];
+  if (!data || !data.startsWith('data:')) return null;
+  try {
+    const comma = data.indexOf(',');
+    const mime = data.slice(5, data.indexOf(';'));
+    const bin = atob(data.slice(comma + 1));
+    const buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    const u = URL.createObjectURL(new Blob([buf], { type: mime }));
+    UURL[key] = u;
+    URL2REF[u] = key;
+    return u;
+  } catch (e) {
+    return data;   // navigateur récalcitrant : on garde l'image intégrée
+  }
+}
+
+function shortURL(ref) {
+  return shortData(ref, UPHOTO[ref]);
+}
+
+function dropShortURL(ref) {
+  const u = UURL[ref];
+  if (!u) return;
+  try { URL.revokeObjectURL(u); } catch (e) {}
+  delete URL2REF[u];
+  delete UURL[ref];
+}
+
+const LOGO_URL = {};
+
+function logoURL(cat) {
+  if (LOGO_URL[cat] === undefined) {
+    LOGO_URL[cat] = shortData('logo:' + cat, LOGOS[cat] && LOGOS[cat].white) || (LOGOS[cat] && LOGOS[cat].white);
+  }
+  return LOGO_URL[cat];
+}
+
+/* Avant un export, on remet les images complètes à la place des adresses courtes. */
+function inlinePhotoURLs(str) {
+  let out = String(str);
+  Object.keys(URL2REF).forEach(u => {
+    const k = URL2REF[u];
+    const full = k.indexOf('logo:') === 0 ? (LOGOS[k.slice(5)] || {}).white : UPHOTO[k];
+    if (full && out.includes(u)) out = out.split(u).join(full);
+  });
+  return out;
+}
+
 const UK = 'bubiplan_userphotos';
 let UPHOTO = {};
 try {
@@ -2954,7 +3071,7 @@ function saveUPhotos(refs) {
 
 
 function photoURL(ref) {
-  if (UPHOTO[ref]) return UPHOTO[ref];
+  if (UPHOTO[ref]) return shortURL(ref) || UPHOTO[ref];
   const u = PHOTO[ref];
   return u && u !== 'none' ? u : null;
 }
@@ -3001,6 +3118,7 @@ function importPhotos(files, forceRef) {
       // détourage sur fond transparent + recadrage, puis stockage
       detourImage(rd.result).then(clean => {
         UPHOTO[ref] = clean;
+        dropShortURL(ref);
         delete PBOX[ref];
         ok++;
         fin();
@@ -3177,7 +3295,7 @@ const S = {
   cat: '',
   fmt: '',
   univ: 'chien',
-  min: false,
+  drawer: 'half',   // hauteur du catalogue sur téléphone : min, half, full
   homeFilter: 'encours',  // vue de la bibliothèque
   homeQ: '',             // recherche sur l'accueil
   side: 'right',   // côté où viennent se poser les nouveaux produits
@@ -3575,9 +3693,9 @@ function renderEditor() {
         <div class="cw" id="cw"></div>
         <div class="undobar" id="undobar"></div>
       </div>
-      <div class="dr${S.min?' min':''}" id="dr">
+      <div class="dr ${S.drawer}" id="dr">
         <div class="grab" data-act="drawer"></div>
-        <div class="sb"><button class="nb tg" data-act="drawer" id="bDr">${S.min?ic('right',18):ic('left',18)}</button><div class="in">${ic('search',18)}<input id="q" placeholder="Réf. ou nom de produit" value="${esc(S.q)}" autocomplete="off" autocorrect="off"></div><button class="nb side" data-act="side" id="bSide" title="Côté d'insertion">${S.side==='left'?ic('left',19):ic('right',19)}</button><span class="cnt" id="cnt"></span></div>
+        <div class="sb"><button class="nb tg" data-act="drawer" id="bDr" aria-label="Hauteur du catalogue">${drawerIcon()}</button><div class="in">${ic('search',18)}<input id="q" placeholder="Réf. ou nom de produit" value="${esc(S.q)}" autocomplete="off" autocorrect="off"></div><button class="nb side" data-act="side" id="bSide" title="Côté d'insertion">${S.side==='left'?ic('left',19):ic('right',19)}</button><span class="cnt" id="cnt"></span></div>
         <div class="seg" id="segb"></div>
         <div class="chips" id="chipsBrand"></div>
         <div class="chips" id="chips"></div>
@@ -3585,9 +3703,13 @@ function renderEditor() {
       </div>
     </div>
   </div>`;
+  let qTimer = null;
+  $('q').addEventListener('focus', () => { if (window.innerWidth < 900 && S.drawer !== 'full') setDrawer('full'); });
   $('q').addEventListener('input', e => {
     S.q = e.target.value;
-    renderList();
+    // on attend une courte pause avant de reconstruire : la frappe reste fluide
+    clearTimeout(qTimer);
+    qTimer = setTimeout(renderList, 110);
   });
   renderFilters();
   renderList();
@@ -3595,15 +3717,25 @@ function renderEditor() {
 }
 
 function renderFilters() {
-  $('segb').innerHTML =
-    `<button data-act="univ2" data-v="chien" class="${S.univ==='chien'?'on':''}">Chien</button><button data-act="univ2" data-v="chat" class="${S.univ==='chat'?'on':''}">Chat</button>` +
-    '';
-  // marques en puces, sous le segment univers
-  $('chipsBrand').innerHTML = ['', ...BRANDS].map(c =>
-    `<span class="chip${S.cat === c ? ' on' : ''}" data-act="cat" data-v="${esc(c)}">${c || 'Toutes'}</span>`).join('');
+  // univers et marques sur une même rangée : deux fois moins de hauteur perdue
+  $('segb').innerHTML = '';
+  $('chipsBrand').innerHTML =
+    `<span class="chip univ${S.univ==='chien'?' on':''}" data-act="univ2" data-v="chien">Chien</span>` +
+    `<span class="chip univ${S.univ==='chat'?' on':''}" data-act="univ2" data-v="chat">Chat</span>` +
+    `<span class="sepv"></span>` +
+    ['', ...BRANDS].map(c =>
+      `<span class="chip${S.cat === c ? ' on' : ''}" data-act="cat" data-v="${esc(c)}">${c || 'Toutes'}</span>`).join('');
   const fl = FMTS(S.univ, S.cat);
   if (S.fmt && !fl.includes(S.fmt)) S.fmt = '';
   $('chips').innerHTML = ['', ...fl].map(f => `<span class="chip${S.fmt===f?' on':''}" data-act="fmt" data-v="${f}">${f||'Tous formats'}</span>`).join('');
+}
+
+const PLUS_ICON = null;   // calculée à la première utilisation
+let _plus = '';
+
+function plusIcon() {
+  if (!_plus) _plus = ic('plus', 16);
+  return _plus;
 }
 
 function renderList() {
@@ -3618,7 +3750,7 @@ function renderList() {
         <div class="n">${esc(p.name.replace(p.cat + ' ', '').replace(p.cat + ', ', ''))}</div>
         <div class="r dim">Réf. ${p.ref} · ${p.w} × ${p.h} cm${p.st > 1 || p.df > 1 ? ' · display ' + p.df + '×' + p.st : ''}</div>
       </div>
-      ${counts[p.ref] ? `<span class="bd">${counts[p.ref]}</span>` : `<span class="add">${ic('plus', 16)}</span>`}
+      ${counts[p.ref] ? `<span class="bd">${counts[p.ref]}</span>` : `<span class="add">${plusIcon()}</span>`}
     </div>`).join('') :
     '<div style="padding:20px;color:var(--mut);font-size:13px;grid-column:1/-1;text-align:center">Aucun produit</div>';
 }
@@ -3641,7 +3773,7 @@ function refreshCounts() {
       slot.textContent = c[r];
     } else if (slot.className !== 'add') {
       slot.className = 'add';
-      slot.innerHTML = ic('plus', 16);
+      slot.innerHTML = plusIcon();
     }
   });
 }
@@ -4088,7 +4220,7 @@ function commercialSheetNow() {
   });
   const occ = Math.round(used / (W * N) * 100),
     date = new Date().toLocaleDateString('fr-FR');
-  const svg = resolveTokens(gondolaSVG(false, true));
+  const svg = inlinePhotoURLs(resolveTokens(gondolaSVG(false, true)));
   const remote = [...new Set(S.cur.shelves.flatMap(sh => sh.items.filter(i => !i.gap).map(i => i.ref)))]
     .filter(r => !UPHOTO[r] && PHOTO[r] && PHOTO[r] !== 'none').length;
   const html = `<!doctype html>
@@ -4142,6 +4274,70 @@ ${TOKEN_STYLE}
     type: 'text/html'
   }), fileName('html'), () => '<pre>Fiche commerciale prête à imprimer en PDF.</pre>');
 }
+
+/* ================= HAUTEUR DU CATALOGUE =================
+   Sur téléphone, le catalogue partageait l'écran à parts fixes : les cartes produits se
+   retrouvaient trop bas, à la limite du pouce. Il a maintenant trois hauteurs — replié,
+   moitié, plein écran — que l'on change d'un appui sur la poignée, et qu'on peut aussi
+   régler au doigt en faisant glisser cette poignée. Le réglage est mémorisé.
+*/
+const DRAWERKEY = 'bubiplan_drawer';
+try { S.drawer = lsGet(DRAWERKEY) || (window.innerWidth < 900 ? 'full' : 'half'); } catch (e) {}
+
+function drawerIcon() {
+  return S.drawer === 'full' ? ic('right', 18) : ic('left', 18);
+}
+
+function setDrawer(state) {
+  S.drawer = state;
+  lsSet(DRAWERKEY, state);
+  const el = $('dr');
+  if (el) {
+    el.classList.remove('min', 'half', 'full');
+    el.classList.add(state);
+    el.style.height = '';
+  }
+  const b = $('bDr');
+  if (b) b.innerHTML = drawerIcon();
+  haptic(6);
+}
+
+function cycleDrawer() {
+  setDrawer(S.drawer === 'half' ? 'full' : S.drawer === 'full' ? 'min' : 'half');
+}
+
+/* Glisser la poignée règle librement la hauteur, puis on s'aimante au palier le plus proche. */
+function bindDrawerDrag() {
+  let start = null;
+  const grab = () => document.querySelector('.dr .grab');
+  const onDown = e => {
+    const g = e.target.closest('.grab');
+    if (!g || window.innerWidth >= 900) return;
+    const t = e.touches ? e.touches[0] : e;
+    start = { y: t.clientY, h: $('dr').getBoundingClientRect().height };
+    e.preventDefault();
+  };
+  const onMove = e => {
+    if (!start) return;
+    const t = e.touches ? e.touches[0] : e;
+    const h = Math.max(58, Math.min(window.innerHeight * .9, start.h + (start.y - t.clientY)));
+    $('dr').style.height = h + 'px';
+    e.preventDefault();
+  };
+  const onUp = () => {
+    if (!start) return;
+    const h = $('dr').getBoundingClientRect().height / window.innerHeight;
+    start = null;
+    setDrawer(h < .22 ? 'min' : h < .68 ? 'half' : 'full');
+  };
+  document.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousedown', onDown);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchend', onUp);
+  document.addEventListener('mouseup', onUp);
+}
+bindDrawerDrag();
 
 /* ================= SÉLECTION MULTIPLE =================
    Premier appui : point de départ. Deuxième appui sur le même niveau : toute la plage
@@ -4503,8 +4699,8 @@ function gondolaSVG(interactive, photos, scene) {
             s += `<image href="${url}" xlink:href="${url}" x="${pl.x}" y="${pl.y}" width="${pl.w}" height="${pl.h}" preserveAspectRatio="${pl.par}" clip-path="url(#${cid})"/>`;
           } else if (wOne > 16 && hOne > 10) {
             // pas de photo : le logo de la marque tient lieu de repère
-            const lg = LOGOS[p.cat], lw2 = Math.min(wOne - 6, 26), lh2 = lw2 * lg.h / lg.w;
-            if (lh2 < hOne - 4) s += `<image href="${lg.white}" xlink:href="${lg.white}" x="${x + (wOne - lw2) / 2}" y="${yy + (hOne - lh2) / 2}" width="${lw2}" height="${lh2}" opacity=".9"/>`;
+            const lg = LOGOS[p.cat], lu = logoURL(p.cat), lw2 = Math.min(wOne - 6, 26), lh2 = lw2 * lg.h / lg.w;
+            if (lh2 < hOne - 4) s += `<image href="${lu}" xlink:href="${lu}" x="${x + (wOne - lw2) / 2}" y="${yy + (hOne - lh2) / 2}" width="${lw2}" height="${lh2}" opacity=".9"/>`;
           }
         }
         // la référence n'est écrite sur la boîte qu'en l'absence de photo
@@ -4536,6 +4732,26 @@ function gondolaSVG(interactive, photos, scene) {
         }
         bx2 += wTot;
       });
+    }
+    // séparateurs : fins traits verticaux entre deux blocs, et joues aux extrémités
+    if (!scene && SEP.mode !== 'aucun') {
+      const blocks = shelfBlocks(shelf);
+      if (blocks.length) {
+        const hSep = Math.min(sh * .5, 26);
+        const draw = px => { s += `<rect x="${px - .8}" y="${y1 - hSep}" width="1.6" height="${hSep}" rx=".8" fill="var(--bubi-blueprint)" opacity=".75"/>`; };
+        let px = L;
+        if (SEP.ends) draw(px);
+        shelf.items.forEach((it, k) => {
+          const wIt = it.gap ? it.gap : BY_REF[it.ref].w * it.f;
+          px += wIt * sc;
+          const next = shelf.items[k + 1];
+          const cut = SEP.mode === 'chaque'
+            ? (!it.gap && next && !next.gap)
+            : (!it.gap && next && !next.gap && next.ref !== it.ref);
+          if (cut) draw(px);
+        });
+        if (SEP.ends) draw(L + shelfW(shelf) * sc);
+      }
     }
     if (interactive && i === S.shelf && S.insertAt != null) {
       const mx = L + S.insertAt * sc;
@@ -5233,6 +5449,46 @@ function shareSheet() {
   <button class="btn" data-act="close">Fermer</button>`);
 }
 
+/* ================= SÉPARATEURS DE RAYON =================
+   Les inter-produits qui maintiennent les boîtes droites et empêchent les gammes de se
+   mélanger. On en compte un entre deux blocs voisins, et l'usage courant ajoute une
+   joue à chaque extrémité du niveau. Le total part avec la commande : on n'installe
+   pas un rayon propre sans eux.
+*/
+const SEPKEY = 'bubiplan_sep';
+let SEP = { mode: 'entre', ends: true };
+try { Object.assign(SEP, JSON.parse(lsGet(SEPKEY) || '{}')); } catch (e) {}
+
+function saveSep() {
+  lsSet(SEPKEY, JSON.stringify(SEP));
+  if (S.cur) update();
+}
+
+/* Blocs de produits d'un niveau : deux emplacements voisins de même référence
+   n'en forment qu'un, on ne sépare pas une référence d'elle-même. */
+function shelfBlocks(shelf) {
+  const blocks = [];
+  shelf.items.forEach(it => {
+    if (it.gap || !BY_REF[it.ref]) return;
+    const last = blocks[blocks.length - 1];
+    if (last && last.ref === it.ref) last.items.push(it);
+    else blocks.push({ ref: it.ref, items: [it] });
+  });
+  return blocks;
+}
+
+function separatorCount() {
+  if (SEP.mode === 'aucun') return 0;
+  let n = 0;
+  S.cur.shelves.forEach(sh => {
+    const b = shelfBlocks(sh).length;
+    if (!b) return;
+    n += SEP.mode === 'chaque' ? b : b - 1;
+    if (SEP.ends) n += 2;
+  });
+  return n;
+}
+
 /* ================= COMMANDE À PASSER =================
    Le planogramme n'est pas une fin : ce qu'il faut, c'est la commande qui remplit le
    rayon. On calcule combien d'unités chaque référence demande pour tenir sa place,
@@ -5273,13 +5529,14 @@ function orderSheet() {
   const totUnits = lines.reduce((a, l) => a + l.qty, 0);
   const totColis = lines.reduce((a, l) => a + l.colis, 0);
   const totVal = lines.reduce((a, l) => a + l.qty * l.price, 0);
+  const seps = separatorCount();
   const fmts = [...new Set(lines.map(l => l.p.fmt))];
   sheet(`<h2>Commande à passer</h2>
    <p>Ce qu'il faut livrer pour remplir cette gondole une fois, profondeur comprise.</p>
    <div class="stats" style="padding:0 0 12px">
      <div class="st">Références<b>${lines.length}</b></div>
      <div class="st">Unités<b>${totUnits}</b></div>
-     <div class="st">Colis<b>${totColis}</b></div>
+     <div class="st">Colis<b>${totColis}</b></div>${seps?`<div class="st">Séparateurs<b>${seps}</b></div>`:''}
      ${totVal ? `<div class="st">Valeur<b>${totVal.toFixed(0)} €</b></div>` : ''}
    </div>
    <p style="margin-bottom:6px"><b>Nombre d'unités par colis</b></p>
@@ -5293,6 +5550,14 @@ function orderSheet() {
      <span class="n">${esc(l.p.name)}</span>
      <span class="q">${l.colis} × ${l.carton}<small>${l.qty} u.</small></span>
    </div>`).join('')}</div>
+   <p style="margin:16px 0 6px"><b>Séparateurs de rayon</b></p>
+   <div class="qs">
+     <button data-act="sep-mode" data-v="entre" class="${SEP.mode==='entre'?'on':''}">Entre les produits</button>
+     <button data-act="sep-mode" data-v="chaque" class="${SEP.mode==='chaque'?'on':''}">Un par produit</button>
+     <button data-act="sep-mode" data-v="aucun" class="${SEP.mode==='aucun'?'on':''}">Aucun</button>
+   </div>
+   ${SEP.mode !== 'aucun' ? `<div class="qs"><button data-act="sep-ends" data-v="1" class="${SEP.ends?'on':''}">Avec joues d'extrémité</button><button data-act="sep-ends" data-v="0" class="${SEP.ends?'':'on'}">Sans joues</button></div>` : ''}
+   ${seps ? `<div class="ol"><span class="r">SEP</span><span class="n">Séparateur de rayon</span><span class="q">${seps}<small>pièces</small></span></div>` : ''}
    <button class="btn p" data-act="order-export">${ic('doc')} Bon de commande à imprimer</button>
    <button class="btn" data-act="order-csv">${ic('doc')} Bon de commande en tableur</button>
    <button class="btn" data-act="close">Fermer</button>`);
@@ -5312,6 +5577,7 @@ function orderExport() {
   const lines = orderLines();
   const totUnits = lines.reduce((a, l) => a + l.qty, 0);
   const totVal = lines.reduce((a, l) => a + l.qty * l.price, 0);
+  const seps = separatorCount();
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
   <title>Commande ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>
     @page { size: A4; margin: 14mm; }
@@ -5334,7 +5600,8 @@ function orderExport() {
   <table>
     <thead><tr><th>Réf.</th><th>Produit</th><th>Format</th><th class="n">Colis</th><th class="n">Par colis</th><th class="n">Unités</th>${totVal ? '<th class="n">Montant</th>' : ''}</tr></thead>
     <tbody>${lines.map(l => `<tr><td>${l.p.ref}</td><td>${esc(l.p.name)}</td><td>${l.p.fmt}</td><td class="n">${l.colis}</td><td class="n">${l.carton}</td><td class="n">${l.qty}</td>${totVal ? `<td class="n">${(l.qty*l.price).toFixed(2)} €</td>` : ''}</tr>`).join('')}</tbody>
-    <tfoot><tr><td colspan="5">${lines.length} références</td><td class="n">${totUnits}</td>${totVal ? `<td class="n">${totVal.toFixed(2)} €</td>` : ''}</tr></tfoot>
+    ${seps ? `<tr><td>SEP</td><td>Séparateur de rayon</td><td>—</td><td class="n">—</td><td class="n">—</td><td class="n">${seps}</td>${totVal ? '<td class="n"></td>' : ''}</tr>` : ''}
+    <tfoot><tr><td colspan="5">${lines.length} références${seps ? ' + séparateurs' : ''}</td><td class="n">${totUnits}</td>${totVal ? `<td class="n">${totVal.toFixed(2)} €</td>` : ''}</tr></tfoot>
   </table>
   <div class="sig"><div>Date et signature du client</div><div>Dominik — Bubimex</div></div>
   <p class="noprint" style="margin-top:20px"><button onclick="print()">Imprimer / Enregistrer en PDF</button></p>
@@ -5652,7 +5919,7 @@ function exportPNG(withPhotos = true) {
 }
 
 function exportPNGNow(withPhotos) {
-  const svg = gondolaSVG(false, withPhotos);
+  const svg = inlinePhotoURLs(resolveTokens(gondolaSVG(false, withPhotos)));
   const vb = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
   const w = +vb[1],
     h = +vb[2],
@@ -5865,6 +6132,16 @@ document.addEventListener('click', e => {
     case 'order':
       orderSheet();
       break;
+    case 'sep-mode':
+      SEP.mode = v;
+      saveSep();
+      orderSheet();
+      break;
+    case 'sep-ends':
+      SEP.ends = v === '1';
+      saveSep();
+      orderSheet();
+      break;
     case 'carton-save':
       saveCartons();
       break;
@@ -5915,9 +6192,7 @@ document.addEventListener('click', e => {
       settingsSheet();
       break;
     case 'drawer':
-      S.min = !S.min;
-      $('dr').classList.toggle('min', S.min);
-      $('bDr').textContent = S.min ? '▲' : '▼';
+      cycleDrawer();
       break;
     case 'univ2':
       S.univ = v === 'chien' || v === 'chat' ? v : (S.univ === 'chien' ? 'chat' : 'chien');
@@ -6085,7 +6360,7 @@ document.addEventListener('click', e => {
       break;
     case 'clearphotos':
       confirmBox('Supprimer les photos importées ?', 'Les photos web restent disponibles.', 'Supprimer', () => {
-        PRODUCTS.filter(p => p.univ === S.univ).forEach(p => { delete UPHOTO[p.ref]; delete PBOX[p.ref]; dbDelete(p.ref); });
+        PRODUCTS.filter(p => p.univ === S.univ).forEach(p => { dropShortURL(p.ref); delete UPHOTO[p.ref]; delete PBOX[p.ref]; dbDelete(p.ref); });
         savePBox();
         renderListIfEditor();
         drawGondola();
