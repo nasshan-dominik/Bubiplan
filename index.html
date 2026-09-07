@@ -2273,6 +2273,24 @@ html {
 }
 
 .descHint b { color: var(--bubi-graphite); }
+
+/* Zones de texte de la composition assistée */
+.aiBox {
+  width: 100%;
+  min-height: 128px;
+  max-height: 34vh;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: .5px solid var(--bubi-border);
+  background: var(--bubi-surface-2);
+  color: var(--bubi-graphite);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  resize: vertical;
+  -webkit-user-select: text;
+  user-select: text;
+}
 </style>
 </head>
 <body>
@@ -2428,10 +2446,10 @@ const CATALOGUE_RAW = [
   ["chien", "117",  "William's Optimal, sanglier, 400g",                       "William's",   "400g", 7.5, 7.5, 7.5, 2, 1],
   ["chien", "118",  "William's Optimal, canard/poulet, 400g",                  "William's",   "400g", 7.5, 7.5, 7.5, 2, 1],
   ["chien", "119",  "William's Optimal, renne/bœuf, 400g",                     "William's",   "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "120",  "William's Optimal, saumon/poisson blanc, 395g",           "William's",   "395g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "121",  "William's Junior, poulet, 395g",                          "William's",   "395g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "122",  "William's Junior, poulet/agneau, 395g",                   "William's",   "395g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "123",  "William's Senior, bœuf/poulet, 395g",                     "William's",   "395g", 7.5, 7.5, 7.5, 2, 1],
+  ["chien", "120",  "William's Optimal, saumon/poisson blanc, 395g",           "William's",   "400g" , 7.5, 7.5, 7.5, 2, 1],
+  ["chien", "121",  "William's Junior, poulet, 395g",                          "William's",   "400g" , 7.5, 7.5, 7.5, 2, 1],
+  ["chien", "122",  "William's Junior, poulet/agneau, 395g",                   "William's",   "400g" , 7.5, 7.5, 7.5, 2, 1],
+  ["chien", "123",  "William's Senior, bœuf/poulet, 395g",                     "William's",   "400g" , 7.5, 7.5, 7.5, 2, 1],
   ["chien", "130",  "William's Optimal, poulet, 800g",                         "William's",   "800g", 10,  12,  10,  2, 1],
   ["chien", "131",  "William's Optimal, agneau, 800g",                         "William's",   "800g", 10,  12,  10,  2, 1],
   ["chien", "132",  "William's Optimal, sanglier, 800g",                       "William's",   "800g", 10,  12,  10,  2, 1],
@@ -2474,12 +2492,12 @@ const CATALOGUE_RAW = [
   ["chat",  "9062", "Bubi Nature Vitality Care, thon/poulet, 70g",             "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
   ["chat",  "9063", "Bubi Nature Junior, poulet, 70g",                         "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
   ["chat",  "9064", "Bubi Nature Sterilised, filet de poulet, 70g",            "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
-  ["chat",  "9013", "Bubi Nature Complet, thon/crevettes en gelée, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
-  ["chat",  "9014", "Bubi Nature Complet, thon/œufs de thon en gelée, 85g",    "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
-  ["chat",  "9015", "Bubi Nature Complet, thon/maquereau en gelée, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
-  ["chat",  "9016", "Bubi Nature Complet, thon/bar en gelée, 85g",             "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
-  ["chat",  "9017", "Bubi Nature Complet, poulet en bouillon sterilised, 85g", "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
-  ["chat",  "9018", "Bubi Nature Complet, poulet/thon en bouillon, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
+  ["chat",  "9013", "Bubi Nature Complet, thon/crevettes en gelée, 85g",       "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
+  ["chat",  "9014", "Bubi Nature Complet, thon/œufs de thon en gelée, 85g",    "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
+  ["chat",  "9015", "Bubi Nature Complet, thon/maquereau en gelée, 85g",       "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
+  ["chat",  "9016", "Bubi Nature Complet, thon/bar en gelée, 85g",             "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
+  ["chat",  "9017", "Bubi Nature Complet, poulet en bouillon sterilised, 85g", "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
+  ["chat",  "9018", "Bubi Nature Complet, poulet/thon en bouillon, 85g",       "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
   ["chat",  "9070", "Bubi Nature, thon, 140g",                                 "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
   ["chat",  "9071", "Bubi Nature, thon/crevettes, 140g",                       "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
   ["chat",  "9072", "Bubi Nature, thon/poulet, 140g",                          "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
@@ -2502,27 +2520,27 @@ const CATALOGUE_RAW = [
   ["chat",  "9067", "Bubi Nature Soupe au canard, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
   ["chat",  "9068", "Bubi Nature Soupe au thon, 135g",                         "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
   ["chat",  "9069", "Bubi Nature Soupe au poulet, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
-  ["chat",  "G500", "Gustav Mousse, canard, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G501", "Gustav Mousse, bœuf, 85g",                                "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G502", "Gustav Mousse, poulet, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G503", "Gustav Mousse, saumon, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G504", "Gustav Mousse, volaille et foie, 85g",                    "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G510", "Gustav Mousse Junior, poulet, 85g",                       "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G511", "Gustav Mousse Stérilisé, lapin, 85g",                     "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G515", "Gustav Mousse Senior, dinde, 85g",                        "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G531", "Gustav Fondant, bœuf, 85g",                               "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G532", "Gustav Fondant, poulet, 85g",                             "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G533", "Gustav Fondant, saumon, 85g",                             "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G551", "Gustav Ragoût, veau, 85g",                                "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G552", "Gustav Ragoût, poulet, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G553", "Gustav Ragoût, saumon, 85g",                              "Gustav",      "85g",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "40",   "William's Optimal, poulet, 85g",                          "William's",   "85g",  7,   11,  2,   1, 1],
-  ["chat",  "41",   "William's Optimal, cochon, 85g",                          "William's",   "85g",  7,   11,  2,   1, 1],
-  ["chat",  "42",   "William's Optimal, bœuf, 85g",                            "William's",   "85g",  7,   11,  2,   1, 1],
-  ["chat",  "43",   "William's Optimal, poulet/hareng, 85g",                   "William's",   "85g",  7,   11,  2,   1, 1],
-  ["chat",  "44",   "William's Optimal, saumon/hareng, 85g",                   "William's",   "85g",  7,   11,  2,   1, 1],
-  ["chat",  "32",   "William's Junior, poulet, 85g",                           "William's",   "85g",  7,   11,  2,   1, 1],
-  ["chat",  "33",   "William's Junior, saumon/hareng, 85g",                    "William's",   "85g",  7,   11,  2,   1, 1],
+  ["chat",  "G500", "Gustav Mousse, canard, 85g",                              "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G501", "Gustav Mousse, bœuf, 85g",                                "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G502", "Gustav Mousse, poulet, 85g",                              "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G503", "Gustav Mousse, saumon, 85g",                              "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G504", "Gustav Mousse, volaille et foie, 85g",                    "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G510", "Gustav Mousse Junior, poulet, 85g",                       "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G511", "Gustav Mousse Stérilisé, lapin, 85g",                     "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G515", "Gustav Mousse Senior, dinde, 85g",                        "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G531", "Gustav Fondant, bœuf, 85g",                               "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G532", "Gustav Fondant, poulet, 85g",                             "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G533", "Gustav Fondant, saumon, 85g",                             "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G551", "Gustav Ragoût, veau, 85g",                                "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G552", "Gustav Ragoût, poulet, 85g",                              "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "G553", "Gustav Ragoût, saumon, 85g",                              "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
+  ["chat",  "40",   "William's Optimal, poulet, 85g",                          "William's",   "85g pochon",  7,   11,  2,   1, 1],
+  ["chat",  "41",   "William's Optimal, cochon, 85g",                          "William's",   "85g pochon",  7,   11,  2,   1, 1],
+  ["chat",  "42",   "William's Optimal, bœuf, 85g",                            "William's",   "85g pochon",  7,   11,  2,   1, 1],
+  ["chat",  "43",   "William's Optimal, poulet/hareng, 85g",                   "William's",   "85g pochon",  7,   11,  2,   1, 1],
+  ["chat",  "44",   "William's Optimal, saumon/hareng, 85g",                   "William's",   "85g pochon",  7,   11,  2,   1, 1],
+  ["chat",  "32",   "William's Junior, poulet, 85g",                           "William's",   "85g pochon",  7,   11,  2,   1, 1],
+  ["chat",  "33",   "William's Junior, saumon/hareng, 85g",                    "William's",   "85g pochon",  7,   11,  2,   1, 1],
   ["chat",  "20",   "William's Optimal, poulet, 200g",                         "William's",   "200g", 8,   6,   8,   2, 1],
   ["chat",  "21",   "William's Optimal, cochon, 200g",                         "William's",   "200g", 8,   6,   8,   2, 1],
   ["chat",  "22",   "William's Optimal, bœuf, 200g",                           "William's",   "200g", 8,   6,   8,   2, 1],
@@ -2844,9 +2862,15 @@ try {
   DIMFIX = JSON.parse(lsGet(DIMKEY) || '{}');
 } catch (e) {}
 
+/* Clé d'une cote : univers, marque, format. Deux produits de même poids mais de
+   marques différentes n'ont pas le même contenant, ils se règlent séparément. */
+function dimKey(p) {
+  return p.univ + '|' + p.cat + '|' + p.fg;
+}
+
 function applyDimFixes() {
   PRODUCTS.forEach(p => {
-    const f = DIMFIX[p.univ + '|' + p.fmt];
+    const f = DIMFIX[dimKey(p)] || DIMFIX[p.univ + '|' + p.fmt];
     if (f) {
       if (f.w) p.w = f.w;
       if (f.h) p.h = f.h;
@@ -2855,8 +2879,8 @@ function applyDimFixes() {
   });
 }
 
-function saveDimFix(univ, fmt, w, h, d) {
-  DIMFIX[univ + '|' + fmt] = { w, h, d };
+function saveDimFix(cle, w, h, d) {
+  DIMFIX[cle] = { w, h, d };
   lsSet(DIMKEY, JSON.stringify(DIMFIX));
   applyDimFixes();
   renderListIfEditor();
@@ -2864,39 +2888,41 @@ function saveDimFix(univ, fmt, w, h, d) {
 }
 
 function dimsSheet() {
-  const fmts = FMTS(S.univ);
-  const sample = f =>PRODUCTS.find(p => p.univ === S.univ && p.fg === f);
+  // une ligne par couple marque + format présent dans l'univers courant
+  const couples = [];
+  PRODUCTS.filter(p => p.univ === S.univ).forEach(p => {
+    const k = dimKey(p);
+    if (!couples.some(c => c.k === k)) couples.push({ k, p, cat: p.cat, fmt: p.fg });
+  });
+  couples.sort((a, b) => BRANDS.indexOf(a.cat) - BRANDS.indexOf(b.cat) || parseInt(a.fmt) - parseInt(b.fmt));
   sheet(`<h2>Dimensions ${UNIV[S.univ]}</h2>
-   <p>Cotes vues de face, en centimètres. Mesure une boîte et corrige : tous les produits du même format suivent.</p>
-   ${fmts.map(f => {
-      const p = sample(f);
-      const fixed = DIMFIX[S.univ + '|' + p.fmt];
-      return `<div class="grp"><div class="f"><label>${f}${fixed?' ':''}</label>
-        <input class="dimin" data-fmt="${p.fmt}" data-k="w" type="number" step="0.1" inputmode="decimal" value="${p.w}" style="max-width:64px"><span class="unit">large</span>
-        <input class="dimin" data-fmt="${p.fmt}" data-k="h" type="number" step="0.1" inputmode="decimal" value="${p.h}" style="max-width:64px"><span class="unit">haut</span>
-        <input class="dimin" data-fmt="${p.fmt}" data-k="d" type="number" step="0.1" inputmode="decimal" value="${p.d}" style="max-width:64px"><span class="unit">prof.</span>
-      </div></div>`;
-    }).join('')}
-   <button class="btn p" data-act="dims-save">Enregistrer les dimensions</button>
-   ${Object.keys(DIMFIX).length ? '<button class="btn d" data-act="dims-reset">Revenir aux cotes du catalogue</button>' : ''}
+   <p>Cotes vues de face, en centimètres. Chaque marque a sa propre ligne : un 85 g Gustav et un 85 g William's ne sont pas le même contenant. Mesure une boîte, corrige, tous les produits concernés suivent.</p>
+   ${BRANDS.filter(b => couples.some(c => c.cat === b)).map(b => `
+     <p class="lbl2">${esc(b)}</p>
+     ${couples.filter(c => c.cat === b).map(c => `<div class="grp"><div class="f">
+       <label>${c.fmt}${DIMFIX[c.k] ? ' ✓' : ''}</label>
+       <input class="dimin" data-k="${esc(c.k)}" data-p="w" type="number" step="0.1" inputmode="decimal" value="${c.p.w}" style="max-width:62px"><span class="unit">l</span>
+       <input class="dimin" data-k="${esc(c.k)}" data-p="h" type="number" step="0.1" inputmode="decimal" value="${c.p.h}" style="max-width:62px"><span class="unit">h</span>
+       <input class="dimin" data-k="${esc(c.k)}" data-p="d" type="number" step="0.1" inputmode="decimal" value="${c.p.d}" style="max-width:62px"><span class="unit">p</span>
+     </div></div>`).join('')}`).join('')}
+   <button class="btn p" data-act="dims-save">Enregistrer</button>
+   ${Object.keys(DIMFIX).length ? '<button class="btn d" data-act="dims-reset">Revenir aux cotes d\'origine</button>' : ''}
    <button class="btn" data-act="close">Fermer</button>`);
 }
 
 function saveDimsFromSheet() {
-  const byFmt = {};
+  const parCle = {};
   document.querySelectorAll('.dimin').forEach(i => {
-    const f = i.dataset.fmt;
-    byFmt[f] = byFmt[f] || {};
+    const k = i.dataset.k;
+    parCle[k] = parCle[k] || {};
     const v = parseFloat(i.value);
-    if (v > 0 && v < 100) byFmt[f][i.dataset.k] = v;
+    if (v > 0 && v < 100) parCle[k][i.dataset.p] = v;
   });
-  Object.keys(byFmt).forEach(f => {
-    const v = byFmt[f];
-    saveDimFix(S.univ, f, v.w, v.h, v.d);
-  });
+  Object.entries(parCle).forEach(([k, v]) => saveDimFix(k, v.w, v.h, v.d));
   closeSheet();
   toast('Dimensions enregistrées');
 }
+
 
 /* ================= BOÎTE UTILE D'UNE PHOTO =================
    Effacer le fond blanc ne suffit pas : il reste une marge, variable d'un packshot à
@@ -3654,8 +3680,32 @@ function redo() {
   }
 }
 
+/* Un séparateur occupe une vraie épaisseur sur la tablette : on la compte. */
+const SEP_W = 0.5;
+
+/* Renvoie, pour un niveau, la liste des indices d'emplacements devant lesquels vient un
+   séparateur, plus un éventuel séparateur de fin. Sert au calcul comme au dessin. */
+function sepPlan(shelf) {
+  if (typeof SEP === 'undefined' || SEP.mode === 'aucun') return { avant: new Set(), fin: false, total: 0 };
+  const reels = shelf.items.filter(i => !i.gap && BY_REF[i.ref]);
+  if (!reels.length) return { avant: new Set(), fin: false, total: 0 };
+  const avant = new Set();
+  let precedent = null, vus = 0;
+  shelf.items.forEach((it, k) => {
+    if (it.gap || !BY_REF[it.ref]) return;
+    const nouveauBloc = precedent === null ? false : (SEP.mode === 'chaque' || it.ref !== precedent);
+    if (vus === 0) { if (SEP.ends) avant.add(k); }
+    else if (nouveauBloc) avant.add(k);
+    precedent = it.ref;
+    vus++;
+  });
+  const fin = !!SEP.ends;
+  return { avant, fin, total: avant.size + (fin ? 1 : 0) };
+}
+
 function shelfW(sh) {
-  return sh.items.reduce((a, it) => a + (it.gap || (BY_REF[it.ref] ? BY_REF[it.ref].w * it.f : 0)), 0);
+  const produits = sh.items.reduce((a, it) => a + (it.gap || (BY_REF[it.ref] ? BY_REF[it.ref].w * it.f : 0)), 0);
+  return produits + sepPlan(sh).total * SEP_W;
 }
 
 function shelfH() {
@@ -4647,7 +4697,11 @@ function gondolaSVG(interactive, photos, scene) {
     if (!scene) s += `<text x="${L-6}" y="${y0+sh/2+5}" font-size="13" font-weight="${act?'700':'500'}" fill="${act?'var(--bubi-blueprint-strong)':'var(--bubi-blueprint)'}" text-anchor="end" data-act="shelf" data-i="${i}">N${i+1}</text>`;
     let x = L;
     const over = shelfW(shelf) >S.cur.W;
-    shelf.items.forEach(it => {
+    const plan = sepPlan(shelf);
+    const hSep = Math.min(sh * .5, 26);
+    const traceSep = px => { s += `<rect x="${px}" y="${y1 - hSep}" width="${SEP_W * sc}" height="${hSep}" rx=".6" fill="var(--bubi-blueprint)" opacity=".7"/>`; };
+    shelf.items.forEach((it, idx) => {
+      if (plan.avant.has(idx)) { traceSep(x); x += SEP_W * sc; }
       if (it.gap) { x += it.gap * sc; return; }   // espace de calage d'une colonne
       const p = BY_REF[it.ref];
       const st = it.s || 1;
@@ -4697,12 +4751,14 @@ function gondolaSVG(interactive, photos, scene) {
         x += wOne;
       }
     });
+    if (plan.fin) traceSep(x);
     // bandeau du niveau : la liste des références placées, à l'aplomb de chaque produit
     if (shelf.items.length && !scene) {
       const bh2 = 11;
       s += `<rect x="${L}" y="${y0 + 1}" width="${W}" height="${bh2}" fill="${dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.05)'}"/>`;
       let bx2 = L;
-      shelf.items.forEach(it => {
+      shelf.items.forEach((it, idx) => {
+        if (plan.avant.has(idx)) bx2 += SEP_W * sc;   // le bandeau suit les séparateurs
         if (it.gap) { bx2 += it.gap * sc; return; }
         const pr = BY_REF[it.ref];
         const wTot = pr.w * it.f * sc;
@@ -4716,26 +4772,6 @@ function gondolaSVG(interactive, photos, scene) {
         }
         bx2 += wTot;
       });
-    }
-    // séparateurs : fins traits verticaux entre deux blocs, et joues aux extrémités
-    if (!scene && SEP.mode !== 'aucun') {
-      const blocks = shelfBlocks(shelf);
-      if (blocks.length) {
-        const hSep = Math.min(sh * .5, 26);
-        const draw = px => { s += `<rect x="${px - .8}" y="${y1 - hSep}" width="1.6" height="${hSep}" rx=".8" fill="var(--bubi-blueprint)" opacity=".75"/>`; };
-        let px = L;
-        if (SEP.ends) draw(px);
-        shelf.items.forEach((it, k) => {
-          const wIt = it.gap ? it.gap : BY_REF[it.ref].w * it.f;
-          px += wIt * sc;
-          const next = shelf.items[k + 1];
-          const cut = SEP.mode === 'chaque'
-            ? (!it.gap && next && !next.gap)
-            : (!it.gap && next && !next.gap && next.ref !== it.ref);
-          if (cut) draw(px);
-        });
-        if (SEP.ends) draw(L + shelfW(shelf) * sc);
-      }
     }
     if (interactive && i === S.shelf && S.insertAt != null) {
       const mx = L + S.insertAt * sc;
@@ -4789,6 +4825,8 @@ function editItem(id) {
    <div class="qs">${[1,2,3,4,6,8].map(n=>`<button data-act="fac" data-id="${id}" data-v="${n}" class="${f.it.f===n?'on':''}">${n}</button>`).join('')}</div>
    <p style="margin:0 0 4px;font-size:12px">Boîtes superposées · ${(p.h*(f.it.s||1)).toFixed(1)} cm de haut</p>
    <div class="qs">${[1,2,3,4,5,6].map(n=>`<button data-act="stk" data-id="${id}" data-v="${n}" class="${(f.it.s||1)===n?'on':''}">${n}</button>`).join('')}</div>
+   <p style="margin:0 0 4px;font-size:12px">Décalage fin — un espace de 0,5 cm avant le produit</p>
+   <div class="two"><button class="btn" data-act="nudge" data-id="${id}" data-v="-0.5">− 0,5 cm</button><button class="btn" data-act="nudge" data-id="${id}" data-v="0.5">＋ 0,5 cm</button></div>
    <div class="two"><button class="btn" data-act="mv" data-id="${id}" data-v="L">◀ Gauche</button><button class="btn" data-act="mv" data-id="${id}" data-v="R">Droite ▶</button></div>
    <div class="two"><button class="btn" data-act="mv" data-id="${id}" data-v="U" ${f.si===0?'disabled':''}>▲ Niveau ${f.si}</button><button class="btn" data-act="mv" data-id="${id}" data-v="D" ${f.si===S.cur.shelves.length-1?'disabled':''}>▼ Niveau ${f.si+2}</button></div>
    <button class="btn" data-act="pick1" data-ref="${p.ref}">${UPHOTO[p.ref]?'Changer la photo':'Ajouter une photo'}</button>
@@ -4804,6 +4842,30 @@ function setS(id, n) {
   snap();
   persist();
   update();
+  editItem(id);
+}
+
+/* Décalage fin : on ajoute ou on retire un espace de 0,5 cm juste avant le produit,
+   pour aligner une descente au millimètre près sans toucher aux facings. */
+function nudgeItem(id, delta) {
+  const f = findItem(id);
+  if (!f) return;
+  const items = S.cur.shelves[f.si].items;
+  const avant = f.k > 0 ? items[f.k - 1] : null;
+  if (avant && avant.gap) {
+    avant.gap = Math.round((avant.gap + delta) * 10) / 10;
+    if (avant.gap <= 0.05) items.splice(f.k - 1, 1);
+  } else if (delta > 0) {
+    if (S.cur.W - shelfW(S.cur.shelves[f.si]) < delta) { toast('Plus de place sur ce niveau'); return; }
+    items.splice(f.k, 0, { id: uid(), ref: null, gap: delta, f: 1, s: 1 });
+  } else {
+    toast('Aucun espace à retirer');
+    return;
+  }
+  snap();
+  persist();
+  update();
+  haptic(5);
   editItem(id);
 }
 
@@ -4988,7 +5050,7 @@ function fillColumn(list, N, colW, pad) {
 function trimOverflow(shelves, W) {
   shelves.forEach(sh => {
     let guard = 0;
-    const width = () => sh.items.reduce((a, it) => a + (it.gap || BY_REF[it.ref].w * it.f), 0);
+    const width = () => shelfW(sh);   // séparateurs compris
     while (width() >W && guard++ < 500) {
       const c = sh.items.filter(it => !it.gap && it.f > 1)
         .sort((a, b) =>BY_REF[b.ref].w * b.f - BY_REF[a.ref].w * a.f)[0];
@@ -5437,15 +5499,7 @@ function shelfBlocks(shelf) {
 }
 
 function separatorCount() {
-  if (SEP.mode === 'aucun') return 0;
-  let n = 0;
-  S.cur.shelves.forEach(sh => {
-    const b = shelfBlocks(sh).length;
-    if (!b) return;
-    n += SEP.mode === 'chaque' ? b : b - 1;
-    if (SEP.ends) n += 2;
-  });
-  return n;
+  return S.cur.shelves.reduce((n, sh) => n + sepPlan(sh).total, 0);
 }
 
 /* ================= COMMANDE À PASSER =================
@@ -5915,6 +5969,117 @@ function insertLayout(id) {
   refreshCounts();
 }
 
+/* ================= COMPOSITION ASSISTÉE PAR UNE IA =================
+   L'app prépare un énoncé complet : dimensions de la gondole, liste des contenants
+   avec leurs cotes, et les règles d'un rayon bien tenu. On le colle dans l'assistant
+   de son choix, on récupère sa proposition, on la recolle ici : l'app la vérifie et
+   l'installe. Rien à payer, rien à configurer.
+*/
+function aiScope() {
+  const poses = [...new Set(S.cur.shelves.flatMap(sh => sh.items.filter(i => !i.gap).map(i => i.ref)))];
+  if (poses.length) return poses.map(r => BY_REF[r]);
+  return PRODUCTS.filter(p => p.univ === S.univ && p.cat !== 'Autre' && (!S.cat || p.cat === S.cat));
+}
+
+function aiPrompt() {
+  const list = aiScope();
+  const N = S.cur.shelves.length;
+  const hNiv = (S.cur.H / N).toFixed(1);
+  const lignes = list.map(p =>
+    `${p.ref} | ${p.name} | ${p.cat} | ${p.w} | ${p.h} | ${p.df} | ${p.st}`).join('\n');
+
+  return `Tu es responsable merchandising. Compose l'implantation d'une gondole de produits pour animaux.
+
+GONDOLE
+Largeur utile : ${S.cur.W} cm
+Niveaux : ${N}, numérotés de 1 en haut à ${N} en bas
+Hauteur libre par niveau : ${hNiv} cm
+Profondeur : ${S.cur.D} cm
+
+CONTENANTS À IMPLANTER
+Colonnes : référence | désignation | gamme | largeur cm | hauteur cm | facings conseillés | superposition conseillée
+${lignes}
+
+RÈGLES À RESPECTER
+1. La somme des largeurs d'un niveau ne dépasse jamais ${S.cur.W} cm. Largeur d'un produit = largeur unitaire × facings.
+2. La hauteur d'un produit multipliée par sa superposition ne dépasse jamais ${hNiv} cm.
+3. Chaque gamme occupe une colonne verticale continue, de haut en bas, et cette colonne commence à la même distance du bord gauche à tous les niveaux. C'est le critère principal : une descente doit être parfaitement droite.
+4. Pour caler ces colonnes au millimètre, tu peux insérer des espaces. Utilise des espaces de 0,5 cm, jamais moins, en les cumulant si besoin : 0,5 / 1 / 1,5 cm.
+5. À l'intérieur d'une gamme, regroupe les mêmes goûts déclinés en plusieurs formats l'un sous l'autre, du plus grand format en bas au plus petit en haut.
+6. Les contenants les plus hauts et les plus lourds vont sur les niveaux bas. Les petits formats et les displays vont en haut.
+7. Vise un remplissage de 90 à 97 % sur chaque niveau. Ajuste les facings à la hausse plutôt que de laisser un vide.
+
+RÉPONSE ATTENDUE
+Uniquement un objet JSON, sans texte autour, sans balises de code, à ce format exact :
+{"niveaux":[[{"ref":"G660","f":2,"s":1},{"gap":0.5},{"ref":"G640","f":3,"s":1}],[...]]}
+Un tableau par niveau, du niveau 1 au niveau ${N}. Chaque élément est soit un produit avec sa référence, son nombre de facings f et sa superposition s, soit un espace de calage {"gap":0.5}. N'invente aucune référence : n'utilise que celles de la liste.`;
+}
+
+function aiSheet() {
+  if (!aiScope().length) { toast('Choisis d\'abord une gamme ou pose des produits'); return; }
+  sheet(`<h2>Composer avec une IA</h2>
+   <p>L'app rédige l'énoncé complet. Copie-le, colle-le dans l'assistant de ton choix, puis reviens coller sa réponse ici.</p>
+   <p class="lbl2">1 — l'énoncé</p>
+   <textarea id="aiOut" class="aiBox" readonly>${esc(aiPrompt())}</textarea>
+   <button class="btn p" data-act="ai-copy">Copier l'énoncé</button>
+   <p class="lbl2">2 — la réponse</p>
+   <textarea id="aiIn" class="aiBox" placeholder='Colle ici le JSON renvoyé par l&apos;assistant'></textarea>
+   <button class="btn" data-act="ai-apply">Installer la proposition</button>
+   <button class="btn" data-act="close">Fermer</button>`);
+}
+
+function aiCopy() {
+  const t = $('aiOut');
+  if (!t) return;
+  t.select();
+  navigator.clipboard ? navigator.clipboard.writeText(t.value).then(() => toast('Énoncé copié')).catch(() => toast('Sélectionne puis copie'))
+                      : toast('Sélectionne puis copie');
+}
+
+/* Vérifie la proposition avant de l'installer : références connues, largeurs tenues. */
+function aiApply() {
+  const brut = ($('aiIn').value || '').trim();
+  if (!brut) { toast('Colle la réponse de l\'assistant'); return; }
+  let data;
+  try {
+    const net = brut.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
+    data = JSON.parse(net);
+  } catch (e) { toast('Réponse illisible : il faut le JSON seul'); return; }
+  const niveaux = data.niveaux || data.shelves || data.levels;
+  if (!Array.isArray(niveaux)) { toast('Format inattendu : clé « niveaux » absente'); return; }
+
+  const N = S.cur.shelves.length, W = S.cur.W;
+  const shelves = Array.from({ length: N }, () => ({ items: [] }));
+  let inconnues = 0, tronques = 0;
+  niveaux.slice(0, N).forEach((row, i) => {
+    (Array.isArray(row) ? row : []).forEach(e => {
+      if (e && e.gap) {
+        shelves[i].items.push({ id: uid(), ref: null, gap: Math.max(.5, +e.gap || .5), f: 1, s: 1 });
+        return;
+      }
+      const p = BY_REF[e && e.ref];
+      if (!p) { inconnues++; return; }
+      let f = Math.max(1, Math.min(30, parseInt(e.f, 10) || p.df));
+      const s = Math.max(1, Math.min(8, parseInt(e.s, 10) || p.st));
+      const reste = W - shelfW(shelves[i]);
+      if (p.w * f > reste) { f = Math.floor(reste / p.w); tronques++; }
+      if (f >= 1) shelves[i].items.push({ id: uid(), ref: p.ref, f, s });
+    });
+  });
+  const poses = shelves.reduce((a, sh) => a + sh.items.filter(i => !i.gap).length, 0);
+  if (!poses) { toast('Aucun produit reconnu dans la réponse'); return; }
+  S.cur.shelves = shelves;
+  S.shelf = 0;
+  closeSheet();
+  commit(`${poses} emplacements installés depuis la proposition`);
+  refreshCounts();
+  if (inconnues || tronques) {
+    setTimeout(() => toast(
+      (inconnues ? inconnues + ' référence(s) inconnue(s) ignorée(s). ' : '') +
+      (tronques ? tronques + ' facing(s) réduit(s) pour tenir dans la largeur.' : '')), 1600);
+  }
+}
+
 /* ---- menu / exports ---- */
 
 function menu() {
@@ -5935,6 +6100,7 @@ function wizardSheet() {
   <button class="btn p" data-act="prof-open">${ic('tray')} Depuis une proforma</button>
   <button class="btn" data-act="addall-sheet">${ic('grid')} Ajouter une gamme entière</button>
   <button class="btn" data-act="pick-layout">${ic('folder')} Installer une descente type</button>
+  <button class="btn" data-act="ai">${ic('wand')} Composer avec une IA</button>
   <button class="btn" data-act="spaceplanner">${ic('ruler')} Calculer la place nécessaire</button>
   <p style="margin-top:16px"><b>Vérifier</b></p>
   <button class="btn" data-act="compare">${ic('chart')} Avant / après</button>
@@ -6431,6 +6597,15 @@ document.addEventListener('click', e => {
     case 'lay-save':
       saveLayout();
       break;
+    case 'ai':
+      aiSheet();
+      break;
+    case 'ai-copy':
+      aiCopy();
+      break;
+    case 'ai-apply':
+      aiApply();
+      break;
     case 'pick-layout': {
       const ls = layouts().filter(l => l.univ === S.cur.univ);
       if (!ls.length) { toast('Aucune descente enregistrée pour cet univers'); break; }
@@ -6491,6 +6666,9 @@ document.addEventListener('click', e => {
         renderListIfEditor();
         drawGondola();
       }, true);
+      break;
+    case 'nudge':
+      nudgeItem(el.dataset.id, parseFloat(v));
       break;
     case 'mv':
       mv(el.dataset.id, v);
