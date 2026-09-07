@@ -2260,6 +2260,19 @@ html {
 
   .btn:active, .nb:active { transform: scale(.96); }
 }
+
+/* Explication affichée tant qu'aucune descente n'est enregistrée */
+.descHint {
+  margin: 0 16px 6px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bubi-blueprint-soft);
+  color: var(--bubi-blueprint-strong);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.descHint b { color: var(--bubi-graphite); }
 </style>
 </head>
 <body>
@@ -3713,8 +3726,13 @@ function renderHome() {
       <span class="chev">›</span>
     </div>` : ''}
 
-    ${layouts().length ? `
-      <div class="storeHead"><span>Descentes types</span><small>${layouts().length}</small></div>
+    ${all.length ? `
+      <div class="storeHead"><span>Descentes types</span><small>${layouts().length || ''}</small></div>
+      ${layouts().length ? '' : `<div class="descHint">
+        Une descente type est un module prêt à poser : une gamme, un nombre de tablettes, une largeur.
+        Ouvre un plan réussi, puis <b>••• → Descentes types</b> pour l'enregistrer. Tu la retrouveras ici,
+        et tu pourras la simuler dans n'importe quelle gondole avant de l'installer.
+      </div>`}
       <div class="descRow">${layouts().map(l => `
         <div class="descCard" data-act="sim" data-id="${l.id}">
           <div class="dcTh">${miniPlan(l.shelves, l.W, l.H)}</div>
