@@ -2338,13 +2338,14 @@ const LOGOS = {
 const BRAND = {
   "Bubi Nature": "var(--bubi-ochre)",
   "Gustav": "var(--bubi-sage)",
-  "William's": "var(--bubi-terracotta)"
+  "William's": "var(--bubi-terracotta)",
+  "Autre": "#A7ADB0"                     /* concurrence : gris neutre, jamais une couleur Bubimex */
 };
 
 /* Nuances dérivées, pour les dégradés des boîtes dessinées sur le rayon. */
 const BRAND_LIGHT = BRAND;
 const BRAND_DARK = BRAND;
-const BRANDS = Object.keys(BRAND);
+const BRANDS = Object.keys(BRAND);   // Bubi Nature, Gustav, William's, puis Autre
 
 /* Libellés des deux univers (manquait aussi dans le V11 reçu). */
 const UNIV = {
@@ -2468,11 +2469,11 @@ const CATALOGUE_RAW = [
   ["chat",  "9046", "Bubi Nature Gelée, thon, 70g",                            "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
   ["chat",  "9053", "Bubi Nature Gelée, thon/rouget, 70g",                     "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
   ["chat",  "9055", "Bubi Nature Gelée, thon/saumon, 70g",                     "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9060", "Bubi Nature Beauty, thon/crevettes, 70g",                 "Bubi Nature", "70g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9061", "Bubi Nature Health Care, saumon/maquereau, 70g",          "Bubi Nature", "70g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9062", "Bubi Nature Vitality Care, thon/poulet, 70g",             "Bubi Nature", "70g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9063", "Bubi Nature Junior, poulet, 70g",                         "Bubi Nature", "70g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9064", "Bubi Nature Sterilised, filet de poulet, 70g",            "Bubi Nature", "70g",  6.5, 10,  2,   1, 1],
+  ["chat",  "9060", "Bubi Nature Beauty, thon/crevettes, 70g",                 "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
+  ["chat",  "9061", "Bubi Nature Health Care, saumon/maquereau, 70g",          "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
+  ["chat",  "9062", "Bubi Nature Vitality Care, thon/poulet, 70g",             "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
+  ["chat",  "9063", "Bubi Nature Junior, poulet, 70g",                         "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
+  ["chat",  "9064", "Bubi Nature Sterilised, filet de poulet, 70g",            "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
   ["chat",  "9013", "Bubi Nature Complet, thon/crevettes en gelée, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
   ["chat",  "9014", "Bubi Nature Complet, thon/œufs de thon en gelée, 85g",    "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
   ["chat",  "9015", "Bubi Nature Complet, thon/maquereau en gelée, 85g",       "Bubi Nature", "85g",  10,  7,   2.5, 1, 1],
@@ -2739,6 +2740,36 @@ function itemDOS(it) {
   return u > 0 ? itemCapacity(it) / (u / 7) : null;
 }
 
+/* ================= CONTENANTS GÉNÉRIQUES =================
+   Quand on ne prend pas le rayon entier, il faut pouvoir représenter ce qui occupe le
+   reste : les produits de la concurrence. On fabrique donc, pour chaque format du
+   catalogue, un contenant neutre aux mêmes cotes et à la même présentation. Il se
+   place comme un produit normal, en gris, mais ne compte jamais dans la commande.
+*/
+function buildGeneriques() {
+  const vus = new Set();
+  const out = [];
+  PRODUCTS.forEach(p => {
+    const cle = p.univ + '|' + p.fmt;
+    if (vus.has(cle)) return;
+    vus.add(cle);
+    const ref = 'X' + (p.univ === 'chat' ? 'C' : 'D') + p.fmt.replace(/[^\w]/g, '');
+    out.push({
+      univ: p.univ, ref, name: 'Autre marque, ' + p.fmt, cat: 'Autre',
+      line: 'Autre', flav: '', fmt: p.fmt, fg: p.fg,
+      w: p.w, h: p.h, d: p.d, df: p.df, st: p.st,
+      ph: 'data:image/svg+xml,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" rx="8" fill="#A7ADB0"/><text x="30" y="27" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="system-ui">AUTRE</text><text x="30" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="system-ui">${p.fmt}</text></svg>`)
+    });
+  });
+  return out;
+}
+
+buildGeneriques().forEach(g => {
+  PRODUCTS.push(g);
+  BY_REF[g.ref] = g;
+});
+
 const FMTS = (u, c) => [...new Set(PRODUCTS.filter(p => p.univ === u && (!c || p.cat === c)).map(p => p.fg))].sort((a, b) => parseInt(a) - parseInt(b));
 
 /* ================= PHOTOS (chargées depuis bubimex.eu, cache statut) ================= */
@@ -2952,8 +2983,11 @@ function photoPlacement(ref, fx, fy, fw, fh) {
   // Règle simple : le produit tient entier dans la hauteur du gabarit, et s'il n'en
   // remplit pas la largeur, on l'étire horizontalement jusqu'à la remplir. Jamais de
   // rognage, jamais de bande sur les côtés.
-  const Dh = Math.min(fh / b.bh, (fw / b.bw) / b.ar);   // hauteur : le produit rentre
-  const Dw = fw / b.bw;                                 // largeur : toujours remplie
+  // Le produit garde ses proportions : on remplit la largeur du gabarit et on rogne
+  // ce qui dépasse en hauteur. Aucune déformation, contrairement à un étirement
+  // vertical qui aplatissait les petites boîtes.
+  const Dw = fw / b.bw;
+  const Dh = Dw / b.ar;
   const cx = (b.bx + b.bw / 2) * Dw;                  // centre du produit dans l'image
   const cy = (b.by + b.bh / 2) * Dh;
   return { x: fx + fw / 2 - cx, y: fy + fh / 2 - cy, w: Dw, h: Dh, par: 'none', cover: true };
@@ -3267,6 +3301,7 @@ function dropShortURL(ref) {
 const LOGO_URL = {};
 
 function logoURL(cat) {
+  if (!LOGOS[cat]) return null;          // gamme sans logo, la concurrence par exemple
   if (LOGO_URL[cat] === undefined) {
     LOGO_URL[cat] = shortData('logo:' + cat, LOGOS[cat] && LOGOS[cat].white) || (LOGOS[cat] && LOGOS[cat].white);
   }
@@ -3790,6 +3825,7 @@ function renderHome() {
 /* Couleur de famille pour les miniatures : merchandising, pas blueprint. */
 function familyColor(p) {
   if (!p) return 'var(--bubi-cream)';
+  if (p.cat === 'Autre') return '#A7ADB0';
   if (p.cat === 'Gustav') return 'var(--bubi-sage)';
   if (p.cat === "William's") return 'var(--bubi-terracotta)';
   return parseInt(p.fmt) <= 85 ? 'var(--bubi-ochre)' : 'var(--bubi-cream)';
@@ -4603,12 +4639,10 @@ function gondolaSVG(interactive, photos, scene) {
     s += `<rect x="${L-2}" y="${y1-1}" width="${W+4}" height="${scene ? 5 : 3.5}" rx="1" fill="var(--bubi-shelf)"/>`;
     if (scene) s += `<rect x="${L-2}" y="${y1+4}" width="${W+4}" height="1.5" fill="rgba(40,50,56,.18)"/>`;
     // niveau vide : emplacements fantômes en plan, pour montrer que c'est à concevoir
+    // Niveau libre : une mention sobre plutôt qu'une trame de pointillés, qui
+    // encombrait le plan et se confondait avec des produits.
     if (interactive && !shelf.items.length) {
-      const gw = Math.min(30, W / 6), gh = Math.min(sh * .55, 36), n = Math.max(1, Math.floor((W - 12) / (gw + 8)));
-      for (let g = 0; g < n; g++) {
-        const gx = L + 6 + g * (gw + 8), gy = y1 - 3 - gh;
-        s += `<rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" rx="3" fill="rgba(220,232,238,.35)" stroke="var(--bubi-blueprint)" stroke-width="1.2" stroke-dasharray="3.5 2.5" pointer-events="none"/>`;
-      }
+      s += `<text x="${L + W / 2}" y="${y1 - sh / 2 + 3}" font-size="9" fill="var(--bubi-text-secondary)" text-anchor="middle" opacity=".5" pointer-events="none">niveau libre</text>`;
     }
     if (!scene) s += `<text x="${L-6}" y="${y0+sh/2+5}" font-size="13" font-weight="${act?'700':'500'}" fill="${act?'var(--bubi-blueprint-strong)':'var(--bubi-blueprint)'}" text-anchor="end" data-act="shelf" data-i="${i}">N${i+1}</text>`;
     let x = L;
@@ -4648,8 +4682,9 @@ function gondolaSVG(interactive, photos, scene) {
             s += `<image href="${url}" xlink:href="${url}" x="${pl.x}" y="${pl.y}" width="${pl.w}" height="${pl.h}" preserveAspectRatio="${pl.par}" clip-path="url(#${cid})"/>`;
           } else if (wOne > 16 && hOne > 10) {
             // pas de photo : le logo de la marque tient lieu de repère
-            const lg = LOGOS[p.cat], lu = logoURL(p.cat), lw2 = Math.min(wOne - 6, 26), lh2 = lw2 * lg.h / lg.w;
-            if (lh2 < hOne - 4) s += `<image href="${lu}" xlink:href="${lu}" x="${x + (wOne - lw2) / 2}" y="${yy + (hOne - lh2) / 2}" width="${lw2}" height="${lh2}" opacity=".9"/>`;
+            const lg = LOGOS[p.cat], lu = logoURL(p.cat);
+            const lw2 = Math.min(wOne - 6, 26), lh2 = lg ? lw2 * lg.h / lg.w : 0;
+            if (lg && lu && lh2 < hOne - 4) s += `<image href="${lu}" xlink:href="${lu}" x="${x + (wOne - lw2) / 2}" y="${yy + (hOne - lh2) / 2}" width="${lw2}" height="${lh2}" opacity=".9"/>`;
           }
         }
         // la référence n'est écrite sur la boîte qu'en l'absence de photo
@@ -5178,7 +5213,7 @@ function addAllSheet() {
 }
 
 function addAll(brand) {
-  let list = PRODUCTS.filter(p => p.univ === S.univ && (brand === '*' || p.cat === brand) && (!S.fmt || p.fg === S.fmt));
+  let list = PRODUCTS.filter(p => p.univ === S.univ && (brand === '*' ? p.cat !== 'Autre' : p.cat === brand) && (!S.fmt || p.fg === S.fmt));
   if (!list.length) { toast('Aucune référence'); return; }
   const cap = S.cur.W * S.cur.shelves.length * .97;
   let left = 0;
@@ -5432,6 +5467,7 @@ function orderLines() {
   S.cur.shelves.forEach(sh => sh.items.forEach(it => {
     if (it.gap || !BY_REF[it.ref]) return;
     const p = BY_REF[it.ref];
+    if (p.cat === 'Autre') return;       // produit concurrent : on ne le commande pas
     const units = it.f * (it.s || 1) * depthCapacity(p);
     byRef[it.ref] = (byRef[it.ref] || 0) + units;
   }));
