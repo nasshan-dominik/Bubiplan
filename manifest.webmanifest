@@ -1,15 +1,73 @@
 {
-  "name": "BubiPlan — Planogrammes Bubimex",
+  "name": "BubiPlan v70 — Planogrammes Professionnel",
   "short_name": "BubiPlan",
+  "description": "Planogrammes & perspective photo pour représentants commerciaux Bubimex",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "./",
+  "theme_color": "#F7F6F2",
   "background_color": "#F7F6F2",
-  "theme_color": "#283238",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%237895A4' width='192' height='192'/><text x='96' y='130' font-size='100' font-weight='bold' text-anchor='middle' fill='white' font-family='sans-serif'>BP</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%237895A4' width='512' height='512'/><text x='256' y='360' font-size='280' font-weight='bold' text-anchor='middle' fill='white' font-family='sans-serif'>BP</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%23F7F6F2' width='540' height='720'/><rect fill='%237895A4' y='0' width='540' height='80'/><text x='270' y='50' font-size='28' font-weight='bold' text-anchor='middle' fill='white' font-family='sans-serif'>BubiPlan v70</text></svg>",
+      "sizes": "540x720",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Créer Projet",
+      "short_name": "Nouveau",
+      "description": "Créer un nouveau planogramme",
+      "url": "./index.html?action=new",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23DDAA4D' width='96' height='96'/><text x='48' y='70' font-size='50' text-anchor='middle' fill='white'>+</text></svg>",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Stats",
+      "description": "Voir les statistiques commerciales",
+      "url": "./index.html?action=dashboard",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23758A6B' width='96' height='96'/><text x='48' y='70' font-size='50' text-anchor='middle' fill='white'>📈</text></svg>",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "./index.html?action=import",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "photo",
+          "accept": ["image/*"]
+        }
+      ]
+    }
+  }
 }

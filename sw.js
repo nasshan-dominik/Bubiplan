@@ -1,54 +1,102 @@
-/* Service worker BubiPlan : cache de l'application pour l'usage hors ligne. */
-const CACHE = 'bubiplan-v58';
-const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-1024.png'];
+const CACHE_VERSION = 'bubiplan-v70';
+const CACHE_ASSETS = `${CACHE_VERSION}-assets`;
+const CACHE_PHOTOS = `${CACHE_VERSION}-photos`;
 
-self.addEventListener('install', e => {
-  self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES).catch(() => {})));
-});
+const URLS_TO_CACHE = [
+  './',
+  './index.html',
+  './manifest.webmanifest'
+];
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
+// Install: Mettre en cache les assets
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_ASSETS).then(cache => {
+      return cache.addAll(URLS_TO_CACHE);
+    }).then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  const u = new URL(e.request.url);
-  // visuels déposés dans le dépôt : mis en cache dès la première consultation
-  if (u.origin === location.origin && u.pathname.includes('/photos/')) {
-    e.respondWith(
-      caches.open('bubiplan-photos').then(c =>
-        c.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-          if (res.ok) c.put(e.request, res.clone()).catch(() => {});
-          return res;
-        }).catch(() => hit))
-      )
+// Activate: Nettoyer les anciens caches
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_ASSETS && cacheName !== CACHE_PHOTOS) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// Fetch: 3 stratégies différentes
+self.addEventListener('fetch', event => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // 1. CACHE-FIRST: Assets de l'app (HTML, manifest)
+  if (request.method === 'GET' && (
+    url.pathname === '/' ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.webmanifest')
+  )) {
+    event.respondWith(
+      caches.match(request).then(response => {
+        if (response) return response;
+        return fetch(request).then(response => {
+          if (response.ok) {
+            caches.open(CACHE_ASSETS).then(cache => cache.put(request, response.clone()));
+          }
+          return response;
+        }).catch(() => caches.match(request));
+      })
     );
     return;
   }
-  if (u.origin !== location.origin) {
-    // visuels produits : on les garde en cache pour qu'ils s'affichent hors ligne
-    if (/\.(jpe?g|png|webp)$/i.test(u.pathname) || u.host.includes('weserv')) {
-      e.respondWith(
-        caches.open('bubiplan-photos').then(c =>
-          c.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-            c.put(e.request, res.clone()).catch(() => {});
-            return res;
-          }).catch(() => hit))
-        )
-      );
-    }
+
+  // 2. CACHE-WITH-SYNC: Photos locales (/photos/)
+  if (request.method === 'GET' && url.pathname.includes('/photos/')) {
+    event.respondWith(
+      caches.match(request).then(response => {
+        if (response) return response;
+        return fetch(request).then(response => {
+          if (response.ok) {
+            caches.open(CACHE_PHOTOS).then(cache => cache.put(request, response.clone()));
+          }
+          return response;
+        }).catch(() => new Response('Photo hors ligne', { status: 404 }));
+      })
+    );
     return;
   }
-  e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-      return res;
-    }).catch(() => caches.match('./index.html')))
+
+  // 3. NETWORK-FIRST: Autres requêtes (API, etc.)
+  event.respondWith(
+    fetch(request).then(response => {
+      if (response.ok && request.method === 'GET') {
+        caches.open(CACHE_ASSETS).then(cache => cache.put(request, response.clone()));
+      }
+      return response;
+    }).catch(() => {
+      return caches.match(request).then(response => {
+        return response || new Response('Offline', { status: 503 });
+      });
+    })
   );
+});
+
+// Background Sync pour les uploads photos
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-photos') {
+    event.waitUntil(
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'SYNC_PHOTOS' });
+        });
+      })
+    );
+  }
 });
