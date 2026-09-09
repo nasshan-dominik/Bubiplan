@@ -9,6 +9,10 @@
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#F7F6F2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#111516" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<link rel="icon" href="icon-192.png">
 <title>BubiPlan</title>
 
 <style>
@@ -2365,7 +2369,6 @@ html {
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
   mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
 }
-
 </style>
 </head>
 <body>
@@ -2385,6 +2388,13 @@ html {
  Ne pas supprimer les clés localStorage existantes sans migration.
 */
 'use strict';
+
+/* ================= INSTALLATION HORS LIGNE ================= */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 
 /* ================= LOGO DE L'APPLICATION =================
    Icône BubiPlan, détourée sur fond transparent, embarquée dans le fichier pour
@@ -7650,7 +7660,6 @@ if (!S.projects.length && lsGet('bubiplan_seen') !== '1') setTimeout(onboarding,
 
 // corrections éventuellement publiées dans le dépôt
 loadCatalogueOverlay();
-
 </script>
 </body>
 </html>
