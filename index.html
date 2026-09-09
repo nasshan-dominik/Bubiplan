@@ -830,7 +830,33 @@ a.chip {
   gap: 10px;
   padding: 0 14px;
   min-height: 46px;
-  position: relative
+  position: relative;
+  width: 100%;
+  text-align: left
+}
+
+.grp button.f:active {
+  background: var(--fill2, rgba(0,0,0,.04))
+}
+
+.grp .f .ic {
+  flex-shrink: 0
+}
+
+.grp .f .lbl {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px
+}
+
+.grp .f .chev {
+  flex-shrink: 0;
+  color: var(--mut);
+  opacity: .6
+}
+
+.grp .f.d .lbl {
+  color: var(--red)
 }
 
 .grp .f+.f::before {
@@ -2755,6 +2781,7 @@ function ic(name, size) {
     cog: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
     box: '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
     bins: '<rect x="3" y="4" width="8" height="7" rx="1"/><rect x="13" y="4" width="8" height="7" rx="1"/><rect x="3" y="13" width="18" height="7" rx="1"/><path d="M12 13v7"/>',
+    chev: '<path d="M9 6l6 6-6 6"/>',
   }[name] || '';
   return `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 }
@@ -3786,7 +3813,7 @@ function undo() {
     S.hi--;
     S.cur = JSON.parse(S.hist[S.hi]);
     persist();
-    update();
+    if (S.cur.kind === 'vrac') bulkRefresh(); else update();
     offerUndo('Action annulée');
   }
 }
@@ -3796,7 +3823,7 @@ function redo() {
     S.hi++;
     S.cur = JSON.parse(S.hist[S.hi]);
     persist();
-    update();
+    if (S.cur.kind === 'vrac') bulkRefresh(); else update();
   }
 }
 
@@ -3902,16 +3929,43 @@ function projectLinear(p) {
 
 /* Illustration de l'état vide : une gondole en plan, emplacements en pointillés. */
 function blueprintIllustration() {
+  // quatre esquisses en pointillés, une par nature de projet, plutôt qu'une
+  // seule gondole — pour ne pas donner l'impression que l'app ne sert qu'à ça
+  const rack = (x0, y0, w, h, niveaux) => {
+    let s = `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="3" fill="var(--bubi-blueprint-soft)"/>`;
+    s += `<rect x="${x0-4}" y="${y0-4}" width="4" height="${h+8}" rx="1.5" fill="var(--bubi-blueprint)"/>`;
+    s += `<rect x="${x0+w}" y="${y0-4}" width="4" height="${h+8}" rx="1.5" fill="var(--bubi-blueprint)"/>`;
+    const pas = h / niveaux;
+    for (let i = 1; i < niveaux; i++) s += `<rect x="${x0}" y="${y0+i*pas-1.5}" width="${w}" height="3" fill="var(--bubi-blueprint)"/>`;
+    for (let i = 0; i < niveaux; i++) {
+      const cy = y0 + i * pas + pas / 2;
+      const n = 2 + (i % 2);
+      for (let k = 0; k < n; k++) {
+        const bw = w / n - 4, bx = x0 + 3 + k * (w / n);
+        s += `<rect x="${bx}" y="${cy-pas*.32}" width="${bw}" height="${pas*.64}" rx="2" fill="none" stroke="var(--bubi-blueprint)" stroke-width="1.2" stroke-dasharray="2.5 2"/>`;
+      }
+    }
+    return s;
+  };
+  const bins = (x0, y0, w, h) => {
+    let s = '';
+    const rangs = [{h: h*.42, n: 2}, {h: h*.58, n: 3}];
+    let y = y0 + h;
+    rangs.forEach(r => {
+      y -= r.h;
+      s += `<rect x="${x0}" y="${y}" width="${w}" height="${r.h}" rx="2" fill="var(--bubi-blueprint-soft)" stroke="var(--bubi-blueprint)" stroke-width="1.3"/>`;
+      for (let k = 1; k < r.n; k++) s += `<line x1="${x0+w*k/r.n}" y1="${y+2}" x2="${x0+w*k/r.n}" y2="${y+r.h-2}" stroke="var(--bubi-blueprint)" stroke-width="1"/>`;
+    });
+    return s;
+  };
   return `<svg class="bp" viewBox="0 0 200 150" aria-hidden="true">
-    <rect x="18" y="12" width="164" height="118" rx="4" fill="var(--bubi-blueprint-soft)"/>
-    <rect x="10" y="8" width="8" height="126" rx="2" fill="var(--bubi-blueprint)"/>
-    <rect x="182" y="8" width="8" height="126" rx="2" fill="var(--bubi-blueprint)"/>
-    ${[48, 88, 128].map(y => `<rect x="18" y="${y}" width="164" height="4" fill="var(--bubi-blueprint)"/>`).join('')}
-    ${[[26,24,22,22],[54,20,26,26],[86,30,18,16],[110,18,30,28],[146,26,26,20],[26,64,26,22],[58,70,20,16],[84,58,32,28],[122,66,20,20],[148,60,26,26],[26,104,30,22],[62,100,22,26],[90,108,26,18],[122,98,26,28],[154,104,22,22]]
-      .map(([x,y,w,h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="none" stroke="var(--bubi-blueprint)" stroke-width="1.5" stroke-dasharray="3 2.5"/>`).join('')}
-    <path d="M22 140 h156" stroke="var(--bubi-blueprint)" stroke-width="1"/>
-    <path d="M22 137 v6 M178 137 v6" stroke="var(--bubi-blueprint)" stroke-width="1"/>
-    <text x="100" y="148" text-anchor="middle" font-size="7" fill="var(--bubi-blueprint)" font-family="system-ui">133 cm</text>
+    ${rack(14, 10, 78, 58, 3)}
+    ${rack(112, 10, 74, 58, 4)}
+    <rect x="16" y="82" width="70" height="50" rx="3" fill="var(--bubi-blueprint-soft)"/>
+    <rect x="12" y="78" width="4" height="58" rx="1.5" fill="var(--bubi-blueprint)"/>
+    <rect x="86" y="78" width="4" height="58" rx="1.5" fill="var(--bubi-blueprint)"/>
+    <rect x="26" y="92" width="50" height="30" rx="2" fill="none" stroke="var(--bubi-blueprint)" stroke-width="1.2" stroke-dasharray="2.5 2"/>
+    ${bins(108, 78, 80, 56)}
   </svg>`;
 }
 
@@ -3994,7 +4048,7 @@ function renderHome() {
         </div>`).join('')}</div>`).join('')
       : all.length
         ? `<div class="empty"><div class="et">Aucun plan dans cette vue.</div></div>`
-        : `<div class="empty">${blueprintIllustration()}<div class="et">Ta première gondole t'attend.</div><div class="es">Choisis ses dimensions, pose tes produits, montre le résultat.</div><button class="pill" data-act="new">Créer un plan</button></div>`}
+        : `<div class="empty">${blueprintIllustration()}<div class="et">Ton premier planogramme t'attend.</div><div class="es">Choisis sa nature, pose tes produits, montre le résultat.</div><button class="pill" data-act="new">Créer un plan</button></div>`}
     <div style="height:90px"></div>
   </div>
   ${all.length ? `<button class="fab" data-act="new" aria-label="Nouveau plan">${ic('plus', 24)}</button>` : ''}`;
@@ -4210,8 +4264,50 @@ function createBulkProject() {
    montre une seule photo, telle quelle — pas de motif, pas de répétition.
 */
 const VRAC_LIB_KEY = 'bubiplan_vrac_lib';
+/* Catalogue de départ pour la bibliothèque de photos vrac, à partir du devis
+   Bubimex 146-00274 du 9 sept 2026. Noms nettoyés du conditionnement (UVNDE,
+   sac/display, Z, R61...), qui ne fait pas partie du nom du produit. Pas de
+   photo pour l'instant, à la demande de Dominik. Chargé une seule fois, à la
+   toute première utilisation de l'app — si la bibliothèque a déjà été modifiée
+   depuis, on ne l'écrase jamais. */
+const VRAC_SEED = [
+  { sku: '516', name: 'Bâtons à mâcher au poulet, 26cm' },
+  { sku: '5160', name: 'Bâtons à mâcher au canard, 26cm' },
+  { sku: '560', name: 'Donuts au poulet, Ø10cm' },
+  { sku: '5600', name: 'Donuts au canard, Ø10cm' },
+  { sku: '5630', name: 'Bretzel poulet, Ø13cm, 90g' },
+  { sku: '5650', name: 'Donuts XXL au poulet, 19cm' },
+  { sku: '5651', name: 'Donuts XXL au canard, 19cm' },
+  { sku: '5700', name: 'Sticks à mâcher de poulet' },
+  { sku: '5701', name: 'Sticks à mâcher de poulet' },
+  { sku: '5702', name: 'Sticks de collagène torsadé au poulet' },
+  { sku: '5703', name: 'Sticks de collagène torsadé au poulet' },
+  { sku: '709', name: 'Sabot de bœuf fourré, 110g' },
+  { sku: '725', name: 'Queue de bœuf, 13-15cm' },
+  { sku: '7250', name: 'Queue de bœuf, 27-30cm' },
+  { sku: '7251', name: 'Queue de bœuf avec viande, 30cm' },
+  { sku: '7252', name: 'Queue de bœuf avec viande, 30cm' },
+  { sku: '7322', name: 'Tripe de bœuf torsadée, 12-15cm' },
+  { sku: '7352', name: 'Rouleau de peau de bœuf' },
+  { sku: '7353', name: 'Rouleau de peau de bœuf' },
+  { sku: '7355', name: 'Rouleau de peau de bœuf' },
+  { sku: '7356', name: 'Rouleau de peau de bœuf' },
+  { sku: '7393', name: 'Nez de bœuf naturel' },
+  { sku: '7394', name: 'Nez de bœuf blanc' },
+  { sku: '7445', name: 'Rouleau de peau de chèvre' },
+  { sku: '7446', name: 'Rouleau de peau de chèvre' },
+  { sku: '8943', name: 'Corne de buffle fourrée, 8cm' },
+  { sku: '8944', name: 'Corne de buffle fourrée, 12cm' }
+];
 function vracLib() {
-  try { return JSON.parse(lsGet(VRAC_LIB_KEY) || '[]'); } catch (e) { return []; }
+  const brut = lsGet(VRAC_LIB_KEY);
+  if (brut === null) {
+    // jamais touché sur cet appareil : on part avec le catalogue fourni par Dominik
+    const depart = VRAC_SEED.map(e => ({ id: uid(), name: e.name, sku: e.sku, photo: null }));
+    vracLibSave(depart);
+    return depart;
+  }
+  try { return JSON.parse(brut) || []; } catch (e) { return []; }
 }
 function vracLibSave(list) { lsSet(VRAC_LIB_KEY, JSON.stringify(list)); }
 
@@ -4352,9 +4448,13 @@ function bulkClearAll() {
 function bulkRowsSheet() {
   const p = S.cur;
   const cols = bulkColumns(p);
+  // affichées du haut de la structure vers le sol, pour que le haut de l'écran
+  // corresponde au haut réel du pôle — sinon "Monter" faisait visuellement
+  // descendre la ligne dans la liste, même quand le sens physique était correct
+  const ordreAffiche = p.bulk.rows.map((r, i) => i).reverse();
   sheet(`<h2>Rangées</h2>
-   <p>La première rangée touche le sol. Chaque nouvelle rangée s'ajoute au-dessus.</p>
-   ${p.bulk.rows.map((r, i) => `
+   <p>Affichées comme posées : le haut de la liste est le haut du pôle, le bas de la liste touche le sol.</p>
+   ${ordreAffiche.map(i => { const r = p.bulk.rows[i]; return `
      <div class="grp"><div class="f" style="min-height:56px">
        <div style="flex:1;min-width:0">
          <div style="font-size:14px;font-weight:600">Rangée ${i + 1}${i === 0 ? ' · au sol' : ''}</div>
@@ -4370,7 +4470,7 @@ function bulkRowsSheet() {
        <button class="btn" data-act="bulk-dup" data-i="${i}">${ic('copy')} Dupliquer</button>
        <button class="btn d" data-act="bulk-del-row" data-i="${i}">${ic('trash')} Supprimer</button>
      </div>
-   `).join('<hr style="border:none;border-top:.5px solid var(--sep);margin:12px 0">')}
+   `; }).join('<hr style="border:none;border-top:.5px solid var(--sep);margin:12px 0">')}
    <button class="btn p" data-act="bulk-add-row" style="margin-top:14px">${ic('plus')} Ajouter une rangée</button>
    <button class="btn" data-act="close">Fermer</button>`);
 }
@@ -4412,9 +4512,25 @@ function bulkSetType(i, type) {
 function bulkCellSheet(ri, ci) {
   const p = S.cur, cell = p.bulk.rows[ri].cells[ci];
   const q = (S.vracPickQ || '').toLowerCase().trim();
-  const lib = vracLib().filter(e => !q || e.name.toLowerCase().includes(q) || e.sku.toLowerCase().includes(q));
+  const toutesLesRefs = vracLib().slice().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  const lib = toutesLesRefs.filter(e => !q || e.name.toLowerCase().includes(q) || e.sku.toLowerCase().includes(q));
   sheet(`<h2>Compartiment</h2>
    <p>Rangée ${ri + 1}, emplacement ${ci + 1}.</p>
+   ${toutesLesRefs.length ? `
+   <p class="lbl2">Depuis la bibliothèque</p>
+   <div class="grp"><div class="f">
+     <select id="bkPickSel" style="flex:1;border:none;background:none;font-size:16px;color:inherit;padding:0">
+       <option value="">Choisir dans la liste…</option>
+       ${toutesLesRefs.map(e => `<option value="${e.id}">${esc(e.name)}${e.sku?' · '+esc(e.sku):''}</option>`).join('')}
+     </select>
+   </div></div>
+   <div class="sb" style="padding:2px 0"><div class="in">${ic('search',18)}<input id="bkPickQ" placeholder="…ou chercher par nom" value="${esc(S.vracPickQ||'')}" autocomplete="off"></div></div>
+   ${q ? (lib.length ? lib.slice(0,8).map(e=>`
+     <button class="btn" style="display:flex;align-items:center;gap:10px;text-align:left" data-act="bulk-pick" data-ri="${ri}" data-ci="${ci}" data-libid="${e.id}">
+       <span style="flex:0 0 auto;width:32px;height:32px;border-radius:7px;overflow:hidden;background:var(--fill);display:inline-block">${e.photo?`<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover">`:''}</span>
+       <span>${esc(e.name)}${e.sku?' · '+esc(e.sku):''}</span>
+     </button>`).join('') : `<p style="color:var(--mut);font-size:13px">Aucune correspondance.</p>`) : ''}
+   <p class="lbl2" style="margin-top:16px">Ou saisis une nouvelle référence</p>` : ''}
    <div class="grp"><div class="f"><label>Référence</label><input id="bk_name" value="${esc(cell?cell.name:'')}" placeholder="Oreilles de porc" autocapitalize="sentences"></div></div>
    <div class="grp"><div class="f"><label>SKU</label><input id="bk_sku" value="${esc(cell?cell.sku:'')}" placeholder="facultatif"></div></div>
    <div class="grp"><div class="f"><label>Quantité à commander</label><input id="bk_qty" type="number" inputmode="numeric" value="${cell&&cell.qty?cell.qty:''}" placeholder="pour remplir ce bac"></div></div>
@@ -4422,16 +4538,12 @@ function bulkCellSheet(ri, ci) {
    <button class="btn" data-act="bulk-photo" data-ri="${ri}" data-ci="${ci}">${cell&&cell.photo?'Changer la photo':'Ajouter une photo'}</button>
    ${cell && cell.photo ? `<button class="btn" data-act="bulk-clear-photo" data-ri="${ri}" data-ci="${ci}">Revenir au texte seul</button>` : ''}
    ${cell ? `<button class="btn d" data-act="bulk-clear" data-ri="${ri}" data-ci="${ci}">${ic('trash')} Retirer la référence</button>` : ''}
-   <p class="lbl2">Depuis la bibliothèque</p>
-   <div class="sb" style="padding:2px 0"><div class="in">${ic('search',18)}<input id="bkPickQ" placeholder="Chercher par nom" value="${esc(S.vracPickQ||'')}" autocomplete="off"></div></div>
-   ${lib.length ? lib.slice(0,10).map(e=>`
-     <button class="btn" style="display:flex;align-items:center;gap:10px;text-align:left" data-act="bulk-pick" data-ri="${ri}" data-ci="${ci}" data-libid="${e.id}">
-       <span style="flex:0 0 auto;width:32px;height:32px;border-radius:7px;overflow:hidden;background:var(--fill);display:inline-block">${e.photo?`<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover">`:''}</span>
-       <span>${esc(e.name)}${e.sku?' · '+esc(e.sku):''}</span>
-     </button>`).join('') : `<p style="color:var(--mut);font-size:13px">${q?'Aucune correspondance.':"Bibliothèque vide pour l'instant."}</p>`}
    <button class="btn" data-act="close">Fermer</button>`);
-  setTimeout(() => { const el = $('bk_name'); if (el) el.focus(); }, 200);
-  $('bkPickQ').addEventListener('input', e => { S.vracPickQ = e.target.value; bulkCellSheet(ri, ci); setTimeout(() => { const el = $('bkPickQ'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 0); });
+  if (!toutesLesRefs.length) setTimeout(() => { const el = $('bk_name'); if (el) el.focus(); }, 200);
+  const selEl = $('bkPickSel');
+  if (selEl) selEl.addEventListener('change', e => { if (e.target.value) bulkPickFromLib(ri, ci, e.target.value); });
+  const qEl = $('bkPickQ');
+  if (qEl) qEl.addEventListener('input', e => { S.vracPickQ = e.target.value; bulkCellSheet(ri, ci); setTimeout(() => { const el = $('bkPickQ'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 0); });
 }
 
 function bulkPickFromLib(ri, ci, libId) {
@@ -4561,6 +4673,7 @@ function renderBulkEditor() {
   const p = S.cur, st = bulkStats(p);
   $('app').innerHTML = `<div class="nav"><button class="nb" data-act="home">${ic('back',19)} Projets</button>
     <div class="t"><h1>${esc(p.store)}</h1><small>${esc(p.name)} · Pôle vrac · ${(p.bulk.widthMm/10).toFixed(0)}×${(bulkTotalHeightMm(p)/10).toFixed(0)} cm</small></div>
+    ${navUndoRedo()}
     <button class="nb b" data-act="bulk-menu">${ic('more')}</button></div>
   <div class="stats">
     <div class="st"><b>${st.columns}</b>Colonnes</div>
@@ -4583,10 +4696,12 @@ function renderBulkEditor() {
 /* ---- export et partage ---- */
 function bulkShareSheet() {
   sheet(`<h2>Partager</h2>
-  <button class="btn p" data-act="bulk-png">${ic('photo')} Image du pôle vrac</button>
-  <button class="btn" data-act="bulk-build">${ic('grid')} Fiche de montage</button>
-  <button class="btn" data-act="bulk-labels">${ic('doc')} Étiquettes</button>
-  <button class="btn" data-act="bulk-csv">${ic('doc')} Liste des compartiments</button>
+  <div class="grp">
+    ${menuRow('bulk-png', 'photo', 'Image du pôle vrac')}
+    ${menuRow('bulk-build', 'grid', 'Fiche de montage')}
+    ${menuRow('bulk-labels', 'doc', 'Étiquettes')}
+    ${menuRow('bulk-csv', 'doc', 'Liste des compartiments')}
+  </div>
   <button class="btn" data-act="close">Fermer</button>`);
 }
 
@@ -4739,13 +4854,17 @@ function bulkLabelsSheet() {
 function bulkMenu() {
   sheet(`<h2>Actions</h2>
   <button class="btn p" data-act="bulk-rows">${ic('grid')} Gérer les rangées</button>
-  <button class="btn" data-act="bulk-order">${ic('tray')} Commande à passer</button>
-  <button class="btn" data-act="bulk-fill">${ic('wand')} ${S.bulkFill?'Arrêter le remplissage':'Remplir les bacs'}</button>
-  <button class="btn" data-act="bulk-share">${ic('doc')} Partager</button>
-  <button class="btn" data-act="present">${ic('play')} Mode présentation</button>
-  <button class="btn" data-act="settings">${ic('cog')} Réglages</button>
-  <button class="btn d" data-act="bulk-clear-all">${ic('undo')} Vider les bacs</button>
-  <button class="btn d" data-act="delete-project">${ic('trash')} Supprimer le projet</button>
+  <div class="grp">
+    ${menuRow('bulk-order', 'tray', 'Commande à passer')}
+    ${menuRow('bulk-fill', 'wand', S.bulkFill?'Arrêter le remplissage':'Remplir les bacs')}
+    ${menuRow('bulk-share', 'doc', 'Partager')}
+    ${menuRow('present', 'play', 'Mode présentation')}
+    ${menuRow('settings', 'cog', 'Réglages')}
+  </div>
+  <div class="grp">
+    ${menuRow('bulk-clear-all', 'undo', 'Vider les bacs', 'd')}
+    ${menuRow('delete-project', 'trash', 'Supprimer le projet', 'd')}
+  </div>
   <button class="btn" data-act="close">Fermer</button>`);
 }
 
@@ -4880,7 +4999,7 @@ function openProject(id) {
 }
 
 function renderEditor() {
-  $('app').innerHTML = `<div class="nav"><button class="nb" data-act="home">${ic('back',19)} Projets</button><div class="t"><h1>${esc(S.cur.store)}</h1><small>${UNIV[S.cur.univ]} · ${esc(S.cur.name)} · ${S.cur.W}×${S.cur.H} cm</small></div><button class="nb b" data-act="menu">${ic('more')}</button></div>
+  $('app').innerHTML = `<div class="nav"><button class="nb" data-act="home">${ic('back',19)} Projets</button><div class="t"><h1>${esc(S.cur.store)}</h1><small>${UNIV[S.cur.univ]} · ${esc(S.cur.name)} · ${S.cur.W}×${S.cur.H} cm</small></div>${navUndoRedo()}<button class="nb b" data-act="menu">${ic('more')}</button></div>
   <div class="ed">
     <div class="lvl" id="lvl"></div>
     <div class="stats" id="stats"></div>
@@ -5034,7 +5153,6 @@ function addProduct(ref) {
   persist();
   update();
   refreshCounts();
-  offerUndo(msg);
   haptic();
   setTimeout(() => { fresh = null; }, 400);
 }
@@ -5511,6 +5629,7 @@ function update() {
     Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([c, w]) => `<div class="st fam" style="--fam:${familyColor({cat:c,fmt:'150g'})}"><b>${used?Math.round(w/used*100):0} %</b>${esc(c)}</div>`).join('');
   $('warns').innerHTML = selBar() + [...new Set(warns)].map(w => `<div class="warn">${esc(w)}</div>`).join('');
   drawGondola();
+  refreshUndoRedoButtons();
 
 }
 
@@ -6120,12 +6239,12 @@ function onboarding() {
   sheet(`<div class="onbHead"><img src="${APP_ICON}" alt=""></div><h2>Bienvenue dans BubiPlan</h2>
   <p>Trois choses à savoir, et tu peux commencer.</p>
   <div class="onb">
-    <div><span>${ic('grid', 22)}</span><div><b>Choisis ta gondole</b><br>largeur, hauteur, nombre de niveaux</div></div>
+    <div><span>${ic('grid', 22)}</span><div><b>Choisis sa nature</b><br>linéaire, tête de gondole, display ou pôle vrac</div></div>
     <div><span>${ic('tray', 22)}</span><div><b>Pose tes produits</b><br>appui simple pour ajouter, appui maintenu pour glisser où tu veux</div></div>
     <div><span>${ic('doc', 22)}</span><div><b>Montre le résultat</b><br>mode présentation en magasin, fiche PDF pour le client</div></div>
   </div>
   <button class="btn p" data-act="onb-demo">Créer un exemple pour essayer</button>
-  <button class="btn" data-act="onb-new">Créer ma première gondole</button>`);
+  <button class="btn" data-act="onb-new">Créer mon premier plan</button>`);
 }
 
 function onboardingDemo() {
@@ -6367,12 +6486,14 @@ function buildSheet() {
 */
 function shareSheet() {
   sheet(`<h2>Partager</h2>
-  <button class="btn p" data-act="commercial">${ic('doc')} Fiche client, plan sur une page</button>
-  <button class="btn" data-act="build">${ic('grid')} Fiche de montage pour le rayon</button>
-  <button class="btn" data-act="labels">${ic('ruler')} Étiquettes de gondole</button>
-  <button class="btn" data-act="order-export">${ic('tray')} Bon de commande</button>
-  <button class="btn" data-act="png">${ic('photo')} Image du rayon</button>
-  <button class="btn" data-act="csv">${ic('doc')} Liste des produits</button>
+  <div class="grp">
+    ${menuRow('commercial', 'doc', 'Fiche client, plan sur une page')}
+    ${menuRow('build', 'grid', 'Fiche de montage pour le rayon')}
+    ${menuRow('labels', 'ruler', 'Étiquettes de gondole')}
+    ${menuRow('order-export', 'tray', 'Bon de commande')}
+    ${menuRow('png', 'photo', 'Image du rayon')}
+    ${menuRow('csv', 'doc', 'Liste des produits')}
+  </div>
   <button class="btn" data-act="close">Fermer</button>`);
 }
 
@@ -6983,14 +7104,18 @@ function aiApply() {
 function menu() {
   sheet(`<h2>Actions</h2>
   <button class="btn p" data-act="wizard">${ic('wand')} Composer le rayon</button>
-  <button class="btn" data-act="order">${ic('tray')} Commande à passer</button>
-  <button class="btn" data-act="share">${ic('doc')} Partager</button>
-  <button class="btn" data-act="present">${ic('play')} Mode présentation</button>
-  <button class="btn" data-act="layouts">${ic('folder')} Descentes types</button>
-  <button class="btn" data-act="settings">${ic('cog')} Réglages</button>
-  <button class="btn d" data-act="clear">${ic('undo')} Vider la gondole</button>
-  <button class="btn d" data-act="delete-project">${ic('trash')} Supprimer le projet</button>
-  <button class="btn" data-act="close" style="margin-top:14px">Fermer</button>`);
+  <div class="grp">
+    ${menuRow('order', 'tray', 'Commande à passer')}
+    ${menuRow('share', 'doc', 'Partager')}
+    ${menuRow('present', 'play', 'Mode présentation')}
+    ${menuRow('layouts', 'folder', 'Descentes types')}
+    ${menuRow('settings', 'cog', 'Réglages')}
+  </div>
+  <div class="grp">
+    ${menuRow('clear', 'undo', 'Vider la gondole', 'd')}
+    ${menuRow('delete-project', 'trash', 'Supprimer le projet', 'd')}
+  </div>
+  <button class="btn" data-act="close">Fermer</button>`);
 }
 
 /* Tout ce qui sert à composer le rayon, réuni au même endroit. */
@@ -7010,24 +7135,51 @@ function wizardSheet() {
 }
 
 /* Réglages, sauvegardes et actions destructrices, à l'écart du travail courant. */
+/* Une ligne cliquable dans une liste groupée façon iOS : icône, libellé, chevron.
+   Réutilisée partout — Réglages, menus Actions — pour que ça se ressemble. */
+/* Paire annuler/rétablir dans la barre de navigation, comme dans les toutes
+   premières versions — plus fiable qu'un bandeau qui disparaît tout seul,
+   présente en permanence plutôt que sur une seule action. */
+/* update() ne redessine pas toute la barre de navigation à chaque fois — sans ça,
+   les flèches resteraient figées dans l'état où elles étaient à l'ouverture de
+   l'écran, jamais réactivées après une action. */
+function refreshUndoRedoButtons() {
+  const bU = document.querySelector('[data-act="undo"]'), bR = document.querySelector('[data-act="redo"]');
+  if (bU) bU.disabled = S.hi <= 0;
+  if (bR) bR.disabled = S.hi >= S.hist.length - 1;
+}
+
+function navUndoRedo() {
+  return `<button class="nb" data-act="undo" aria-label="Annuler" ${S.hi<=0?'disabled':''}>${ic('back',20)}</button>` +
+    `<button class="nb" data-act="redo" aria-label="Rétablir" ${S.hi>=S.hist.length-1?'disabled':''}>${ic('chev',20)}</button>`;
+}
+
+function menuRow(act, icon, label, cls) {
+  return `<button class="f${cls?' '+cls:''}" data-act="${act}">${ic(icon)}<span class="lbl">${label}</span>${cls==='d'?'':ic('chev',16)}</button>`;
+}
+
 function settingsSheet() {
   const vrac = S.cur.kind === 'vrac';
+  const row = menuRow;
   sheet(`<h2>Réglages</h2>
-  ${vrac ? `
-  <button class="btn" data-act="vrac-lib">${ic('photo')} Photos vrac</button>
-  <button class="btn" data-act="edit-project">${ic('cog')} Dimensions du pôle vrac</button>` : `
-  <button class="btn" data-act="photosheet">${ic('photo')} Photos produits</button>
-  <button class="btn" data-act="dims">${ic('ruler')} Dimensions des boîtes</button>
-  <button class="btn" data-act="edit-project">${ic('cog')} Dimensions de la gondole</button>`}
-  <p style="margin-top:16px"><b>Où en est ce plan ?</b></p>
+  <p class="lbl2">Photos et dimensions</p>
+  <div class="grp">
+    ${vrac ? row('vrac-lib', 'photo', 'Photos vrac') + row('edit-project', 'cog', 'Dimensions du pôle vrac')
+           : row('photosheet', 'photo', 'Photos produits') + row('dims', 'ruler', 'Dimensions des boîtes') + row('edit-project', 'cog', vrac?'Dimensions du pôle vrac':'Dimensions de la gondole')}
+  </div>
+  <p class="lbl2">Où en est ce plan ?</p>
   <div class="qs">${Object.entries(STATUS).map(([k, v]) => `<button data-act="setstatus" data-v="${k}" class="${statusOf(S.cur) === k ? 'on' : ''}">${v.l}</button>`).join('')}</div>
-  <p style="margin-top:16px"><b>Ce projet</b></p>
-  <button class="btn" data-act="dup">${ic('copy')} Dupliquer</button>
-  <button class="btn" data-act="dup-store">${ic('copy')} Copier vers un autre magasin</button>
-  <p style="margin-top:16px"><b>Toutes les données</b></p>
-  <button class="btn" data-act="backup">${ic('save')} Sauvegarder BubiPlan</button>
-  <button class="btn" data-act="restore">${ic('tray')} Restaurer une sauvegarde</button>
-  <button class="btn" data-act="close" style="margin-top:14px">Fermer</button>`);
+  <p class="lbl2" style="margin-top:16px">Ce projet</p>
+  <div class="grp">
+    ${row('dup', 'copy', 'Dupliquer')}
+    ${row('dup-store', 'copy', 'Copier vers un autre magasin')}
+  </div>
+  <p class="lbl2">Toutes les données</p>
+  <div class="grp">
+    ${row('backup', 'save', 'Sauvegarder BubiPlan')}
+    ${row('restore', 'tray', 'Restaurer une sauvegarde')}
+  </div>
+  <button class="btn" data-act="close" style="margin-top:4px">Fermer</button>`);
 }
 
 
