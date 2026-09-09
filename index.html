@@ -2389,11 +2389,32 @@ html {
 */
 'use strict';
 
-/* ================= INSTALLATION HORS LIGNE ================= */
+/* ================= INSTALLATION HORS LIGNE, AVEC AUTO-RÉPARATION =================
+   Ne plus jamais dépendre du rythme auquel le navigateur vérifie tout seul si le
+   service worker a changé — ce rythme s'est révélé trop lent ou pas fiable sur
+   iPad, et forçait à vider les données du site à la main à chaque incident. Ici,
+   la PAGE elle-même vérifie à chaque ouverture si un service worker plus ancien
+   traîne encore, et se corrige toute seule sans qu'aucune action manuelle ne
+   soit nécessaire. */
+const VERSION_ATTENDUE = 'bubiplan-v78';
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
+  (async () => {
+    try {
+      const noms = await caches.keys();
+      const perime = noms.some(n => n.startsWith('bubiplan-') && n !== VERSION_ATTENDUE);
+      if (perime && !sessionStorage.getItem('bubiplan_reparation_faite')) {
+        sessionStorage.setItem('bubiplan_reparation_faite', '1');
+        await Promise.all(noms.map(n => caches.delete(n)));
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+        location.reload();
+        return;
+      }
+    } catch (e) {}
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  })();
 }
 
 /* ================= LOGO DE L'APPLICATION =================
@@ -4406,6 +4427,7 @@ function bulkCellSheet(ri, ci) {
    <p>Rangée ${ri + 1}, emplacement ${ci + 1}.</p>
    <div class="grp"><div class="f"><label>Référence</label><input id="bk_name" value="${esc(cell?cell.name:'')}" placeholder="Oreilles de porc" autocapitalize="sentences"></div></div>
    <div class="grp"><div class="f"><label>SKU</label><input id="bk_sku" value="${esc(cell?cell.sku:'')}" placeholder="facultatif"></div></div>
+   <div class="grp"><div class="f"><label>Quantité à commander</label><input id="bk_qty" type="number" inputmode="numeric" value="${cell&&cell.qty?cell.qty:''}" placeholder="pour remplir ce bac"></div></div>
    <button class="btn p" data-act="bulk-assign" data-ri="${ri}" data-ci="${ci}">${cell?'Modifier':'Affecter'}</button>
    <button class="btn" data-act="bulk-photo" data-ri="${ri}" data-ci="${ci}">${cell&&cell.photo?'Changer la photo':'Ajouter une photo'}</button>
    ${cell && cell.photo ? `<button class="btn" data-act="bulk-clear-photo" data-ri="${ri}" data-ci="${ci}">Revenir au texte seul</button>` : ''}
@@ -4436,12 +4458,14 @@ function bulkPickFromLib(ri, ci, libId) {
   bulkRefresh();
 }
 
-function bulkAssign(ri, ci, name, sku) {
+function bulkAssign(ri, ci, name, sku, qty) {
   const p = S.cur;
   name = (name || '').trim();
   if (!name) { toast('Indique un nom de référence'); return; }
   sku = (sku || '').trim();
-  p.bulk.rows[ri].cells[ci] = { name, sku };
+  qty = Math.max(0, parseInt(qty, 10) || 0) || null;
+  const ancien = p.bulk.rows[ri].cells[ci];
+  p.bulk.rows[ri].cells[ci] = { name, sku, qty, photo: ancien ? ancien.photo : null };
   vracRemember(name, sku);
   snap(); persist();
   closeSheet();
@@ -4547,7 +4571,7 @@ function renderBulkEditor() {
   const p = S.cur, st = bulkStats(p);
   $('app').innerHTML = `<div class="nav"><button class="nb" data-act="home">${ic('back',19)} Projets</button>
     <div class="t"><h1>${esc(p.store)}</h1><small>${esc(p.name)} · Pôle vrac · ${(p.bulk.widthMm/10).toFixed(0)}×${(bulkTotalHeightMm(p)/10).toFixed(0)} cm</small></div>
-    <button class="nb" data-act="bulk-menu">${ic('dots',20)}</button></div>
+    <button class="nb b" data-act="bulk-menu">${ic('more')}</button></div>
   <div class="stats">
     <div class="st"><b>${st.columns}</b>Colonnes</div>
     <div class="st"><b>${st.rows}</b>Rangées</div>
@@ -4570,6 +4594,8 @@ function renderBulkEditor() {
 function bulkShareSheet() {
   sheet(`<h2>Partager</h2>
   <button class="btn p" data-act="bulk-png">${ic('photo')} Image du pôle vrac</button>
+  <button class="btn" data-act="bulk-build">${ic('grid')} Fiche de montage</button>
+  <button class="btn" data-act="bulk-labels">${ic('doc')} Étiquettes</button>
   <button class="btn" data-act="bulk-csv">${ic('doc')} Liste des compartiments</button>
   <button class="btn" data-act="close">Fermer</button>`);
 }
@@ -4598,18 +4624,132 @@ function bulkExportPNG() {
 
 function bulkExportCSV() {
   const p = S.cur;
-  const rows = [['Rangée', 'Type', 'Emplacement', 'Référence', 'SKU']];
+  const rows = [['Rangée', 'Type', 'Emplacement', 'Référence', 'SKU', 'Quantité']];
   p.bulk.rows.forEach((row, ri) => row.cells.forEach((cell, ci) => {
-    if (cell) rows.push([ri + 1, row.type === 'grand' ? 'Grand' : 'Petit', ci + 1, cell.name, cell.sku || '']);
+    if (cell) rows.push([ri + 1, row.type === 'grand' ? 'Grand' : 'Petit', ci + 1, cell.name, cell.sku || '', cell.qty || '']);
   }));
   const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
   shareOrDownload(new Blob([csv], { type: 'text/csv;charset=utf-8' }), fileName('csv'), u => `<a href="${u}">Ouvrir</a>`);
 }
 
+/* Toutes les affectations du pôle, une ligne par compartiment renseigné — sert de
+   base commune au bon de commande, à la fiche de montage et aux étiquettes. */
+function bulkAllCells() {
+  const out = [];
+  S.cur.bulk.rows.forEach((row, ri) => row.cells.forEach((cell, ci) => {
+    if (cell) out.push({ ri, ci, row, cell });
+  }));
+  return out;
+}
+
+/* ---- bon de commande ---- */
+function bulkOrderSheet() {
+  const cells = bulkAllCells();
+  if (!cells.length) { toast('Affecte d\'abord des références aux compartiments'); return; }
+  const totQty = cells.reduce((a, c) => a + (c.cell.qty || 0), 0);
+  const sansQty = cells.filter(c => !c.cell.qty).length;
+  sheet(`<h2>Commande à passer</h2>
+   <p>Les quantités indiquées sur chaque compartiment, réunies en une seule liste.</p>
+   <div class="stats" style="padding:0 0 12px">
+     <div class="st">Références<b>${cells.length}</b></div>
+     <div class="st">Unités<b>${totQty}</b></div>
+   </div>
+   ${sansQty ? `<p style="color:var(--bubi-warning)">${sansQty} compartiment${sansQty>1?'s n\'ont':' n\'a'} pas de quantité renseignée, ${sansQty>1?'ils':'il'} n'apparaîtr${sansQty>1?'ont':'a'} pas dans le total.</p>` : ''}
+   <div class="ordl">${cells.filter(c => c.cell.qty).map(c => `<div class="ol">
+     <span class="r">${esc(c.cell.sku || '—')}</span>
+     <span class="n">${esc(c.cell.name)}</span>
+     <span class="q">${c.cell.qty}<small>u.</small></span>
+   </div>`).join('')}</div>
+   <button class="btn p" data-act="bulk-order-export">${ic('doc')} Bon de commande à imprimer</button>
+   <button class="btn" data-act="close">Fermer</button>`);
+}
+
+function bulkOrderExport() {
+  const cells = bulkAllCells().filter(c => c.cell.qty);
+  const totQty = cells.reduce((a, c) => a + c.cell.qty, 0);
+  const st = bulkStats(S.cur);
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+  <title>Commande ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>
+    @page { size: A4; margin: 14mm; }
+    body { font-family: -apple-system, Arial, sans-serif; color: #111; font-size: 12px; }
+    h1 { color: var(--bubi-graphite); font-size: 20px; margin: 0; }
+    .sub { color: #666; margin: 4px 0 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 6px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: var(--bubi-surface-2); }
+    td.n, th.n { text-align: right; }
+    tr { page-break-inside: avoid; }
+    tfoot td { font-weight: 700; border-top: 2px solid var(--bubi-graphite); border-bottom: 0; }
+    .sig { margin-top: 26px; display: flex; gap: 40px; font-size: 12px; color: #444; }
+    .sig div { flex: 1; border-top: 1px solid #999; padding-top: 6px; }
+    .noprint button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 8px; background: var(--bubi-graphite); color: #fff; }
+    @media print { .noprint { display: none; } }
+  </style></head><body>
+  <h1>Bon de commande</h1>
+  <div class="sub">${esc(S.cur.store)} · ${esc(S.cur.name)} · Pôle vrac · ${(S.cur.bulk.widthMm/10).toFixed(0)}×${(st.totalHeightMm/10).toFixed(0)} cm · ${new Date().toLocaleDateString('fr-FR')}</div>
+  <table>
+    <thead><tr><th>SKU</th><th>Référence</th><th>Rangée</th><th class="n">Quantité</th></tr></thead>
+    <tbody>${cells.map(c => `<tr><td>${esc(c.cell.sku||'—')}</td><td>${esc(c.cell.name)}</td><td>${c.ri+1}</td><td class="n">${c.cell.qty}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="3">${cells.length} références</td><td class="n">${totQty}</td></tr></tfoot>
+  </table>
+  <div class="sig"><div>Signature magasin</div><div>Signature Bubimex</div></div>
+  <div class="noprint" style="margin-top:20px"><button onclick="print()">Imprimer / exporter en PDF</button></div>
+  </body></html>`;
+  shareOrDownload(new Blob([html], { type: 'text/html' }), fileName('commande.html'), u => `<iframe src="${u}" style="width:100%;height:70vh;border:0"></iframe>`);
+}
+
+/* ---- fiche de montage ---- */
+function bulkBuildSheet() {
+  const p = S.cur;
+  const lignes = p.bulk.rows.map((row, ri) => {
+    const remplis = row.cells.map((cell, ci) => cell ? `${ci+1}. ${esc(cell.name)}${cell.sku?' · '+esc(cell.sku):''}` : null).filter(Boolean);
+    return `<li><b>Rangée ${ri+1}${ri===0?' · au sol':''}</b> — ${BIN[row.type].hMm} mm de haut<br>${remplis.length ? remplis.join('<br>') : '<span class="mut">aucun compartiment renseigné</span>'}</li>`;
+  }).join('');
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+  <title>Montage ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>
+    @page { size: A4; margin: 14mm; }
+    body { font-family: -apple-system, Arial, sans-serif; color: #111; font-size: 13px; }
+    h1 { color: var(--bubi-graphite); font-size: 20px; margin: 0; }
+    .sub { color: #666; margin: 4px 0 20px; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { padding: 10px 0; border-bottom: 1px solid #ddd; }
+    .mut { color: #888; }
+    .noprint button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 8px; background: var(--bubi-graphite); color: #fff; }
+    @media print { .noprint { display: none; } }
+  </style></head><body>
+  <h1>Fiche de montage</h1>
+  <div class="sub">${esc(S.cur.store)} · ${esc(S.cur.name)} · Pôle vrac, du sol vers le haut · ${new Date().toLocaleDateString('fr-FR')}</div>
+  <ul>${lignes}</ul>
+  <div class="noprint" style="margin-top:20px"><button onclick="print()">Imprimer / exporter en PDF</button></div>
+  </body></html>`;
+  shareOrDownload(new Blob([html], { type: 'text/html' }), fileName('montage.html'), u => `<iframe src="${u}" style="width:100%;height:70vh;border:0"></iframe>`);
+}
+
+/* ---- étiquettes ---- */
+function bulkLabelsSheet() {
+  const cells = bulkAllCells();
+  if (!cells.length) { toast('Affecte d\'abord des références aux compartiments'); return; }
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+  <title>Étiquettes ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>
+    @page { size: A4; margin: 10mm; }
+    body { font-family: -apple-system, Arial, sans-serif; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; }
+    .lab { border: 1px dashed #999; border-radius: 4px; padding: 8px 10px; text-align: center; page-break-inside: avoid; }
+    .lab b { display: block; font-size: 15px; color: var(--bubi-graphite); }
+    .lab span { font-size: 12px; color: #666; }
+    .noprint button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 8px; background: var(--bubi-graphite); color: #fff; margin-bottom: 16px; }
+    @media print { .noprint { display: none; } }
+  </style></head><body>
+  <div class="noprint"><button onclick="print()">Imprimer / exporter en PDF</button></div>
+  <div class="grid">${cells.map(c => `<div class="lab"><b>${esc(c.cell.name)}</b>${c.cell.sku?`<span>${esc(c.cell.sku)}</span>`:''}</div>`).join('')}</div>
+  </body></html>`;
+  shareOrDownload(new Blob([html], { type: 'text/html' }), fileName('etiquettes.html'), u => `<iframe src="${u}" style="width:100%;height:70vh;border:0"></iframe>`);
+}
 
 function bulkMenu() {
   sheet(`<h2>Actions</h2>
   <button class="btn p" data-act="bulk-rows">${ic('grid')} Gérer les rangées</button>
+  <button class="btn" data-act="bulk-order">${ic('tray')} Commande à passer</button>
   <button class="btn" data-act="bulk-fill">${ic('wand')} ${S.bulkFill?'Arrêter le remplissage':'Remplir les bacs'}</button>
   <button class="btn" data-act="bulk-share">${ic('doc')} Partager</button>
   <button class="btn" data-act="present">${ic('play')} Mode présentation</button>
@@ -7153,7 +7293,7 @@ document.addEventListener('click', e => {
       bulkToggleFill();
       break;
     case 'bulk-assign':
-      bulkAssign(+el.dataset.ri, +el.dataset.ci, $('bk_name').value, $('bk_sku').value);
+      bulkAssign(+el.dataset.ri, +el.dataset.ci, $('bk_name').value, $('bk_sku').value, $('bk_qty').value);
       break;
     case 'bulk-pick':
       bulkPickFromLib(+el.dataset.ri, +el.dataset.ci, el.dataset.libid);
@@ -7169,6 +7309,18 @@ document.addEventListener('click', e => {
       break;
     case 'bulk-share':
       bulkShareSheet();
+      break;
+    case 'bulk-order':
+      bulkOrderSheet();
+      break;
+    case 'bulk-order-export':
+      bulkOrderExport();
+      break;
+    case 'bulk-build':
+      bulkBuildSheet();
+      break;
+    case 'bulk-labels':
+      bulkLabelsSheet();
       break;
     case 'bulk-png':
       bulkExportPNG();
