@@ -9,10 +9,6 @@
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#F7F6F2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#111516" media="(prefers-color-scheme: dark)">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
-<link rel="icon" href="icon-192.png">
 <title>BubiPlan</title>
 
 <style>
@@ -46,6 +42,12 @@
   --bubi-warning: #B8862B;
   --bubi-warning-bg: #FBF3DF;
   --bubi-danger: #B5473A;
+
+  /* nouveauté en rayon : couleur volontairement hors palette produit, pour ne jamais
+     se confondre avec une marque. Identique en clair et en sombre : c'est un repère
+     de terrain, il doit rester net et reconnaissable partout. */
+  --bubi-new: #FFD100;
+  --bubi-new-ink: #3A2E00;
 
   --radius-xs: 8px;
   --radius-sm: 12px;
@@ -917,6 +919,12 @@ a.chip {
   color: var(--red)
 }
 
+.btn.on-new {
+  background: var(--bubi-new);
+  color: var(--bubi-new-ink);
+  font-weight: 700;
+}
+
 .btn[disabled] {
   opacity: .35;
   pointer-events: none
@@ -1234,8 +1242,6 @@ a.chip {
 .nb .ic { vertical-align: middle; }
 .seg button .ic { vertical-align: -.2em; margin-right: 3px; }
 
-to { opacity: 1; }
-}
 
 /* ===== Bandeau Annuler ===== */
 .undobar {
@@ -2291,12 +2297,100 @@ html {
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* ===== Liste des natures de projet (écran de choix, façon iOS) ===== */
+.kindList {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--card);
+  margin-bottom: 14px;
+}
+
+.kindRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 14px;
+  text-align: left;
+  background: transparent;
+}
+
+.kindRow + .kindRow {
+  border-top: .5px solid var(--sep);
+}
+
+.kindRow:active {
+  background: var(--fill);
+}
+
+.kindIcon {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fill);
+  color: var(--tint);
+}
+
+.kindTx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kindTx b {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--txt);
+}
+
+.kindTx small {
+  font-size: 13px;
+  color: var(--mut);
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.kindRow.soon .kindIcon {
+  background: var(--fill);
+  color: var(--mut);
+}
+
+.kindRow.soon .kindTx b,
+.kindRow.soon .kindTx small {
+  color: var(--mut);
+}
+
+.soonBadge {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mut);
+  background: var(--fill);
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+/* ===== Fondu de bord sur les rangées qui défilent horizontalement =====
+   Signal visuel qu'il reste du contenu à faire glisser, plutôt qu'une coupure nette
+   qui donne l'impression d'un bug d'affichage. */
+.lvl, .stats, .chips {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+}
+
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="toast" class="toast"></div>
-<div class="ver">V10.0 PRO</div>
 <script>
 /*
  BUBIPLAN V11 MASTER — fichier de référence à transmettre à Claude
@@ -2311,13 +2405,6 @@ html {
  Ne pas supprimer les clés localStorage existantes sans migration.
 */
 'use strict';
-
-/* ================= INSTALLATION HORS LIGNE ================= */
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
 
 /* ================= LOGO DE L'APPLICATION =================
    Icône BubiPlan, détourée sur fond transparent, embarquée dans le fichier pour
@@ -2384,179 +2471,179 @@ const PHOTO_BASE = "https://bubimex.eu/wp-content/uploads/";
 */
 //   univers  réf     nom                                                        marque         format  L    H    P    fa pi
 const CATALOGUE_RAW = [
-  ["chien", "8024", "Bubi Nature, thon/poulet, 70g",                           "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chien", "8030", "Bubi Nature, filets de poulet, 70g",                      "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chien", "8031", "Bubi Nature, poulet/fromage, 70g",                        "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chien", "8032", "Bubi Nature, poulet/crevettes, 70g",                      "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chien", "8033", "Bubi Nature, poulet/poisson blanc, 70g",                  "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chien", "8035", "Bubi Nature, cuisse de poulet, 70g",                      "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chien", "8050", "Bubi Nature, blanc de poulet, 150g",                      "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
-  ["chien", "8051", "Bubi Nature, blanc de poulet/petits légumes, 150g",       "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
-  ["chien", "8052", "Bubi Nature, filet de poulet/aloe vera, 150g",            "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
-  ["chien", "8053", "Bubi Nature, jambon/poulet, 150g",                        "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
-  ["chien", "8054", "Bubi Nature, bœuf/poulet, 150g",                          "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
-  ["chien", "8055", "Bubi Nature, poulet/pomme, 150g",                         "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
-  ["chien", "8056", "Bubi Nature, poulet/papaye, 150g",                        "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
-  ["chien", "8057", "Bubi Nature, poulet/ananas, 150g",                        "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
-  ["chien", "8060", "Bubi Nature, thon, 150g",                                 "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
-  ["chien", "8061", "Bubi Nature, thon/aloe vera, 150g",                       "Bubi Nature", "150g", 10,  3.2, 7.5, 1, 4],
-  ["chien", "8070", "Bubi Nature Soupe au poulet, 185g",                       "Bubi Nature", "185g", 7,   10,  7,   2, 1],
-  ["chien", "8071", "Bubi Nature Soupe au canard, 185g",                       "Bubi Nature", "185g", 7,   10,  7,   2, 1],
-  ["chien", "8072", "Bubi Nature Soupe au bœuf, 185g",                         "Bubi Nature", "185g", 7,   10,  7,   2, 1],
-  ["chien", "G600", "Gustav Adulte, agneau, 150g",                             "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G601", "Gustav Adulte, lapin, 150g",                              "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G602", "Gustav Adulte, dinde, 150g",                              "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G603", "Gustav Adulte, thon, 150g",                               "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G604", "Gustav Adulte, poulet, 150g",                             "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G605", "Gustav Adulte, saumon, 150g",                             "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G606", "Gustav Adulte, gibier, 150g",                             "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G607", "Gustav Adulte, bœuf, 150g",                               "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G610", "Gustav Junior, poulet, 150g",                             "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G611", "Gustav Junior, poisson, 150g",                            "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G612", "Gustav Junior, bœuf, 150g",                               "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G613", "Gustav Senior, canard, 150g",                             "Gustav",      "150g", 9.5, 9.5, 3.5, 1, 1],
-  ["chien", "G640", "Gustav Adulte, agneau, 400g",                             "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G641", "Gustav Adulte, lapin, 400g",                              "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G642", "Gustav Adulte, dinde, 400g",                              "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G643", "Gustav Adulte, thon, 400g",                               "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G644", "Gustav Adulte, poulet, 400g",                             "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G645", "Gustav Adulte, saumon, 400g",                             "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G646", "Gustav Adulte, gibier, 400g",                             "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G647", "Gustav Adulte, bœuf, 400g",                               "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G650", "Gustav Junior, poulet, 400g",                             "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G652", "Gustav Junior, bœuf, 400g",                               "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G653", "Gustav Senior, canard, 400g",                             "Gustav",      "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "G660", "Gustav Adulte, agneau, 800g",                             "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "G661", "Gustav Adulte, lapin, 800g",                              "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "G662", "Gustav Adulte, dinde, 800g",                              "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "G663", "Gustav Adulte, thon, 800g",                               "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "G664", "Gustav Adulte, poulet, 800g",                             "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "G665", "Gustav Adulte, saumon, 800g",                             "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "G666", "Gustav Adulte, gibier, 800g",                             "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "G667", "Gustav Adulte, bœuf, 800g",                               "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "G670", "Gustav Junior, poulet, 800g",                             "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "G672", "Gustav Junior, bœuf, 800g",                               "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "G673", "Gustav Senior, canard, 800g",                             "Gustav",      "800g", 10,  12,  10,  2, 1],
-  ["chien", "100",  "William's Optimal, poulet, 200g",                         "William's",   "200g", 8,   6,   8,   2, 1],
-  ["chien", "101",  "William's Optimal, agneau, 200g",                         "William's",   "200g", 8,   6,   8,   2, 1],
-  ["chien", "102",  "William's Optimal, sanglier, 200g",                       "William's",   "200g", 8,   6,   8,   2, 1],
-  ["chien", "103",  "William's Optimal, canard/poulet, 200g",                  "William's",   "200g", 8,   6,   8,   2, 1],
-  ["chien", "115",  "William's Optimal, poulet, 400g",                         "William's",   "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "116",  "William's Optimal, agneau, 400g",                         "William's",   "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "117",  "William's Optimal, sanglier, 400g",                       "William's",   "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "118",  "William's Optimal, canard/poulet, 400g",                  "William's",   "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "119",  "William's Optimal, renne/bœuf, 400g",                     "William's",   "400g", 7.5, 7.5, 7.5, 2, 1],
+  ["chien", "8024", "Bubi Nature, thon/poulet, 70g",                           "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chien", "8030", "Bubi Nature, filets de poulet, 70g",                      "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chien", "8031", "Bubi Nature, poulet/fromage, 70g",                        "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chien", "8032", "Bubi Nature, poulet/crevettes, 70g",                      "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chien", "8033", "Bubi Nature, poulet/poisson blanc, 70g",                  "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chien", "8035", "Bubi Nature, cuisse de poulet, 70g",                      "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chien", "8050", "Bubi Nature, blanc de poulet, 150g",                      "Bubi Nature", "150g", 9, 4, 9, 1, 4],
+  ["chien", "8051", "Bubi Nature, blanc de poulet/petits légumes, 150g",       "Bubi Nature", "150g", 9, 4, 9, 1, 4],
+  ["chien", "8052", "Bubi Nature, filet de poulet/aloe vera, 150g",            "Bubi Nature", "150g", 9, 4, 9, 1, 4],
+  ["chien", "8053", "Bubi Nature, jambon/poulet, 150g",                        "Bubi Nature", "150g", 9, 4, 9, 1, 4],
+  ["chien", "8054", "Bubi Nature, bœuf/poulet, 150g",                          "Bubi Nature", "150g", 9, 4, 9, 1, 4],
+  ["chien", "8055", "Bubi Nature, poulet/pomme, 150g",                         "Bubi Nature", "150g", 9, 4, 9, 1, 4],
+  ["chien", "8056", "Bubi Nature, poulet/papaye, 150g",                        "Bubi Nature", "150g", 9, 4, 9, 1, 4],
+  ["chien", "8057", "Bubi Nature, poulet/ananas, 150g",                        "Bubi Nature", "150g", 9, 4, 9, 1, 4],
+  ["chien", "8060", "Bubi Nature, thon, 150g",                                 "Bubi Nature", "150g", 9, 4, 9, 1, 4],
+  ["chien", "8061", "Bubi Nature, thon/aloe vera, 150g",                       "Bubi Nature", "150g", 9, 4, 9, 1, 4],
+  ["chien", "8070", "Bubi Nature Soupe au poulet, 185g",                       "Bubi Nature", "185g", 6, 10, 6,   2, 1],
+  ["chien", "8071", "Bubi Nature Soupe au canard, 185g",                       "Bubi Nature", "185g", 6, 10, 6,   2, 1],
+  ["chien", "8072", "Bubi Nature Soupe au bœuf, 185g",                         "Bubi Nature", "185g", 6, 10, 6,   2, 1],
+  ["chien", "G600", "Gustav Adulte, agneau, 150g",                             "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G601", "Gustav Adulte, lapin, 150g",                              "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G602", "Gustav Adulte, dinde, 150g",                              "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G603", "Gustav Adulte, thon, 150g",                               "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G604", "Gustav Adulte, poulet, 150g",                             "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G605", "Gustav Adulte, saumon, 150g",                             "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G606", "Gustav Adulte, gibier, 150g",                             "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G607", "Gustav Adulte, bœuf, 150g",                               "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G610", "Gustav Junior, poulet, 150g",                             "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G611", "Gustav Junior, poisson, 150g",                            "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G612", "Gustav Junior, bœuf, 150g",                               "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G613", "Gustav Senior, canard, 150g",                             "Gustav",      "150g", 8.9, 3.5, 8.9, 1, 1],
+  ["chien", "G640", "Gustav Adulte, agneau, 400g",                             "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G641", "Gustav Adulte, lapin, 400g",                              "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G642", "Gustav Adulte, dinde, 400g",                              "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G643", "Gustav Adulte, thon, 400g",                               "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G644", "Gustav Adulte, poulet, 400g",                             "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G645", "Gustav Adulte, saumon, 400g",                             "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G646", "Gustav Adulte, gibier, 400g",                             "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G647", "Gustav Adulte, bœuf, 400g",                               "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G650", "Gustav Junior, poulet, 400g",                             "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G652", "Gustav Junior, bœuf, 400g",                               "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G653", "Gustav Senior, canard, 400g",                             "Gustav",      "400g", 7.5, 10.8, 7.5, 2, 1],
+  ["chien", "G660", "Gustav Adulte, agneau, 800g",                             "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "G661", "Gustav Adulte, lapin, 800g",                              "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "G662", "Gustav Adulte, dinde, 800g",                              "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "G663", "Gustav Adulte, thon, 800g",                               "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "G664", "Gustav Adulte, poulet, 800g",                             "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "G665", "Gustav Adulte, saumon, 800g",                             "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "G666", "Gustav Adulte, gibier, 800g",                             "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "G667", "Gustav Adulte, bœuf, 800g",                               "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "G670", "Gustav Junior, poulet, 800g",                             "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "G672", "Gustav Junior, bœuf, 800g",                               "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "G673", "Gustav Senior, canard, 800g",                             "Gustav",      "800g", 10, 12, 10,  2, 1],
+  ["chien", "100",  "William's Optimal, poulet, 200g",                         "William's",   "200g", 8, 6, 8,   2, 1],
+  ["chien", "101",  "William's Optimal, agneau, 200g",                         "William's",   "200g", 8, 6, 8,   2, 1],
+  ["chien", "102",  "William's Optimal, sanglier, 200g",                       "William's",   "200g", 8, 6, 8,   2, 1],
+  ["chien", "103",  "William's Optimal, canard/poulet, 200g",                  "William's",   "200g", 8, 6, 8,   2, 1],
+  ["chien", "115",  "William's Optimal, poulet, 400g",                         "William's",   "400g", 8, 10, 8, 2, 1],
+  ["chien", "116",  "William's Optimal, agneau, 400g",                         "William's",   "400g", 8, 10, 8, 2, 1],
+  ["chien", "117",  "William's Optimal, sanglier, 400g",                       "William's",   "400g", 8, 10, 8, 2, 1],
+  ["chien", "118",  "William's Optimal, canard/poulet, 400g",                  "William's",   "400g", 8, 10, 8, 2, 1],
+  ["chien", "119",  "William's Optimal, renne/bœuf, 400g",                     "William's",   "400g", 8, 10, 8, 2, 1],
   ["chien", "120",  "William's Optimal, saumon/poisson blanc, 395g",           "William's",   "400g" , 7.5, 7.5, 7.5, 2, 1],
   ["chien", "121",  "William's Junior, poulet, 395g",                          "William's",   "400g" , 7.5, 7.5, 7.5, 2, 1],
   ["chien", "122",  "William's Junior, poulet/agneau, 395g",                   "William's",   "400g" , 7.5, 7.5, 7.5, 2, 1],
   ["chien", "123",  "William's Senior, bœuf/poulet, 395g",                     "William's",   "400g" , 7.5, 7.5, 7.5, 2, 1],
-  ["chien", "130",  "William's Optimal, poulet, 800g",                         "William's",   "800g", 10,  12,  10,  2, 1],
-  ["chien", "131",  "William's Optimal, agneau, 800g",                         "William's",   "800g", 10,  12,  10,  2, 1],
-  ["chien", "132",  "William's Optimal, sanglier, 800g",                       "William's",   "800g", 10,  12,  10,  2, 1],
-  ["chien", "133",  "William's Optimal, canard/poulet, 800g",                  "William's",   "800g", 10,  12,  10,  2, 1],
-  ["chien", "134",  "William's Optimal, renne/bœuf, 800g",                     "William's",   "800g", 10,  12,  10,  2, 1],
-  ["chien", "170",  "William's Terrine, truite/saumon, 80g",                   "William's",   "80g",  9.5, 9.5, 3,   1, 1],
-  ["chien", "172",  "William's Terrine, saumon/aneth, 80g",                    "William's",   "80g",  9.5, 9.5, 3,   1, 1],
-  ["chien", "173",  "William's Terrine, truite/épinards, 80g",                 "William's",   "80g",  9.5, 9.5, 3,   1, 1],
-  ["chat",  "9020", "Bubi Nature, thon/crevettes, 70g",                        "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9021", "Bubi Nature, thon/poisson blanc, 70g",                    "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9022", "Bubi Nature, thon, 70g",                                  "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9023", "Bubi Nature, thon/fromage, 70g",                          "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9024", "Bubi Nature, thon/poulet, 70g",                           "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9025", "Bubi Nature, thon/saumon, 70g",                           "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9026", "Bubi Nature, thon/daurade, 70g",                          "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9027", "Bubi Nature, thon/sardine, 70g",                          "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9028", "Bubi Nature, thon/carotte, 70g",                          "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9029", "Bubi Nature, thon/bar, 70g",                              "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9030", "Bubi Nature, filets de poulet, 70g",                      "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9031", "Bubi Nature, poulet/fromage, 70g",                        "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9032", "Bubi Nature, poulet/crevettes, 70g",                      "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9033", "Bubi Nature, poulet/poisson blanc, 70g",                  "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9034", "Bubi Nature, poulet/potiron, 70g",                        "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9035", "Bubi Nature, cuisse de poulet, 70g",                      "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9036", "Bubi Nature, poulet/foie, 70g",                           "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9037", "Bubi Nature, poulet/ananas, 70g",                         "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9040", "Bubi Nature, saumon, 70g",                                "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9050", "Bubi Nature, poisson de l’océan, 70g",                    "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9051", "Bubi Nature, maquereau, 70g",                             "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9052", "Bubi Nature, thon/mangue, 70g",                           "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9038", "Bubi Nature Gelée, thon/crevettes, 70g",                  "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9039", "Bubi Nature Gelée, thon/sardine, 70g",                    "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9044", "Bubi Nature Gelée, thon/surimi, 70g",                     "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9045", "Bubi Nature Gelée, thon/encornet, 70g",                   "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9046", "Bubi Nature Gelée, thon, 70g",                            "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9053", "Bubi Nature Gelée, thon/rouget, 70g",                     "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9055", "Bubi Nature Gelée, thon/saumon, 70g",                     "Bubi Nature", "70g",  7.5, 2.7, 7.5, 2, 4],
-  ["chat",  "9060", "Bubi Nature Beauty, thon/crevettes, 70g",                 "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
-  ["chat",  "9061", "Bubi Nature Health Care, saumon/maquereau, 70g",          "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
-  ["chat",  "9062", "Bubi Nature Vitality Care, thon/poulet, 70g",             "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
-  ["chat",  "9063", "Bubi Nature Junior, poulet, 70g",                         "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
-  ["chat",  "9064", "Bubi Nature Sterilised, filet de poulet, 70g",            "Bubi Nature", "70g pochon",  6.5, 10,  2,   1, 1],
-  ["chat",  "9013", "Bubi Nature Complet, thon/crevettes en gelée, 85g",       "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
-  ["chat",  "9014", "Bubi Nature Complet, thon/œufs de thon en gelée, 85g",    "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
-  ["chat",  "9015", "Bubi Nature Complet, thon/maquereau en gelée, 85g",       "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
-  ["chat",  "9016", "Bubi Nature Complet, thon/bar en gelée, 85g",             "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
-  ["chat",  "9017", "Bubi Nature Complet, poulet en bouillon sterilised, 85g", "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
-  ["chat",  "9018", "Bubi Nature Complet, poulet/thon en bouillon, 85g",       "Bubi Nature", "85g boîte",  10,  7,   2.5, 1, 1],
-  ["chat",  "9070", "Bubi Nature, thon, 140g",                                 "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
-  ["chat",  "9071", "Bubi Nature, thon/crevettes, 140g",                       "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
-  ["chat",  "9072", "Bubi Nature, thon/poulet, 140g",                          "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
-  ["chat",  "9073", "Bubi Nature, thon/saumon, 140g",                          "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
-  ["chat",  "9074", "Bubi Nature, poisson de l’océan, 140g",                   "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
-  ["chat",  "9075", "Bubi Nature, thon/sardine, 140g",                         "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
-  ["chat",  "9076", "Bubi Nature, maquereau, 140g",                            "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
-  ["chat",  "9077", "Bubi Nature, poulet/crevettes, 140g",                     "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
-  ["chat",  "9078", "Bubi Nature, cuisse de poulet, 140g",                     "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
-  ["chat",  "9080", "Bubi Nature, filet de poulet, 140g",                      "Bubi Nature", "140g", 10,  3.2, 7.5, 1, 4],
-  ["chat",  "9082", "Bubi Nature Mousse, poulet, 50g",                         "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9083", "Bubi Nature Mousse, saumon, 50g",                         "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9084", "Bubi Nature Mousse, lapin, 50g",                          "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9085", "Bubi Nature Mousse, bœuf, 50g",                           "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9056", "Bubi Nature Soupe au saumon, 50g",                        "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9057", "Bubi Nature Soupe au poulet, 50g",                        "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9058", "Bubi Nature Soupe au thon, 50g",                          "Bubi Nature", "50g",  6.5, 10,  2,   1, 1],
-  ["chat",  "9065", "Bubi Nature Soupe au crevettes, 135g",                    "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
-  ["chat",  "9066", "Bubi Nature Soupe au saumon, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
-  ["chat",  "9067", "Bubi Nature Soupe au canard, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
-  ["chat",  "9068", "Bubi Nature Soupe au thon, 135g",                         "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
-  ["chat",  "9069", "Bubi Nature Soupe au poulet, 135g",                       "Bubi Nature", "135g", 6.5, 9,   6.5, 3, 2],
-  ["chat",  "G500", "Gustav Mousse, canard, 85g",                              "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G501", "Gustav Mousse, bœuf, 85g",                                "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G502", "Gustav Mousse, poulet, 85g",                              "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G503", "Gustav Mousse, saumon, 85g",                              "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G504", "Gustav Mousse, volaille et foie, 85g",                    "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G510", "Gustav Mousse Junior, poulet, 85g",                       "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G511", "Gustav Mousse Stérilisé, lapin, 85g",                     "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G515", "Gustav Mousse Senior, dinde, 85g",                        "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G531", "Gustav Fondant, bœuf, 85g",                               "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G532", "Gustav Fondant, poulet, 85g",                             "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G533", "Gustav Fondant, saumon, 85g",                             "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G551", "Gustav Ragoût, veau, 85g",                                "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G552", "Gustav Ragoût, poulet, 85g",                              "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "G553", "Gustav Ragoût, saumon, 85g",                              "Gustav",      "85g barquette",  10,  2.6, 7.5, 2, 2],
-  ["chat",  "40",   "William's Optimal, poulet, 85g",                          "William's",   "85g pochon",  7,   11,  2,   1, 1],
-  ["chat",  "41",   "William's Optimal, cochon, 85g",                          "William's",   "85g pochon",  7,   11,  2,   1, 1],
-  ["chat",  "42",   "William's Optimal, bœuf, 85g",                            "William's",   "85g pochon",  7,   11,  2,   1, 1],
-  ["chat",  "43",   "William's Optimal, poulet/hareng, 85g",                   "William's",   "85g pochon",  7,   11,  2,   1, 1],
-  ["chat",  "44",   "William's Optimal, saumon/hareng, 85g",                   "William's",   "85g pochon",  7,   11,  2,   1, 1],
-  ["chat",  "32",   "William's Junior, poulet, 85g",                           "William's",   "85g pochon",  7,   11,  2,   1, 1],
-  ["chat",  "33",   "William's Junior, saumon/hareng, 85g",                    "William's",   "85g pochon",  7,   11,  2,   1, 1],
-  ["chat",  "20",   "William's Optimal, poulet, 200g",                         "William's",   "200g", 8,   6,   8,   2, 1],
-  ["chat",  "21",   "William's Optimal, cochon, 200g",                         "William's",   "200g", 8,   6,   8,   2, 1],
-  ["chat",  "22",   "William's Optimal, bœuf, 200g",                           "William's",   "200g", 8,   6,   8,   2, 1],
+  ["chien", "130",  "William's Optimal, poulet, 800g",                         "William's",   "800g", 10, 12, 10,  2, 1],
+  ["chien", "131",  "William's Optimal, agneau, 800g",                         "William's",   "800g", 10, 12, 10,  2, 1],
+  ["chien", "132",  "William's Optimal, sanglier, 800g",                       "William's",   "800g", 10, 12, 10,  2, 1],
+  ["chien", "133",  "William's Optimal, canard/poulet, 800g",                  "William's",   "800g", 10, 12, 10,  2, 1],
+  ["chien", "134",  "William's Optimal, renne/bœuf, 800g",                     "William's",   "800g", 10, 12, 10,  2, 1],
+  ["chien", "170",  "William's Terrine, truite/saumon, 80g",                   "William's",   "80g",  8, 3, 8,   1, 1],
+  ["chien", "172",  "William's Terrine, saumon/aneth, 80g",                    "William's",   "80g",  8, 3, 8,   1, 1],
+  ["chien", "173",  "William's Terrine, truite/épinards, 80g",                 "William's",   "80g",  8, 3, 8,   1, 1],
+  ["chat",  "9020", "Bubi Nature, thon/crevettes, 70g",                        "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9021", "Bubi Nature, thon/poisson blanc, 70g",                    "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9022", "Bubi Nature, thon, 70g",                                  "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9023", "Bubi Nature, thon/fromage, 70g",                          "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9024", "Bubi Nature, thon/poulet, 70g",                           "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9025", "Bubi Nature, thon/saumon, 70g",                           "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9026", "Bubi Nature, thon/daurade, 70g",                          "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9027", "Bubi Nature, thon/sardine, 70g",                          "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9028", "Bubi Nature, thon/carotte, 70g",                          "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9029", "Bubi Nature, thon/bar, 70g",                              "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9030", "Bubi Nature, filets de poulet, 70g",                      "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9031", "Bubi Nature, poulet/fromage, 70g",                        "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9032", "Bubi Nature, poulet/crevettes, 70g",                      "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9033", "Bubi Nature, poulet/poisson blanc, 70g",                  "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9034", "Bubi Nature, poulet/potiron, 70g",                        "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9035", "Bubi Nature, cuisse de poulet, 70g",                      "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9036", "Bubi Nature, poulet/foie, 70g",                           "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9037", "Bubi Nature, poulet/ananas, 70g",                         "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9040", "Bubi Nature, saumon, 70g",                                "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9050", "Bubi Nature, poisson de l’océan, 70g",                    "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9051", "Bubi Nature, maquereau, 70g",                             "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9052", "Bubi Nature, thon/mangue, 70g",                           "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9038", "Bubi Nature Gelée, thon/crevettes, 70g",                  "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9039", "Bubi Nature Gelée, thon/sardine, 70g",                    "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9044", "Bubi Nature Gelée, thon/surimi, 70g",                     "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9045", "Bubi Nature Gelée, thon/encornet, 70g",                   "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9046", "Bubi Nature Gelée, thon, 70g",                            "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9053", "Bubi Nature Gelée, thon/rouget, 70g",                     "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9055", "Bubi Nature Gelée, thon/saumon, 70g",                     "Bubi Nature", "70g",  7, 4, 7, 2, 4],
+  ["chat",  "9060", "Bubi Nature Beauty, thon/crevettes, 70g",                 "Bubi Nature", "70g pochon",  9, 15, 2,   1, 1],
+  ["chat",  "9061", "Bubi Nature Health Care, saumon/maquereau, 70g",          "Bubi Nature", "70g pochon",  9, 15, 2,   1, 1],
+  ["chat",  "9062", "Bubi Nature Vitality Care, thon/poulet, 70g",             "Bubi Nature", "70g pochon",  9, 15, 2,   1, 1],
+  ["chat",  "9063", "Bubi Nature Junior, poulet, 70g",                         "Bubi Nature", "70g pochon",  9, 15, 2,   1, 1],
+  ["chat",  "9064", "Bubi Nature Sterilised, filet de poulet, 70g",            "Bubi Nature", "70g pochon",  9, 15, 2,   1, 1],
+  ["chat",  "9013", "Bubi Nature Complet, thon/crevettes en gelée, 85g",       "Bubi Nature", "85g boîte",  11, 2, 6, 1, 1],
+  ["chat",  "9014", "Bubi Nature Complet, thon/œufs de thon en gelée, 85g",    "Bubi Nature", "85g boîte",  11, 2, 6, 1, 1],
+  ["chat",  "9015", "Bubi Nature Complet, thon/maquereau en gelée, 85g",       "Bubi Nature", "85g boîte",  11, 2, 6, 1, 1],
+  ["chat",  "9016", "Bubi Nature Complet, thon/bar en gelée, 85g",             "Bubi Nature", "85g boîte",  11, 2, 6, 1, 1],
+  ["chat",  "9017", "Bubi Nature Complet, poulet en bouillon sterilised, 85g", "Bubi Nature", "85g boîte",  11, 2, 6, 1, 1],
+  ["chat",  "9018", "Bubi Nature Complet, poulet/thon en bouillon, 85g",       "Bubi Nature", "85g boîte",  11, 2, 6, 1, 1],
+  ["chat",  "9070", "Bubi Nature, thon, 140g",                                 "Bubi Nature", "140g", 9, 4, 9, 1, 4],
+  ["chat",  "9071", "Bubi Nature, thon/crevettes, 140g",                       "Bubi Nature", "140g", 9, 4, 9, 1, 4],
+  ["chat",  "9072", "Bubi Nature, thon/poulet, 140g",                          "Bubi Nature", "140g", 9, 4, 9, 1, 4],
+  ["chat",  "9073", "Bubi Nature, thon/saumon, 140g",                          "Bubi Nature", "140g", 9, 4, 9, 1, 4],
+  ["chat",  "9074", "Bubi Nature, poisson de l’océan, 140g",                   "Bubi Nature", "140g", 9, 4, 9, 1, 4],
+  ["chat",  "9075", "Bubi Nature, thon/sardine, 140g",                         "Bubi Nature", "140g", 9, 4, 9, 1, 4],
+  ["chat",  "9076", "Bubi Nature, maquereau, 140g",                            "Bubi Nature", "140g", 9, 4, 9, 1, 4],
+  ["chat",  "9077", "Bubi Nature, poulet/crevettes, 140g",                     "Bubi Nature", "140g", 9, 4, 9, 1, 4],
+  ["chat",  "9078", "Bubi Nature, cuisse de poulet, 140g",                     "Bubi Nature", "140g", 9, 4, 9, 1, 4],
+  ["chat",  "9080", "Bubi Nature, filet de poulet, 140g",                      "Bubi Nature", "140g", 9, 4, 9, 1, 4],
+  ["chat",  "9082", "Bubi Nature Mousse, poulet, 50g",                         "Bubi Nature", "50g mousse", 9.0, 13.0, 1.0,   1, 1],
+  ["chat",  "9083", "Bubi Nature Mousse, saumon, 50g",                         "Bubi Nature", "50g mousse", 9.0, 13.0, 1.0,   1, 1],
+  ["chat",  "9084", "Bubi Nature Mousse, lapin, 50g",                          "Bubi Nature", "50g mousse", 9.0, 13.0, 1.0,   1, 1],
+  ["chat",  "9085", "Bubi Nature Mousse, bœuf, 50g",                           "Bubi Nature", "50g mousse", 9.0, 13.0, 1.0,   1, 1],
+  ["chat",  "9056", "Bubi Nature Soupe au saumon, 50g",                        "Bubi Nature", "50g soupe", 9.5, 13.5, 1.0,   1, 1],
+  ["chat",  "9057", "Bubi Nature Soupe au poulet, 50g",                        "Bubi Nature", "50g soupe", 9.5, 13.5, 1.0,   1, 1],
+  ["chat",  "9058", "Bubi Nature Soupe au thon, 50g",                          "Bubi Nature", "50g soupe", 9.5, 13.5, 1.0,   1, 1],
+  ["chat",  "9065", "Bubi Nature Soupe au crevettes, 135g",                    "Bubi Nature", "135g", 5, 9, 5, 3, 2],
+  ["chat",  "9066", "Bubi Nature Soupe au saumon, 135g",                       "Bubi Nature", "135g", 5, 9, 5, 3, 2],
+  ["chat",  "9067", "Bubi Nature Soupe au canard, 135g",                       "Bubi Nature", "135g", 5, 9, 5, 3, 2],
+  ["chat",  "9068", "Bubi Nature Soupe au thon, 135g",                         "Bubi Nature", "135g", 5, 9, 5, 3, 2],
+  ["chat",  "9069", "Bubi Nature Soupe au poulet, 135g",                       "Bubi Nature", "135g", 5, 9, 5, 3, 2],
+  ["chat",  "G500", "Gustav Mousse, canard, 85g",                              "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G501", "Gustav Mousse, bœuf, 85g",                                "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G502", "Gustav Mousse, poulet, 85g",                              "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G503", "Gustav Mousse, saumon, 85g",                              "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G504", "Gustav Mousse, volaille et foie, 85g",                    "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G510", "Gustav Mousse Junior, poulet, 85g",                       "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G511", "Gustav Mousse Stérilisé, lapin, 85g",                     "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G515", "Gustav Mousse Senior, dinde, 85g",                        "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G531", "Gustav Fondant, bœuf, 85g",                               "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G532", "Gustav Fondant, poulet, 85g",                             "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G533", "Gustav Fondant, saumon, 85g",                             "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G551", "Gustav Ragoût, veau, 85g",                                "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G552", "Gustav Ragoût, poulet, 85g",                              "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "G553", "Gustav Ragoût, saumon, 85g",                              "Gustav",      "85g barquette",  6.5, 3.5, 6.5, 2, 2],
+  ["chat",  "40",   "William's Optimal, poulet, 85g",                          "William's",   "85g pochon",  9, 14, 1,   1, 1],
+  ["chat",  "41",   "William's Optimal, cochon, 85g",                          "William's",   "85g pochon",  9, 14, 1,   1, 1],
+  ["chat",  "42",   "William's Optimal, bœuf, 85g",                            "William's",   "85g pochon",  9, 14, 1,   1, 1],
+  ["chat",  "43",   "William's Optimal, poulet/hareng, 85g",                   "William's",   "85g pochon",  9, 14, 1,   1, 1],
+  ["chat",  "44",   "William's Optimal, saumon/hareng, 85g",                   "William's",   "85g pochon",  9, 14, 1,   1, 1],
+  ["chat",  "32",   "William's Junior, poulet, 85g",                           "William's",   "85g pochon",  9, 14, 1,   1, 1],
+  ["chat",  "33",   "William's Junior, saumon/hareng, 85g",                    "William's",   "85g pochon",  9, 14, 1,   1, 1],
+  ["chat",  "20",   "William's Optimal, poulet, 200g",                         "William's",   "200g", 8, 6, 8,   2, 1],
+  ["chat",  "21",   "William's Optimal, cochon, 200g",                         "William's",   "200g", 8, 6, 8,   2, 1],
+  ["chat",  "22",   "William's Optimal, bœuf, 200g",                           "William's",   "200g", 8, 6, 8,   2, 1],
   ["chat",  "23",   "William's Optimal, poulet/hareng, 190g",                  "William's",   "190g", 8,   6,   8,   2, 1],
   ["chat",  "24",   "William's Optimal, saumon/hareng, 190g",                  "William's",   "190g", 8,   6,   8,   2, 1],
-  ["chat",  "30",   "William's Junior, poulet, 200g",                          "William's",   "200g", 8,   6,   8,   2, 1],
+  ["chat",  "30",   "William's Junior, poulet, 200g",                          "William's",   "200g", 8, 6, 8,   2, 1],
   ["chat",  "31",   "William's Junior, saumon/hareng, 190g",                   "William's",   "190g", 8,   6,   8,   2, 1],
-  ["chat",  "50",   "William's Optimal, poulet, 400g",                         "William's",   "400g", 7.5, 7.5, 7.5, 2, 1],
-  ["chat",  "51",   "William's Optimal, bœuf, 400g",                           "William's",   "400g", 7.5, 7.5, 7.5, 2, 1],
+  ["chat",  "50",   "William's Optimal, poulet, 400g",                         "William's",   "400g", 8, 10, 8, 2, 1],
+  ["chat",  "51",   "William's Optimal, bœuf, 400g",                           "William's",   "400g", 8, 10, 8, 2, 1],
   ["chat",  "52",   "William's Optimal, saumon/hareng, 375g",                  "William's",   "375g", 7.5, 7.5, 7.5, 2, 1],
-  ["chat",  "70",   "William's Terrine, truite/saumon, 80g",                   "William's",   "80g",  9.5, 9.5, 3,   1, 1],
-  ["chat",  "71",   "William's Terrine, saumon/tomate, 80g",                   "William's",   "80g",  9.5, 9.5, 3,   1, 1],
-  ["chat",  "72",   "William's Terrine, saumon/aneth, 80g",                    "William's",   "80g",  9.5, 9.5, 3,   1, 1],
-  ["chat",  "73",   "William's Terrine, truite/épinards, 80g",                 "William's",   "80g",  9.5, 9.5, 3,   1, 1],
-  ["chat",  "74",   "William's Terrine, truite/poivron, 80g",                  "William's",   "80g",  9.5, 9.5, 3,   1, 1],
-  ["chat",  "9099", "Bubi Nature Multi-Pack, 6 saveurs, 6 × 70g",             "Bubi Nature", "6×70g", 23,  8,   16,  1, 2],
+  ["chat",  "70",   "William's Terrine, truite/saumon, 80g",                   "William's",   "80g",  8, 3, 8,   1, 1],
+  ["chat",  "71",   "William's Terrine, saumon/tomate, 80g",                   "William's",   "80g",  8, 3, 8,   1, 1],
+  ["chat",  "72",   "William's Terrine, saumon/aneth, 80g",                    "William's",   "80g",  8, 3, 8,   1, 1],
+  ["chat",  "73",   "William's Terrine, truite/épinards, 80g",                 "William's",   "80g",  8, 3, 8,   1, 1],
+  ["chat",  "74",   "William's Terrine, truite/poivron, 80g",                  "William's",   "80g",  8, 3, 8,   1, 1],
+  ["chat",  "9099", "Bubi Nature Multi-Pack, 6 saveurs, 6 × 70g",             "Bubi Nature", "6×70g", 14, 11, 8,  1, 2],
 ];
 
 const IMAGE_BASE = "https://bubimex.eu/wp-content/uploads/";
@@ -2576,6 +2663,17 @@ function buildProduct([universe, ref, name, brand, format, widthCm, heightCm, de
 const CATALOGUE_DB = CATALOGUE_RAW.map(buildProduct);
 
 // Index de catalogue : toutes les fonctions historiques continuent d'utiliser PRODUCTS/BY_REF.
+/* La clé de correction des cotes doit exister AVANT la construction du catalogue,
+   sinon le tout premier appel à applyDimFixes() ci-dessous s'exécute alors que DIMFIX
+   n'est pas encore initialisée : l'erreur est alors silencieusement avalée par le
+   try/catch et les corrections enregistrées par l'utilisateur ne sont jamais
+   réappliquées au redémarrage de l'app, même si elles sont bien en localStorage. */
+const DIMKEY = 'bubiplan_dims';
+let DIMFIX = {};
+try {
+  DIMFIX = JSON.parse(lsGet(DIMKEY) || '{}');
+} catch (e) {}
+
 const PRODUCTS = CATALOGUE_DB.map(x => {
   const parts = x.name.split(', ');
   const line = parts[0].replace(x.brand, '').trim();
@@ -2670,7 +2768,8 @@ const TOKENS = {
   '--bubi-blueprint-soft': '#DCE8EE', '--bubi-blueprint': '#7895A4', '--bubi-blueprint-strong': '#527789',
   '--bubi-sage': '#758A6B', '--bubi-terracotta': '#C96F4F', '--bubi-ochre': '#DDAA4D',
   '--bubi-cream': '#E8D8BD', '--bubi-shelf': '#D8B991', '--bubi-warning': '#B8862B',
-  '--bubi-warning-bg': '#FBF3DF', '--bubi-danger': '#B5473A'
+  '--bubi-warning-bg': '#FBF3DF', '--bubi-danger': '#B5473A',
+  '--bubi-new': '#FFD100', '--bubi-new-ink': '#3A2E00'
 };
 
 function resolveTokens(str) {
@@ -2855,12 +2954,8 @@ function loadCatalogueOverlay() {
    Les cotes du catalogue viennent du site Bubimex et des fiches revendeurs ; certaines
    sont approximatives. Cet écran permet de les corriger au mètre ruban, par format.
    Les corrections sont enregistrées sur l'appareil et priment sur le catalogue.
+   (DIMKEY et DIMFIX sont déclarées plus haut, avant la construction du catalogue.)
 */
-const DIMKEY = 'bubiplan_dims';
-let DIMFIX = {};
-try {
-  DIMFIX = JSON.parse(lsGet(DIMKEY) || '{}');
-} catch (e) {}
 
 /* Clé d'une cote : univers, marque, format. Deux produits de même poids mais de
    marques différentes n'ont pas le même contenant, ils se règlent séparément. */
@@ -2880,7 +2975,14 @@ function applyDimFixes() {
 }
 
 function saveDimFix(cle, w, h, d) {
-  DIMFIX[cle] = { w, h, d };
+  // on garde toute cote déjà bonne si l'un des trois champs n'a pas pu être lu,
+  // plutôt que de l'effacer silencieusement
+  const prev = DIMFIX[cle] || {};
+  DIMFIX[cle] = {
+    w: w != null ? w : prev.w,
+    h: h != null ? h : prev.h,
+    d: d != null ? d : prev.d
+  };
   lsSet(DIMKEY, JSON.stringify(DIMFIX));
   applyDimFixes();
   renderListIfEditor();
@@ -2901,9 +3003,9 @@ function dimsSheet() {
      <p class="lbl2">${esc(b)}</p>
      ${couples.filter(c => c.cat === b).map(c => `<div class="grp"><div class="f">
        <label>${c.fmt}${DIMFIX[c.k] ? ' ✓' : ''}</label>
-       <input class="dimin" data-k="${esc(c.k)}" data-p="w" type="number" step="0.1" inputmode="decimal" value="${c.p.w}" style="max-width:62px"><span class="unit">l</span>
-       <input class="dimin" data-k="${esc(c.k)}" data-p="h" type="number" step="0.1" inputmode="decimal" value="${c.p.h}" style="max-width:62px"><span class="unit">h</span>
-       <input class="dimin" data-k="${esc(c.k)}" data-p="d" type="number" step="0.1" inputmode="decimal" value="${c.p.d}" style="max-width:62px"><span class="unit">p</span>
+       <input class="dimin" data-k="${esc(c.k)}" data-p="w" type="text" inputmode="decimal" value="${frNum(c.p.w)}" style="max-width:62px"><span class="unit">l</span>
+       <input class="dimin" data-k="${esc(c.k)}" data-p="h" type="text" inputmode="decimal" value="${frNum(c.p.h)}" style="max-width:62px"><span class="unit">h</span>
+       <input class="dimin" data-k="${esc(c.k)}" data-p="d" type="text" inputmode="decimal" value="${frNum(c.p.d)}" style="max-width:62px"><span class="unit">p</span>
      </div></div>`).join('')}`).join('')}
    <button class="btn p" data-act="dims-save">Enregistrer</button>
    ${Object.keys(DIMFIX).length ? '<button class="btn d" data-act="dims-reset">Revenir aux cotes d\'origine</button>' : ''}
@@ -2912,15 +3014,19 @@ function dimsSheet() {
 
 function saveDimsFromSheet() {
   const parCle = {};
+  let invalides = 0;
   document.querySelectorAll('.dimin').forEach(i => {
     const k = i.dataset.k;
     parCle[k] = parCle[k] || {};
-    const v = parseFloat(i.value);
+    const v = numFR(i.value);
     if (v > 0 && v < 100) parCle[k][i.dataset.p] = v;
+    else if (i.value.trim() !== '') invalides++;   // quelque chose était tapé mais illisible
   });
   Object.entries(parCle).forEach(([k, v]) => saveDimFix(k, v.w, v.h, v.d));
   closeSheet();
-  toast('Dimensions enregistrées');
+  toast(invalides
+    ? `Dimensions enregistrées — ${invalides} champ${invalides > 1 ? 's' : ''} ignoré${invalides > 1 ? 's' : ''} (nombre entre 0 et 100)`
+    : 'Dimensions enregistrées');
 }
 
 
@@ -3608,6 +3714,17 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+/* La France note les décimales avec une virgule. Un champ HTML type="number" refuse
+   la virgule et vide silencieusement le champ dès qu'elle est tapée — c'est ce qui
+   a fait perdre les cotes saisies par Dominik sans aucun message d'erreur. Ces deux
+   fonctions lisent et affichent les nombres à la française, sur des champs texte. */
+function numFR(v) {
+  return parseFloat(String(v).replace(',', '.').trim());
+}
+function frNum(n) {
+  return String(n).replace('.', ',');
+}
+
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c => ({
     '&': '&amp;',
@@ -3797,11 +3914,13 @@ function renderHome() {
   S.cur = null;
   const all = S.projects.slice().sort((a, b) => b.updated - a.updated);
   const filt = S.homeFilter || 'encours';
+  const kindFilt = S.homeKind || 'tous';
   const q = (S.homeQ || '').toLowerCase().trim();
   const keep = p => filt === 'tous' ? true
     : filt === 'encours' ? statusOf(p) !== 'pose'
     : statusOf(p) === filt;
-  const list = all.filter(p => keep(p) && (!q || (p.store + ' ' + p.name).toLowerCase().includes(q)));
+  const keepKind = p => kindFilt === 'tous' ? true : (p.kind || 'lineaire') === kindFilt;
+  const list = all.filter(p => keep(p) && keepKind(p) && (!q || (p.store + ' ' + p.name).toLowerCase().includes(q)));
   const last = all[0];
   const groups = {};
   list.forEach(p => (groups[p.store] = groups[p.store] || []).push(p));
@@ -3846,7 +3965,12 @@ function renderHome() {
         ${[['encours', 'En cours'], ['propose', 'Proposés'], ['valide', 'Validés'], ['pose', 'Posés'], ['tous', 'Tous']]
           .filter(([k]) => k === 'tous' || k === filt || compte(k))
           .map(([k, l]) => `<span class="chip${filt === k ? ' on' : ''}" data-act="hfilter" data-v="${k}">${l}<i>${compte(k)}</i></span>`).join('')}
-      </div>` : ''}
+      </div>
+      ${all.some(p => (p.kind || 'lineaire') === 'gondole') ? `<div class="chips hchips">
+        ${[['tous', 'Tous types'], ['lineaire', 'Linéaires'], ['gondole', 'Têtes de gondole']]
+          .filter(([k]) => k === 'tous' || all.some(p => (p.kind || 'lineaire') === k))
+          .map(([k, l]) => `<span class="chip${kindFilt === k ? ' on' : ''}" data-act="hkind" data-v="${k}">${l}</span>`).join('')}
+      </div>` : ''}` : ''}
 
     ${list.length ? Object.entries(groups).map(([store, ps]) => `
       <div class="storeHead"><span>${esc(store)}</span><small>${ps.length} plan${ps.length > 1 ? 's' : ''}</small></div>
@@ -3916,6 +4040,46 @@ function thumb(p) {
 
 /* ================= PROJECT FORM ================= */
 
+/* ================= NATURE DU PROJET =================
+   Quatre natures de projet à la création. Linéaire et Gondole ouvrent aujourd'hui le
+   même formulaire de dimensions ; Display et Pôle vrac sont préparés pour plus tard,
+   avec un mot d'explication le temps qu'ils soient construits.
+*/
+function newProjectSheet() {
+  const row = (kind, icon, title, sub, soon) => `
+   <button class="kindRow${soon ? ' soon' : ''}" data-act="new-kind" data-v="${kind}">
+     <span class="kindIcon">${ic(icon, 22)}</span>
+     <span class="kindTx"><b>${title}</b><small>${sub}</small></span>
+     ${soon ? '<span class="soonBadge">Bientôt</span>' : '<span class="chev">›</span>'}
+   </button>`;
+  sheet(`<h2>Nouveau projet</h2>
+   <p>Quel type d'implantation veux-tu préparer ?</p>
+   <div class="kindList">
+     ${row('lineaire', 'grid', 'Nouveau linéaire', 'Un rayon classique, plusieurs niveaux')}
+     ${row('gondole', 'grid', 'Nouvelle gondole', 'Tête de gondole, mise en avant ou promo')}
+     ${row('display', 'box', 'Nouveau display', 'Présentoir aux dimensions figées', true)}
+     ${row('vrac', 'box', 'Nouveau pôle vrac', 'Bacs libre-service', true)}
+   </div>
+   <button class="btn" data-act="close">Annuler</button>`);
+}
+
+function startNewProject(kind) {
+  if (kind === 'display' || kind === 'vrac') {
+    toast(kind === 'display' ? "Les displays arrivent bientôt : en attendant, crée-le comme une gondole." : "Le pôle vrac arrive bientôt : en attendant, crée-le comme un linéaire.");
+  }
+  S.newKind = kind;   // gardé pour les niveaux à venir : statut par défaut, filtres, etc.
+  projectForm(false);
+}
+
+/* Libellés selon la nature du projet, pour que le titre et le bouton de la feuille de
+   dimensions correspondent réellement à ce que la personne a choisi. */
+const KIND_LABELS = {
+  lineaire: { title: 'Nouveau linéaire', submit: 'Créer le linéaire', edit: 'Linéaire' },
+  gondole: { title: 'Nouvelle gondole', submit: 'Créer la gondole', edit: 'Gondole' },
+  display: { title: 'Nouveau display', submit: 'Créer le display', edit: 'Display' },
+  vrac: { title: 'Nouveau pôle vrac', submit: 'Créer le pôle vrac', edit: 'Pôle vrac' }
+};
+
 function projectForm(edit) {
   const p = edit ? S.cur : {
     store: '',
@@ -3928,7 +4092,9 @@ function projectForm(edit) {
     },
     univ: 'chien'
   };
-  sheet(`<h2>${edit?'Gondole':'Nouvelle gondole'}</h2><div id="ferr"></div>
+  const kind = edit ? (S.cur.kind || 'lineaire') : (S.newKind || 'lineaire');
+  const kl = KIND_LABELS[kind] || KIND_LABELS.lineaire;
+  sheet(`<h2>${edit ? kl.edit : kl.title}</h2><div id="ferr"></div>
    <div class="seg" style="margin:0 0 12px" id="usg"><button data-act="univ" data-v="chien" class="${p.univ!=='chat'?'on':''}">Chien</button><button data-act="univ" data-v="chat" class="${p.univ==='chat'?'on':''}">Chat</button></div>
    <input type="hidden" id="f_univ" value="${p.univ||'chien'}">
    <p class="lbl2">Fixation</p>
@@ -3947,7 +4113,7 @@ function projectForm(edit) {
      <div class="f"><label>Niveaux</label><input id="f_N" type="number" inputmode="numeric" value="${p.shelves.length}"></div>
    </div>
    ${edit?'<p>Réduire le nombre de niveaux retire les produits des niveaux supprimés.</p>':''}
-   <button class="btn p" data-act="submit" data-edit="${edit?1:0}">${edit?'Enregistrer':'Créer la gondole'}</button>
+   <button class="btn p" data-act="submit" data-edit="${edit?1:0}">${edit?'Enregistrer':kl.submit}</button>
    <button class="btn" data-act="close">Annuler</button>`);
   if (!edit) setTimeout(() => {
     const el = $('f_store');
@@ -3961,6 +4127,7 @@ function submitProject(edit) {
     name = v('f_name'),
     univ = v('f_univ') || 'chien',
     mount = ($('f_mount') ? $('f_mount').value : '') || 'tablette',
+    kind = edit ? (S.cur.kind || 'lineaire') : (S.newKind || 'lineaire'),
     W = +v('f_W'),
     H = +v('f_H'),
     D = +v('f_D'),
@@ -3986,6 +4153,7 @@ function submitProject(edit) {
       H,
       D
     });
+    // la nature du projet (linéaire, gondole...) ne change pas au fil des modifications
     while (S.cur.shelves.length < N) S.cur.shelves.push({
       items: []
     });
@@ -4003,6 +4171,7 @@ function submitProject(edit) {
       name,
       univ,
       mount,
+      kind,
       W,
       H,
       D,
@@ -4758,6 +4927,14 @@ function gondolaSVG(interactive, photos, scene) {
             continue;
           }
           s += `<rect x="${x+.5}" y="${yy+.5}" width="${wOne-1}" height="${hOne-1}" rx="2" fill="${url ? 'var(--bubi-surface)' : familyColor(p)}" stroke="var(--bubi-border)" stroke-width=".6" class="${fresh===it.id?'pop':''}"/>`;
+          if (it.isNew) {
+            // surbrillance nette, une seule couleur, jamais confondue avec une marque :
+            // le repère que le magasin doit voir en premier sur la fiche de montage.
+            s += `<rect x="${x-.6}" y="${yy-.6}" width="${wOne+1.2}" height="${hOne+1.2}" rx="3" fill="none" stroke="var(--bubi-new)" stroke-width="1.6"/>`;
+            if (wOne > 9 && hOne > 7) {
+              s += `<g><rect x="${x-.6}" y="${yy-.6}" width="15" height="8" rx="2" fill="var(--bubi-new)"/><text x="${x+6.4}" y="${yy+5}" font-size="5.5" font-weight="700" text-anchor="middle" fill="var(--bubi-new-ink)">NEW</text></g>`;
+            }
+          }
           if (url) {
             // le produit est calé sur le cadre : plus aucune marge blanche visible
             const bw = wOne - 2, bh = hOne - 2, bx = x + 1, by = yy + 1;
@@ -4864,7 +5041,22 @@ function editItem(id) {
    <div class="two"><button class="btn" data-act="mv" data-id="${id}" data-v="L">◀ Gauche</button><button class="btn" data-act="mv" data-id="${id}" data-v="R">Droite ▶</button></div>
    <div class="two"><button class="btn" data-act="mv" data-id="${id}" data-v="U" ${f.si===0?'disabled':''}>▲ Niveau ${f.si}</button><button class="btn" data-act="mv" data-id="${id}" data-v="D" ${f.si===S.cur.shelves.length-1?'disabled':''}>▼ Niveau ${f.si+2}</button></div>
    <button class="btn" data-act="pick1" data-ref="${p.ref}">${UPHOTO[p.ref]?'Changer la photo':'Ajouter une photo'}</button>
+   <button class="btn ${f.it.isNew?'on-new':''}" data-act="tog-new" data-id="${id}">${f.it.isNew?'★ Nouveauté — retirer la surbrillance':'☆ Marquer comme nouveauté'}</button>
    <button class="btn d" data-act="del" data-id="${id}">Retirer du rayon</button><button class="btn" data-act="close">Fermer</button>`);
+}
+
+/* Surbrillance nouveauté : un repère net posé sur un produit qu'on vient d'intégrer,
+   pour que le magasin voie d'un coup d'œil où l'installer exactement. Purement
+   visuel — n'entre dans aucun calcul de commande ni d'analyse. */
+function toggleNew(id) {
+  const f = findItem(id);
+  if (!f) return;
+  f.it.isNew = !f.it.isNew;
+  snap();
+  persist();
+  update();
+  haptic(6);
+  editItem(id);
 }
 
 function setS(id, n) {
@@ -5465,7 +5657,8 @@ function buildSheet() {
     if (!items.length) return `<li><b>Niveau ${i+1}</b><br><span class="mut">à laisser libre</span></li>`;
     return `<li><b>Niveau ${i+1}</b><br>` + items.map(it => {
       const p = BY_REF[it.ref];
-      return `${p.ref} <span class="mut">${esc(p.name)}</span> — ${it.f} de face${(it.s||1)>1?', '+it.s+' superposées':''}`;
+      // le texte reste lisible même imprimé en noir et blanc : la couleur seule ne suffit pas
+      return `${p.ref} <span class="mut">${esc(p.name)}</span> — ${it.f} de face${(it.s||1)>1?', '+it.s+' superposées':''}${it.isNew?' <span class="new">★ NOUVEAUTÉ — installer ici</span>':''}`;
     }).join('<br>') + '</li>';
   }).join('');
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
@@ -5477,6 +5670,7 @@ function buildSheet() {
     ol { padding-left: 18px; }
     li { margin-bottom: 12px; font-size: 13px; line-height: 1.5; page-break-inside: avoid; }
     .mut { color: #777; }
+    .new { display: inline-block; background: var(--bubi-new); color: var(--bubi-new-ink); font-weight: 700; font-size: 11px; padding: 1px 6px; border-radius: 6px; margin-left: 4px; }
     .noprint button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 8px; background: var(--bubi-graphite); color: #fff; }
     @media print { .noprint { display: none; } }
   </style></head><body>
@@ -6123,7 +6317,7 @@ function aiApply() {
 function menu() {
   sheet(`<h2>Actions</h2>
   <button class="btn p" data-act="wizard">${ic('wand')} Composer le rayon</button>
-  <button class="btn p" data-act="order">${ic('tray')} Commande à passer</button>
+  <button class="btn" data-act="order">${ic('tray')} Commande à passer</button>
   <button class="btn" data-act="share">${ic('doc')} Partager</button>
   <button class="btn" data-act="present">${ic('play')} Mode présentation</button>
   <button class="btn" data-act="layouts">${ic('folder')} Descentes types</button>
@@ -6386,7 +6580,10 @@ document.addEventListener('click', e => {
     v = el.dataset.v;
   switch (a) {
     case 'new':
-      projectForm(false);
+      newProjectSheet();
+      break;
+    case 'new-kind':
+      startNewProject(v);
       break;
     case 'open':
       openProject(el.dataset.id);
@@ -6461,6 +6658,10 @@ document.addEventListener('click', e => {
       break;
     case 'hfilter':
       S.homeFilter = v;
+      renderHome();
+      break;
+    case 'hkind':
+      S.homeKind = v;
       renderHome();
       break;
     case 'setstatus':
@@ -6712,6 +6913,9 @@ document.addEventListener('click', e => {
     case 'nudge':
       nudgeItem(el.dataset.id, parseFloat(v));
       break;
+    case 'tog-new':
+      toggleNew(el.dataset.id);
+      break;
     case 'mv':
       mv(el.dataset.id, v);
       break;
@@ -6843,10 +7047,6 @@ if (!S.projects.length && lsGet('bubiplan_seen') !== '1') setTimeout(onboarding,
 // corrections éventuellement publiées dans le dépôt
 loadCatalogueOverlay();
 
-// Service Worker : cache et offline
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
-}
 </script>
 </body>
 </html>
