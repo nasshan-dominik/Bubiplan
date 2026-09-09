@@ -2389,32 +2389,21 @@ html {
 */
 'use strict';
 
-/* ================= INSTALLATION HORS LIGNE, AVEC AUTO-RÉPARATION =================
-   Ne plus jamais dépendre du rythme auquel le navigateur vérifie tout seul si le
-   service worker a changé — ce rythme s'est révélé trop lent ou pas fiable sur
-   iPad, et forçait à vider les données du site à la main à chaque incident. Ici,
-   la PAGE elle-même vérifie à chaque ouverture si un service worker plus ancien
-   traîne encore, et se corrige toute seule sans qu'aucune action manuelle ne
-   soit nécessaire. */
-const VERSION_ATTENDUE = 'bubiplan-v78';
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  (async () => {
-    try {
-      const noms = await caches.keys();
-      const perime = noms.some(n => n.startsWith('bubiplan-') && n !== VERSION_ATTENDUE);
-      if (perime && !sessionStorage.getItem('bubiplan_reparation_faite')) {
-        sessionStorage.setItem('bubiplan_reparation_faite', '1');
-        await Promise.all(noms.map(n => caches.delete(n)));
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(r => r.unregister()));
-        location.reload();
-        return;
-      }
-    } catch (e) {}
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    });
-  })();
+/* ================= PLUS DE SERVICE WORKER =================
+   Décision du 9 sept 2026, après plusieurs incidents où un service worker resté
+   coincé sur une ancienne version a bloqué l'app sans qu'aucune mise à jour ne
+   puisse la corriger toute seule. L'app se charge maintenant à chaque fois
+   depuis le réseau, sans aucun mécanisme de cache personnalisé — la fiabilité
+   prime sur le confort hors ligne. Ce code retire aussi activement tout
+   service worker resté actif d'une version précédente, pour que les appareils
+   déjà touchés par un ancien incident en sortent tout seuls, sans manipulation. */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  }).catch(() => {});
+  if (window.caches) {
+    caches.keys().then(noms => noms.forEach(n => caches.delete(n))).catch(() => {});
+  }
 }
 
 /* ================= LOGO DE L'APPLICATION =================
@@ -3635,7 +3624,7 @@ function refreshPhoto(ref) {
   document.querySelectorAll(`img[data-ph="${ref}"]`).forEach(im => {
     im.src = photoSrc(ref);
   });
-  if (S.cur && S.cur.shelves.some(s => s.items.some(i => i.ref === ref))) drawGondola();
+  if (S.cur && S.cur.kind !== 'vrac' && S.cur.shelves.some(s => s.items.some(i => i.ref === ref))) drawGondola();
 }
 
 function resetPhotos() {
@@ -3715,6 +3704,7 @@ const S = {
 };
 S.projects.forEach(p => {
   if (!p.univ) p.univ = 'chien';
+  if (p.kind === 'vrac') return;   // pas d'étagères sur un pôle vrac, rien à nettoyer ici
   p.shelves.forEach(s => {
     s.items = s.items.filter(i =>BY_REF[i.ref]);
     s.items.forEach(i => {
