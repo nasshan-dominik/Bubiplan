@@ -1,5 +1,5 @@
 /* Service worker BubiPlan : cache de l'application pour l'usage hors ligne. */
-const CACHE = 'bubiplan-v70';
+const CACHE = 'bubiplan-v75';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-1024.png'];
 
 self.addEventListener('install', e => {
@@ -42,6 +42,22 @@ self.addEventListener('fetch', e => {
         )
       );
     }
+    return;
+  }
+  // le document principal se vérifie toujours en réseau d'abord : s'il reste
+  // servi depuis le cache en priorité, une seule copie corrompue ou périmée
+  // bloquerait l'app indéfiniment sur une version cassée, sans aucun moyen de
+  // s'en sortir tout seul — exactement le symptôme d'un écran blanc qui persiste
+  // après une mise à jour. Le cache ne sert plus que de filet hors ligne.
+  const estDocument = e.request.mode === 'navigate' || u.pathname.endsWith('/index.html') || u.pathname === '/' || u.pathname.endsWith('/');
+  if (estDocument) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(e.request).then(hit => hit || caches.match('./index.html')))
+    );
     return;
   }
   e.respondWith(

@@ -586,21 +586,6 @@ a.chip {
   color: var(--tint)
 }
 
-.dr.min .chips,
-.dr.min .pl,
-.dr.min .seg {
-  display: none
-}
-
-
-
-
-
-
-
-
-
-
 /* ===== Tablette et grand écran : plus dense, panneau produits plus large ===== */
 @media (min-width:900px) {
   .body { flex-direction: row; }
@@ -617,11 +602,6 @@ a.chip {
 
   .grab,
   .dr .sb .tg { display: none; }
-
-  .dr.min .chips,
-  .dr.min .seg { display: flex; }
-
-  .dr.min .pl { display: grid; }
 
   /* grille de produits : autant de colonnes que la largeur le permet */
   .pl { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 7px; }
@@ -2754,6 +2734,7 @@ function ic(name, size) {
     save: '<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h7V3"/><rect x="8" y="13" width="8" height="8"/>',
     cog: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
     box: '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+    bins: '<rect x="3" y="4" width="8" height="7" rx="1"/><rect x="13" y="4" width="8" height="7" rx="1"/><rect x="3" y="13" width="18" height="7" rx="1"/><path d="M12 13v7"/>',
   }[name] || '';
   return `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 }
@@ -2833,11 +2814,6 @@ function perf(ref) {
     maxF: 6,
     priority: 3
   }, PERF[ref] || {});
-}
-
-function setPerf(ref, data) {
-  PERF[ref] = Object.assign(perf(ref), data);
-  savePerf();
 }
 
 function depthCapacity(p) {
@@ -3445,7 +3421,13 @@ function inlinePhotoURLs(str) {
   let out = String(str);
   Object.keys(URL2REF).forEach(u => {
     const k = URL2REF[u];
-    const full = k.indexOf('logo:') === 0 ? (LOGOS[k.slice(5)] || {}).white : UPHOTO[k];
+    let full;
+    if (k.indexOf('logo:') === 0) full = (LOGOS[k.slice(5)] || {}).white;
+    else if (k.indexOf('vrac:') === 0) {
+      const [, ri, ci] = k.split(':');
+      const cell = S.cur && S.cur.bulk && S.cur.bulk.rows[ri] && S.cur.bulk.rows[ri].cells[ci];
+      full = cell && cell.photo;
+    } else full = UPHOTO[k];
     if (full && out.includes(u)) out = out.split(u).join(full);
   });
   return out;
@@ -4080,7 +4062,7 @@ function newProjectSheet() {
      ${row('lineaire', 'grid', 'Nouveau linéaire', 'Un rayon classique, plusieurs niveaux')}
      ${row('gondole', 'grid', 'Nouvelle gondole', 'Tête de gondole, mise en avant ou promo')}
      ${row('display', 'box', 'Nouveau display', 'Présentoir aux dimensions figées', true)}
-     ${row('vrac', 'box', 'Nouveau pôle vrac', 'Bacs libre-service, construction au sol')}
+     ${row('vrac', 'bins', 'Nouveau pôle vrac', 'Bacs libre-service, construction au sol')}
    </div>
    <button class="btn" data-act="close">Annuler</button>`);
 }
@@ -4225,9 +4207,10 @@ function vracRemember(name, sku, photo) {
   vracLibSave(list.slice(0, 200));
   return e;
 }
-function vracRecents() { return vracLib(); }   // conservé pour compatibilité du nom
 
-function bulkPickPhoto(ri, ci) {
+/* Ouvre le sélecteur de fichier natif et renvoie l'image choisie en data URL, une
+   seule fois définie plutôt que reconstruite à chaque endroit qui en a besoin. */
+function pickImageFile(cb) {
   const inp = document.createElement('input');
   inp.type = 'file';
   inp.accept = 'image/*';
@@ -4235,17 +4218,21 @@ function bulkPickPhoto(ri, ci) {
     const f = inp.files[0];
     if (!f) return;
     const rd = new FileReader();
-    rd.onload = () => {
-      const cell = S.cur.bulk.rows[ri].cells[ci] || { name: '', sku: '' };
-      cell.photo = rd.result;
-      S.cur.bulk.rows[ri].cells[ci] = cell;
-      vracRemember(cell.name, cell.sku, cell.photo);
-      dropShortURL('vrac:' + ri + ':' + ci);
-      snap(); persist(); closeSheet(); bulkRefresh();
-    };
+    rd.onload = () => cb(rd.result);
     rd.readAsDataURL(f);
   };
   inp.click();
+}
+
+function bulkPickPhoto(ri, ci) {
+  pickImageFile(photo => {
+    const cell = S.cur.bulk.rows[ri].cells[ci] || { name: '', sku: '' };
+    cell.photo = photo;
+    S.cur.bulk.rows[ri].cells[ci] = cell;
+    vracRemember(cell.name, cell.sku, cell.photo);
+    dropShortURL('vrac:' + ri + ':' + ci);
+    snap(); persist(); closeSheet(); bulkRefresh();
+  });
 }
 
 /* Écran dédié : voir, chercher et gérer toutes les photos importées, indépendamment
@@ -4271,26 +4258,16 @@ function vracLibSheet() {
 }
 
 function vracLibAdd() {
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'image/*';
-  inp.onchange = () => {
-    const f = inp.files[0];
-    if (!f) return;
-    const rd = new FileReader();
-    rd.onload = () => {
-      sheet(`<h2>Nouvelle photo</h2>
-       <div style="text-align:center;margin-bottom:10px"><img src="${rd.result}" style="max-width:120px;max-height:120px;border-radius:10px"></div>
-       <div class="grp"><div class="f"><label>Référence</label><input id="vl_name" placeholder="Oreilles de porc" autocapitalize="sentences"></div></div>
-       <div class="grp"><div class="f"><label>SKU</label><input id="vl_sku" placeholder="facultatif"></div></div>
-       <button class="btn p" data-act="vrac-lib-save">Enregistrer</button>
-       <button class="btn" data-act="vrac-lib">Annuler</button>`);
-      S.vracLibPending = rd.result;
-      setTimeout(() => { const el = $('vl_name'); if (el) el.focus(); }, 200);
-    };
-    rd.readAsDataURL(f);
-  };
-  inp.click();
+  pickImageFile(photo => {
+    sheet(`<h2>Nouvelle photo</h2>
+     <div style="text-align:center;margin-bottom:10px"><img src="${photo}" style="max-width:120px;max-height:120px;border-radius:10px"></div>
+     <div class="grp"><div class="f"><label>Référence</label><input id="vl_name" placeholder="Oreilles de porc" autocapitalize="sentences"></div></div>
+     <div class="grp"><div class="f"><label>SKU</label><input id="vl_sku" placeholder="facultatif"></div></div>
+     <button class="btn p" data-act="vrac-lib-save">Enregistrer</button>
+     <button class="btn" data-act="vrac-lib">Annuler</button>`);
+    S.vracLibPending = photo;
+    setTimeout(() => { const el = $('vl_name'); if (el) el.focus(); }, 200);
+  });
 }
 function vracLibSaveNew() {
   const name = ($('vl_name').value || '').trim();
@@ -4311,6 +4288,46 @@ function bulkSinglePhotoSVG(ri, ci, url, x, y, w, h) {
     <image href="${url}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet" clip-path="url(#${cid})"/>`;
 }
 
+function bulkEditSheet() {
+  const p = S.cur;
+  sheet(`<h2>Pôle vrac</h2>
+   <div class="grp"><div class="f"><label>Magasin</label><input id="be_store" value="${esc(p.store)}" autocapitalize="words"></div></div>
+   <div class="grp"><div class="f"><label>Plan</label><input id="be_name" value="${esc(p.name)}" autocapitalize="sentences"></div></div>
+   <div class="grp"><div class="f"><label>Largeur disponible</label><input id="be_w" type="number" inputmode="numeric" value="${(p.bulk.widthMm/10).toFixed(0)}"><span class="unit">cm</span></div></div>
+   <p style="font-size:13px;color:var(--mut)">Réduire la largeur peut retirer les derniers bacs de chaque rangée si la place ne suffit plus.</p>
+   <button class="btn p" data-act="bulk-edit-save">Enregistrer</button>
+   <button class="btn" data-act="close">Annuler</button>`);
+}
+
+function bulkEditSave() {
+  const p = S.cur;
+  p.store = ($('be_store').value || '').trim() || p.store;
+  p.name = ($('be_name').value || '').trim() || p.name;
+  const wCm = Math.max(60, parseInt($('be_w').value, 10) || (p.bulk.widthMm / 10));
+  const widthMm = Math.round(wCm * 10);
+  if (widthMm !== p.bulk.widthMm) {
+    const cols = Math.max(1, Math.floor(widthMm / 600));
+    p.bulk.rows.forEach(row => {
+      const anciennes = row.cells;
+      const neuves = bulkCellsFor(row.type, cols);
+      for (let i = 0; i < Math.min(anciennes.length, neuves.length); i++) neuves[i] = anciennes[i];
+      row.cells = neuves;
+    });
+    p.bulk.widthMm = widthMm;
+  }
+  snap(); persist(); closeSheet(); bulkRefresh();
+  toast('Pôle vrac mis à jour');
+}
+
+function bulkClearAll() {
+  confirmBox('Vider les bacs ?', 'Toutes les références affectées seront retirées.', 'Vider', () => {
+    S.cur.bulk.rows.forEach(r => r.cells = r.cells.map(() => null));
+    S.bulkFill = false;
+    snap(); persist(); bulkRefresh();
+  }, true);
+}
+
+
 function bulkRowsSheet() {
   const p = S.cur;
   const cols = bulkColumns(p);
@@ -4325,8 +4342,8 @@ function bulkRowsSheet() {
        <div class="seg" style="margin:0 6px"><button data-act="bulk-type" data-i="${i}" data-v="grand" class="${r.type==='grand'?'on':''}">Grand</button><button data-act="bulk-type" data-i="${i}" data-v="petit" class="${r.type==='petit'?'on':''}">Petit</button></div>
      </div></div>
      <div class="two">
-       <button class="btn" data-act="bulk-move" data-i="${i}" data-v="-1" ${i===0?'disabled':''}>▲ Monter</button>
-       <button class="btn" data-act="bulk-move" data-i="${i}" data-v="1" ${i===p.bulk.rows.length-1?'disabled':''}>▼ Descendre</button>
+       <button class="btn" data-act="bulk-move" data-i="${i}" data-v="1" ${i===p.bulk.rows.length-1?'disabled':''}>▲ Monter</button>
+       <button class="btn" data-act="bulk-move" data-i="${i}" data-v="-1" ${i===0?'disabled':''}>▼ Descendre</button>
      </div>
      <div class="two">
        <button class="btn" data-act="bulk-dup" data-i="${i}">${ic('copy')} Dupliquer</button>
@@ -4539,11 +4556,55 @@ function renderBulkEditor() {
   });
 }
 
+/* ---- export et partage ---- */
+function bulkShareSheet() {
+  sheet(`<h2>Partager</h2>
+  <button class="btn p" data-act="bulk-png">${ic('photo')} Image du pôle vrac</button>
+  <button class="btn" data-act="bulk-csv">${ic('doc')} Liste des compartiments</button>
+  <button class="btn" data-act="close">Fermer</button>`);
+}
+
+function bulkExportPNG() {
+  const svg = inlinePhotoURLs(resolveTokens(bulkSVG(S.cur)));
+  const vb = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+  const w = +vb[1], h = +vb[2], k = 3;
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = w * k; c.height = h * k + 30;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, w * k, h * k);
+    ctx.fillStyle = '#444';
+    ctx.font = `${11*k}px -apple-system,system-ui`;
+    ctx.fillText(`${S.cur.store} – ${S.cur.name} · Pôle vrac · ${(S.cur.bulk.widthMm/10).toFixed(0)}×${(bulkTotalHeightMm(S.cur)/10).toFixed(0)} cm · ${new Date().toLocaleDateString('fr-FR')}`, 8, h * k + 20);
+    try {
+      c.toBlob(b => { if (b) shareOrDownload(b, fileName('png'), u => `<img src="${u}">`); else toast('Export impossible'); }, 'image/png');
+    } catch (e) { toast('Export impossible'); }
+  };
+  img.onerror = () => toast('Export impossible');
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function bulkExportCSV() {
+  const p = S.cur;
+  const rows = [['Rangée', 'Type', 'Emplacement', 'Référence', 'SKU']];
+  p.bulk.rows.forEach((row, ri) => row.cells.forEach((cell, ci) => {
+    if (cell) rows.push([ri + 1, row.type === 'grand' ? 'Grand' : 'Petit', ci + 1, cell.name, cell.sku || '']);
+  }));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
+  shareOrDownload(new Blob([csv], { type: 'text/csv;charset=utf-8' }), fileName('csv'), u => `<a href="${u}">Ouvrir</a>`);
+}
+
+
 function bulkMenu() {
   sheet(`<h2>Actions</h2>
-  <button class="btn" data-act="bulk-rows">${ic('grid')} Gérer les rangées</button>
-  <button class="btn" data-act="vrac-lib">${ic('photo')} Photos vrac</button>
+  <button class="btn p" data-act="bulk-rows">${ic('grid')} Gérer les rangées</button>
   <button class="btn" data-act="bulk-fill">${ic('wand')} ${S.bulkFill?'Arrêter le remplissage':'Remplir les bacs'}</button>
+  <button class="btn" data-act="bulk-share">${ic('doc')} Partager</button>
+  <button class="btn" data-act="present">${ic('play')} Mode présentation</button>
+  <button class="btn" data-act="settings">${ic('cog')} Réglages</button>
+  <button class="btn d" data-act="bulk-clear-all">${ic('undo')} Vider les bacs</button>
   <button class="btn d" data-act="delete-project">${ic('trash')} Supprimer le projet</button>
   <button class="btn" data-act="close">Fermer</button>`);
 }
@@ -5295,15 +5356,19 @@ function update() {
     return `<span class="l${i===S.shelf?' on':''}" data-act="shelf" data-i="${i}">N${i+1}<small>${w>W?'︎':Math.round(w/W*100)+'%'}</small></span>`;
   }).join('');
   const allItems = S.cur.shelves.flatMap(sh => sh.items),
-    capacity = allItems.reduce((a, it) => a + itemCapacity(it), 0),
-    dosVals = allItems.map(itemDOS).filter(x => x != null),
-    avgDos = dosVals.length ? dosVals.reduce((a, b) => a + b, 0) / dosVals.length : null;
-  $('stats').innerHTML = `<div class="st"><b>${Math.round(used/(W*N)*100)} %</b>Remplissage</div><div class="st"><b>${refs.size}</b>Références</div><div class="st"><b>${fac}</b>Boîtes de face</div><div class="st"><b>${capacity} u.</b>Capacité</div>${avgDos!=null?`<div class="st"><b>${avgDos.toFixed(0)} j</b>Stock moyen</div>`:''}${surBroches()?`<div class="st"><b>${brocheCount()}</b>Broches</div>`:''}` +
-    Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([c, w]) => `<div class="st fam" style="--fam:${familyColor({cat:c,fmt:'150g'})}"><b>${used?Math.round(w/used*100):0} %</b>${esc(c)}</div>`).join('');
+    capacity = allItems.reduce((a, it) => a + itemCapacity(it), 0);
+  // un seul passage : le stock moyen et les alertes de rupture utilisaient chacun
+  // leur propre calcul de itemDOS(), donc le double du travail pour le même résultat
+  const dosVals = [];
   allItems.forEach(it => {
     const d = itemDOS(it);
-    if (d != null && d < 7) warns.push(`${it.ref} : seulement ${d.toFixed(1)} jours de stock estimés`);
+    if (d == null) return;
+    dosVals.push(d);
+    if (d < 7) warns.push(`${it.ref} : seulement ${d.toFixed(1)} jours de stock estimés`);
   });
+  const avgDos = dosVals.length ? dosVals.reduce((a, b) => a + b, 0) / dosVals.length : null;
+  $('stats').innerHTML = `<div class="st"><b>${Math.round(used/(W*N)*100)} %</b>Remplissage</div><div class="st"><b>${refs.size}</b>Références</div><div class="st"><b>${fac}</b>Boîtes de face</div><div class="st"><b>${capacity} u.</b>Capacité</div>${avgDos!=null?`<div class="st"><b>${avgDos.toFixed(0)} j</b>Stock moyen</div>`:''}${surBroches()?`<div class="st"><b>${brocheCount()}</b>Broches</div>`:''}` +
+    Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([c, w]) => `<div class="st fam" style="--fam:${familyColor({cat:c,fmt:'150g'})}"><b>${used?Math.round(w/used*100):0} %</b>${esc(c)}</div>`).join('');
   $('warns').innerHTML = selBar() + [...new Set(warns)].map(w => `<div class="warn">${esc(w)}</div>`).join('');
   drawGondola();
 
@@ -5312,10 +5377,6 @@ function update() {
 function drawGondola() {
   const c = $('cw');
   if (c) c.innerHTML = gondolaSVG(true, true);
-}
-
-function gradId(brand) {
-  return BRANDS.indexOf(brand);
 }
 
 let clipSeq = 0;
@@ -6190,19 +6251,6 @@ function saveSep() {
   if (S.cur) update();
 }
 
-/* Blocs de produits d'un niveau : deux emplacements voisins de même référence
-   n'en forment qu'un, on ne sépare pas une référence d'elle-même. */
-function shelfBlocks(shelf) {
-  const blocks = [];
-  shelf.items.forEach(it => {
-    if (it.gap || !BY_REF[it.ref]) return;
-    const last = blocks[blocks.length - 1];
-    if (last && last.ref === it.ref) last.items.push(it);
-    else blocks.push({ ref: it.ref, items: [it] });
-  });
-  return blocks;
-}
-
 function separatorCount() {
   return S.cur.shelves.reduce((n, sh) => n + sepPlan(sh).total, 0);
 }
@@ -6527,7 +6575,8 @@ function dupToStoreGo() {
   c.status = 'brouillon';
   delete c.before;
   c.created = c.updated = Date.now();
-  c.shelves.forEach(sh => sh.items.forEach(it => it.id = uid()));
+  if (c.kind === 'vrac') { /* rien à renouveler : les compartiments n'ont pas d'identifiant propre */ }
+  else c.shelves.forEach(sh => sh.items.forEach(it => it.id = uid()));
   S.projects.push(c);
   store.save(S.projects);
   closeSheet();
@@ -6798,9 +6847,9 @@ function menu() {
   <button class="btn" data-act="share">${ic('doc')} Partager</button>
   <button class="btn" data-act="present">${ic('play')} Mode présentation</button>
   <button class="btn" data-act="layouts">${ic('folder')} Descentes types</button>
+  <button class="btn" data-act="settings">${ic('cog')} Réglages</button>
   <button class="btn d" data-act="clear">${ic('undo')} Vider la gondole</button>
   <button class="btn d" data-act="delete-project">${ic('trash')} Supprimer le projet</button>
-  <button class="btn" data-act="settings">${ic('cog')} Réglages</button>
   <button class="btn" data-act="close" style="margin-top:14px">Fermer</button>`);
 }
 
@@ -6822,10 +6871,14 @@ function wizardSheet() {
 
 /* Réglages, sauvegardes et actions destructrices, à l'écart du travail courant. */
 function settingsSheet() {
+  const vrac = S.cur.kind === 'vrac';
   sheet(`<h2>Réglages</h2>
+  ${vrac ? `
+  <button class="btn" data-act="vrac-lib">${ic('photo')} Photos vrac</button>
+  <button class="btn" data-act="edit-project">${ic('cog')} Dimensions du pôle vrac</button>` : `
   <button class="btn" data-act="photosheet">${ic('photo')} Photos produits</button>
   <button class="btn" data-act="dims">${ic('ruler')} Dimensions des boîtes</button>
-  <button class="btn" data-act="edit-project">${ic('cog')} Dimensions de la gondole</button>
+  <button class="btn" data-act="edit-project">${ic('cog')} Dimensions de la gondole</button>`}
   <p style="margin-top:16px"><b>Où en est ce plan ?</b></p>
   <div class="qs">${Object.entries(STATUS).map(([k, v]) => `<button data-act="setstatus" data-v="${k}" class="${statusOf(S.cur) === k ? 'on' : ''}">${v.l}</button>`).join('')}</div>
   <p style="margin-top:16px"><b>Ce projet</b></p>
@@ -6954,7 +7007,7 @@ function presentation() {
   const d = document.createElement('div');
   d.className = 'pres';
   d.id = 'pres';
-  d.innerHTML = `<div class="presWrap" id="presWrap">${gondolaSVG(false, true)}</div>
+  d.innerHTML = `<div class="presWrap" id="presWrap">${S.cur.kind === 'vrac' ? bulkSVG(S.cur) : gondolaSVG(false, true)}</div>
     <div class="presBar">
       <button class="nb" data-act="pres-zoom" data-v="-1">−</button>
       <span id="presPct">100 %</span>
@@ -7097,6 +7150,21 @@ document.addEventListener('click', e => {
       break;
     case 'vrac-lib':
       vracLibSheet();
+      break;
+    case 'bulk-edit-save':
+      bulkEditSave();
+      break;
+    case 'bulk-clear-all':
+      bulkClearAll();
+      break;
+    case 'bulk-share':
+      bulkShareSheet();
+      break;
+    case 'bulk-png':
+      bulkExportPNG();
+      break;
+    case 'bulk-csv':
+      bulkExportCSV();
       break;
     case 'vrac-lib-add':
       vracLibAdd();
@@ -7507,7 +7575,7 @@ document.addEventListener('click', e => {
       break;
     }
     case 'edit-project':
-      projectForm(true);
+      if (S.cur.kind === 'vrac') bulkEditSheet(); else projectForm(true);
       break;
     case 'png':
       exportPNG(true);
@@ -7530,7 +7598,8 @@ document.addEventListener('click', e => {
       c.id = uid();
       c.name += ' (copie)';
       c.created = c.updated = Date.now();
-      c.shelves.forEach(s => s.items.forEach(i => i.id = uid()));
+      if (c.kind === 'vrac') { /* les compartiments n'ont pas d'identifiant propre à renouveler */ }
+      else c.shelves.forEach(s => s.items.forEach(i => i.id = uid()));
       S.projects.push(c);
       store.save(S.projects);
       closeSheet();
