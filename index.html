@@ -547,6 +547,36 @@ button {
   outline: none
 }
 
+.sb .in .clr {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: -13px -13px -13px -8px;
+  background: none;
+  color: transparent;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0
+}
+
+.sb .in .clr::before {
+  content: '✕';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--mut);
+  color: var(--bubi-surface);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.sb .in input:not(:placeholder-shown) ~ .clr {
+  display: flex
+}
+
 .sb .in input::placeholder {
   color: var(--mut)
 }
@@ -2031,10 +2061,53 @@ html, body {
 .hsb { padding: 8px 16px 2px; }
 
 .hsb .in {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   background: var(--bubi-surface-2);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   border: .5px solid var(--bubi-border);
+}
+
+.hsb .in input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font-size: 16px;
+  color: var(--txt);
+  outline: none
+}
+
+.hsb .in .clr {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: -13px -13px -13px -8px;
+  background: none;
+  color: transparent;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0
+}
+
+.hsb .in .clr::before {
+  content: '✕';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--mut);
+  color: var(--bubi-surface);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.hsb .in input:not(:placeholder-shown) ~ .clr {
+  display: flex
 }
 
 .hchips { padding: 8px 16px 2px; }
@@ -3929,43 +4002,27 @@ function projectLinear(p) {
 
 /* Illustration de l'état vide : une gondole en plan, emplacements en pointillés. */
 function blueprintIllustration() {
-  // quatre esquisses en pointillés, une par nature de projet, plutôt qu'une
-  // seule gondole — pour ne pas donner l'impression que l'app ne sert qu'à ça
-  const rack = (x0, y0, w, h, niveaux) => {
-    let s = `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="3" fill="var(--bubi-blueprint-soft)"/>`;
-    s += `<rect x="${x0-4}" y="${y0-4}" width="4" height="${h+8}" rx="1.5" fill="var(--bubi-blueprint)"/>`;
-    s += `<rect x="${x0+w}" y="${y0-4}" width="4" height="${h+8}" rx="1.5" fill="var(--bubi-blueprint)"/>`;
-    const pas = h / niveaux;
-    for (let i = 1; i < niveaux; i++) s += `<rect x="${x0}" y="${y0+i*pas-1.5}" width="${w}" height="3" fill="var(--bubi-blueprint)"/>`;
-    for (let i = 0; i < niveaux; i++) {
-      const cy = y0 + i * pas + pas / 2;
-      const n = 2 + (i % 2);
-      for (let k = 0; k < n; k++) {
-        const bw = w / n - 4, bx = x0 + 3 + k * (w / n);
-        s += `<rect x="${bx}" y="${cy-pas*.32}" width="${bw}" height="${pas*.64}" rx="2" fill="none" stroke="var(--bubi-blueprint)" stroke-width="1.2" stroke-dasharray="2.5 2"/>`;
-      }
+  // un seul symbole plutôt que quatre esquisses séparées : une équerre de mesure,
+  // avec ses graduations, et quelques produits nichés dans l'angle — l'idée du
+  // planogramme (mesurer, puis placer) en une seule image, pas une par nature
+  const grad = (x1, y1, x2, y2, n) => {
+    let s = '';
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
+      const long = i % 5 === 0;
+      const dx = x2 === x1 ? (long ? 7 : 4) : 0, dy = y2 === y1 ? (long ? 7 : 4) : 0;
+      s += `<line x1="${x}" y1="${y}" x2="${x+dx}" y2="${y+dy}" stroke="var(--bubi-blueprint)" stroke-width="1"/>`;
     }
     return s;
   };
-  const bins = (x0, y0, w, h) => {
-    let s = '';
-    const rangs = [{h: h*.42, n: 2}, {h: h*.58, n: 3}];
-    let y = y0 + h;
-    rangs.forEach(r => {
-      y -= r.h;
-      s += `<rect x="${x0}" y="${y}" width="${w}" height="${r.h}" rx="2" fill="var(--bubi-blueprint-soft)" stroke="var(--bubi-blueprint)" stroke-width="1.3"/>`;
-      for (let k = 1; k < r.n; k++) s += `<line x1="${x0+w*k/r.n}" y1="${y+2}" x2="${x0+w*k/r.n}" y2="${y+r.h-2}" stroke="var(--bubi-blueprint)" stroke-width="1"/>`;
-    });
-    return s;
-  };
   return `<svg class="bp" viewBox="0 0 200 150" aria-hidden="true">
-    ${rack(14, 10, 78, 58, 3)}
-    ${rack(112, 10, 74, 58, 4)}
-    <rect x="16" y="82" width="70" height="50" rx="3" fill="var(--bubi-blueprint-soft)"/>
-    <rect x="12" y="78" width="4" height="58" rx="1.5" fill="var(--bubi-blueprint)"/>
-    <rect x="86" y="78" width="4" height="58" rx="1.5" fill="var(--bubi-blueprint)"/>
-    <rect x="26" y="92" width="50" height="30" rx="2" fill="none" stroke="var(--bubi-blueprint)" stroke-width="1.2" stroke-dasharray="2.5 2"/>
-    ${bins(108, 78, 80, 56)}
+    <path d="M34 26 L34 124 L176 124 L176 108 L50 108 L50 26 Z" fill="var(--bubi-blueprint-soft)" stroke="var(--bubi-blueprint)" stroke-width="2.5" stroke-linejoin="round"/>
+    ${grad(34, 26, 34, 108, 14)}
+    ${grad(50, 124, 176, 124, 21)}
+    <rect x="66" y="70" width="30" height="38" rx="2.5" fill="var(--bubi-surface)" stroke="var(--bubi-blueprint-strong)" stroke-width="1.6" stroke-dasharray="3 2.5"/>
+    <rect x="102" y="84" width="24" height="24" rx="2.5" fill="var(--bubi-surface)" stroke="var(--bubi-blueprint-strong)" stroke-width="1.6" stroke-dasharray="3 2.5"/>
+    <rect x="132" y="92" width="34" height="16" rx="2.5" fill="var(--bubi-surface)" stroke="var(--bubi-blueprint-strong)" stroke-width="1.6" stroke-dasharray="3 2.5"/>
   </svg>`;
 }
 
@@ -4018,7 +4075,7 @@ function renderHome() {
 
     ${all.length ? `
       <div class="sb hsb">
-        <div class="in">${ic('search', 18)}<input id="hq" placeholder="Magasin ou plan" value="${esc(S.homeQ || '')}" autocomplete="off"></div>
+        <div class="in">${ic('search', 18)}<input id="hq" placeholder="Magasin ou plan" value="${esc(S.homeQ || '')}" autocomplete="off"><button class="clr" data-act="clear-search" data-target="hq">✕</button></div>
       </div>
       <div class="chips hchips">
         ${[['encours', 'En cours'], ['propose', 'Proposés'], ['valide', 'Validés'], ['pose', 'Posés'], ['tous', 'Tous']]
@@ -4288,10 +4345,10 @@ const VRAC_SEED = [
   { sku: '7251', name: 'Queue de bœuf avec viande, 30cm' },
   { sku: '7252', name: 'Queue de bœuf avec viande, 30cm' },
   { sku: '7322', name: 'Tripe de bœuf torsadée, 12-15cm' },
-  { sku: '7352', name: 'Rouleau de peau de bœuf' },
-  { sku: '7353', name: 'Rouleau de peau de bœuf' },
-  { sku: '7355', name: 'Rouleau de peau de bœuf' },
-  { sku: '7356', name: 'Rouleau de peau de bœuf' },
+  { sku: '7352', name: 'Rouleau de masque de bœuf, 22-25cm' },
+  { sku: '7353', name: 'Rouleau de masque de bœuf, 22-25cm' },
+  { sku: '7355', name: 'Rouleau de masque de bœuf, 22-25cm' },
+  { sku: '7356', name: 'Rouleau de masque de bœuf, 22-25cm' },
   { sku: '7393', name: 'Nez de bœuf naturel' },
   { sku: '7394', name: 'Nez de bœuf blanc' },
   { sku: '7445', name: 'Rouleau de peau de chèvre' },
@@ -4359,7 +4416,7 @@ function vracLibSheet() {
   const list = vracLib().filter(e => !q || e.name.toLowerCase().includes(q) || e.sku.toLowerCase().includes(q));
   sheet(`<h2>Photos vrac</h2>
    <p>Importe une fois, retrouve-la ensuite dans n'importe quel bac par le nom.</p>
-   <div class="sb" style="padding:4px 0"><div class="in">${ic('search',18)}<input id="vlibQ" placeholder="Chercher une référence" value="${esc(S.vracLibQ||'')}" autocomplete="off"></div></div>
+   <div class="sb" style="padding:4px 0"><div class="in">${ic('search',18)}<input id="vlibQ" placeholder="Chercher une référence" value="${esc(S.vracLibQ||'')}" autocomplete="off"><button class="clr" data-act="clear-search" data-target="vlibQ">✕</button></div></div>
    <button class="btn p" data-act="vrac-lib-add">${ic('plus')} Ajouter une photo</button>
    ${list.length ? list.map(e => `
      <div class="grp"><div class="f" style="min-height:56px">
@@ -4475,10 +4532,23 @@ function bulkRowsSheet() {
    <button class="btn" data-act="close">Fermer</button>`);
 }
 
-function bulkAddRow() {
+function bulkAddRow(type) {
   const p = S.cur, cols = bulkColumns(p);
-  p.bulk.rows.push({ type: 'grand', cells: bulkCellsFor('grand', cols) });
-  snap(); persist(); bulkRefresh(); bulkRowsSheet();
+  p.bulk.rows.push({ type: type || 'grand', cells: bulkCellsFor(type || 'grand', cols) });
+  snap(); persist();
+}
+function bulkAddRowFromSheet(type) { bulkAddRow(type); bulkRefresh(); bulkRowsSheet(); }
+
+/* Demande Grand ou Petit avant de créer la rangée, plutôt que de choisir Grand
+   tout seul sans le dire — depuis le dessin comme depuis « Gérer les rangées ». */
+function bulkAskRowType(depuisFeuille) {
+  sheet(`<h2>Nouvelle rangée</h2>
+   <p>Grand : 2 compartiments, 299 mm de haut. Petit : 3 compartiments, 197 mm de haut.</p>
+   <div class="two">
+     <button class="btn p" data-act="bulk-add-row-type" data-v="grand" data-from="${depuisFeuille?'sheet':'canvas'}">Grand</button>
+     <button class="btn p" data-act="bulk-add-row-type" data-v="petit" data-from="${depuisFeuille?'sheet':'canvas'}">Petit</button>
+   </div>
+   <button class="btn" data-act="close">Annuler</button>`, true);
 }
 function bulkDelRow(i) {
   const p = S.cur;
@@ -4512,24 +4582,31 @@ function bulkSetType(i, type) {
 function bulkCellSheet(ri, ci) {
   const p = S.cur, cell = p.bulk.rows[ri].cells[ci];
   const q = (S.vracPickQ || '').toLowerCase().trim();
-  const toutesLesRefs = vracLib().slice().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  // les références déjà posées ailleurs disparaissent de la liste : en pratique une
+  // même référence ne va jamais dans deux bacs à la fois. Celle déjà dans CE
+  // compartiment reste proposée, pour ne pas se bloquer soi-même en la modifiant.
+  const dejaPosees = new Set(bulkAllCells().filter(c => !(c.ri === ri && c.ci === ci)).map(c => c.cell.sku || c.cell.name));
+  const toutesLesRefs = vracLib()
+    .filter(e => !dejaPosees.has(e.sku || e.name))
+    .sort((a, b) => (a.sku || '').localeCompare(b.sku || '', undefined, { numeric: true }) || a.name.localeCompare(b.name, 'fr'));
   const lib = toutesLesRefs.filter(e => !q || e.name.toLowerCase().includes(q) || e.sku.toLowerCase().includes(q));
+  const ligne = e => `
+     <button class="f" style="min-height:60px" data-act="bulk-pick" data-ri="${ri}" data-ci="${ci}" data-libid="${e.id}">
+       <span style="flex:0 0 auto;width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--bubi-surface-2);display:flex;align-items:center;justify-content:center;color:var(--mut)">${e.photo?`<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover">`:ic('photo',20)}</span>
+       <span class="lbl" style="text-align:left">
+         <span style="display:block;font-size:15px;font-weight:600;color:var(--txt);line-height:1.25">${esc(e.name)}</span>
+         ${e.sku?`<span style="display:block;font-size:12px;color:var(--mut)">${esc(e.sku)}</span>`:''}
+       </span>
+     </button>`;
   sheet(`<h2>Compartiment</h2>
-   <p>Rangée ${ri + 1}, emplacement ${ci + 1}.</p>
+   <p>Rangée ${ri + 1}, emplacement ${ci + 1}.${S.bulkFill?' Remplissage en cours…':''}</p>
+   ${S.bulkFill ? `<button class="btn d" data-act="bulk-fill-stop">${ic('check')} Terminé — arrêter le remplissage</button>` : ''}
    ${toutesLesRefs.length ? `
    <p class="lbl2">Depuis la bibliothèque</p>
-   <div class="grp"><div class="f">
-     <select id="bkPickSel" style="flex:1;border:none;background:none;font-size:16px;color:inherit;padding:0">
-       <option value="">Choisir dans la liste…</option>
-       ${toutesLesRefs.map(e => `<option value="${e.id}">${esc(e.name)}${e.sku?' · '+esc(e.sku):''}</option>`).join('')}
-     </select>
-   </div></div>
-   <div class="sb" style="padding:2px 0"><div class="in">${ic('search',18)}<input id="bkPickQ" placeholder="…ou chercher par nom" value="${esc(S.vracPickQ||'')}" autocomplete="off"></div></div>
-   ${q ? (lib.length ? lib.slice(0,8).map(e=>`
-     <button class="btn" style="display:flex;align-items:center;gap:10px;text-align:left" data-act="bulk-pick" data-ri="${ri}" data-ci="${ci}" data-libid="${e.id}">
-       <span style="flex:0 0 auto;width:32px;height:32px;border-radius:7px;overflow:hidden;background:var(--fill);display:inline-block">${e.photo?`<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover">`:''}</span>
-       <span>${esc(e.name)}${e.sku?' · '+esc(e.sku):''}</span>
-     </button>`).join('') : `<p style="color:var(--mut);font-size:13px">Aucune correspondance.</p>`) : ''}
+   <div class="sb" style="padding:2px 0"><div class="in">${ic('search',18)}<input id="bkPickQ" placeholder="Chercher par nom ou numéro" value="${esc(S.vracPickQ||'')}" autocomplete="off"><button class="clr" data-act="clear-search" data-target="bkPickQ">✕</button></div></div>
+   <div class="grp" style="max-height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch">
+     ${lib.length ? lib.map(ligne).join('') : `<div class="f" style="color:var(--mut);font-size:13px">Aucune correspondance.</div>`}
+   </div>
    <p class="lbl2" style="margin-top:16px">Ou saisis une nouvelle référence</p>` : ''}
    <div class="grp"><div class="f"><label>Référence</label><input id="bk_name" value="${esc(cell?cell.name:'')}" placeholder="Oreilles de porc" autocapitalize="sentences"></div></div>
    <div class="grp"><div class="f"><label>SKU</label><input id="bk_sku" value="${esc(cell?cell.sku:'')}" placeholder="facultatif"></div></div>
@@ -4540,8 +4617,6 @@ function bulkCellSheet(ri, ci) {
    ${cell ? `<button class="btn d" data-act="bulk-clear" data-ri="${ri}" data-ci="${ci}">${ic('trash')} Retirer la référence</button>` : ''}
    <button class="btn" data-act="close">Fermer</button>`);
   if (!toutesLesRefs.length) setTimeout(() => { const el = $('bk_name'); if (el) el.focus(); }, 200);
-  const selEl = $('bkPickSel');
-  if (selEl) selEl.addEventListener('change', e => { if (e.target.value) bulkPickFromLib(ri, ci, e.target.value); });
   const qEl = $('bkPickQ');
   if (qEl) qEl.addEventListener('input', e => { S.vracPickQ = e.target.value; bulkCellSheet(ri, ci); setTimeout(() => { const el = $('bkPickQ'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 0); });
 }
@@ -4616,7 +4691,8 @@ function bulkSVG(p) {
   const totalWpx = cols * binWpx;
   const totalHpx = bulkTotalHeightMm(p) * sc;
   const padL = 14, padB = 10, padT = 10;
-  const W = totalWpx + padL * 2, H = totalHpx + padB + padT;
+  const addRowH = 30;   // bandeau d'ajout d'une rangée, hauteur fixe, pas à l'échelle
+  const W = totalWpx + padL * 2, H = totalHpx + padB + padT + addRowH;
   let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">`;
   s += `<line x1="0" y1="${H-padB}" x2="${W}" y2="${H-padB}" stroke="var(--bubi-graphite)" stroke-width="2"/>`;
   let y = H - padB;   // on empile du sol vers le haut
@@ -4644,8 +4720,11 @@ function bulkSVG(p) {
           if (cell.photo) {
             s += bulkSinglePhotoSVG(ri, ci, shortData('vrac:' + ri + ':' + ci, cell.photo) || cell.photo, cx + 1, y + 1, cw - 2, hpx - 2);
           } else {
-            s += `<text x="${cx+cw/2}" y="${y+hpx/2+3}" font-size="7" font-weight="600" text-anchor="middle" fill="var(--bubi-graphite)" pointer-events="none">${esc(cell.name).slice(0,14)}</text>`;
-            if (cell.sku) s += `<text x="${cx+cw/2}" y="${y+hpx/2+11}" font-size="5.5" text-anchor="middle" fill="var(--bubi-text-secondary)" pointer-events="none">${esc(cell.sku)}</text>`;
+            // comme sur le linéaire : le code en bande haute, le reste du
+            // compartiment laissé vide — réservé au visuel du produit à venir
+            const bandH = Math.min(hpx * 0.3, 13);
+            s += `<rect x="${cx+1}" y="${y+1}" width="${cw-2}" height="${bandH}" fill="var(--bubi-surface-2)"/>`;
+            s += `<text x="${cx+cw/2}" y="${y+bandH/2+2.5}" font-size="6.5" font-weight="700" text-anchor="middle" fill="var(--bubi-graphite)" pointer-events="none">${esc(cell.sku || cell.name).slice(0,12)}</text>`;
           }
         } else {
           s += `<text x="${cx+cw/2}" y="${y+hpx/2+3}" font-size="9" text-anchor="middle" fill="var(--bubi-border)" pointer-events="none">+</text>`;
@@ -4654,6 +4733,15 @@ function bulkSVG(p) {
       }
     }
   });
+  // rangée d'ajout, toujours disponible en haut du pôle, découpée en blocs de
+  // 60 cm comme un vrai bac — on peut toujours « monter encore un peu plus »
+  y -= addRowH;
+  for (let bi = 0; bi < cols; bi++) {
+    const bx = padL + bi * binWpx;
+    s += `<rect x="${bx+2}" y="${y+2}" width="${binWpx-4}" height="${addRowH-6}" rx="4" fill="none" stroke="var(--bubi-border)" stroke-width="1.4" stroke-dasharray="4 3"/>`;
+    s += `<text x="${bx+binWpx/2}" y="${y+addRowH/2+2}" font-size="13" text-anchor="middle" fill="var(--bubi-border)" pointer-events="none">+</text>`;
+    s += `<rect class="bulkaddrow" x="${bx+2}" y="${y+2}" width="${binWpx-4}" height="${addRowH-6}" fill="transparent"/>`;
+  }
   return s + '</svg>';
 }
 
@@ -4665,6 +4753,7 @@ function bulkTapAt(clientX, clientY) {
   const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
   const el = document.elementFromPoint(clientX, clientY);
   if (el && el.classList.contains('bulkcell')) return { ri: +el.dataset.ri, ci: +el.dataset.ci };
+  if (el && el.classList.contains('bulkaddrow')) return { addRow: true };
   return null;
 }
 
@@ -4689,7 +4778,9 @@ function renderBulkEditor() {
   </div>`;
   document.getElementById('bulkCw').addEventListener('click', e => {
     const hit = bulkTapAt(e.clientX, e.clientY);
-    if (hit) { S.bulkSel = hit; bulkRefresh(); bulkCellSheet(hit.ri, hit.ci); }
+    if (!hit) return;
+    if (hit.addRow) { bulkAskRowType(false); haptic(6); return; }
+    S.bulkSel = hit; bulkRefresh(); bulkCellSheet(hit.ri, hit.ci);
   });
 }
 
@@ -4698,6 +4789,7 @@ function bulkShareSheet() {
   sheet(`<h2>Partager</h2>
   <div class="grp">
     ${menuRow('bulk-png', 'photo', 'Image du pôle vrac')}
+    ${menuRow('bulk-plan', 'ruler', 'Plan détaillé, avec cotes')}
     ${menuRow('bulk-build', 'grid', 'Fiche de montage')}
     ${menuRow('bulk-labels', 'doc', 'Étiquettes')}
     ${menuRow('bulk-csv', 'doc', 'Liste des compartiments')}
@@ -4774,21 +4866,7 @@ function bulkOrderExport() {
   const totQty = cells.reduce((a, c) => a + c.cell.qty, 0);
   const st = bulkStats(S.cur);
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
-  <title>Commande ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>
-    @page { size: A4; margin: 14mm; }
-    body { font-family: -apple-system, Arial, sans-serif; color: #111; font-size: 12px; }
-    h1 { color: var(--bubi-graphite); font-size: 20px; margin: 0; }
-    .sub { color: #666; margin: 4px 0 16px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 6px 8px; border-bottom: 1px solid #ddd; text-align: left; }
-    th { background: var(--bubi-surface-2); }
-    td.n, th.n { text-align: right; }
-    tr { page-break-inside: avoid; }
-    tfoot td { font-weight: 700; border-top: 2px solid var(--bubi-graphite); border-bottom: 0; }
-    .sig { margin-top: 26px; display: flex; gap: 40px; font-size: 12px; color: #444; }
-    .sig div { flex: 1; border-top: 1px solid #999; padding-top: 6px; }
-    .noprint button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 8px; background: var(--bubi-graphite); color: #fff; }
-    @media print { .noprint { display: none; } }
+  <title>Commande ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>${orderPrintCSS()}
   </style></head><body>
   <h1>Bon de commande</h1>
   <div class="sub">${esc(S.cur.store)} · ${esc(S.cur.name)} · Pôle vrac · ${(S.cur.bulk.widthMm/10).toFixed(0)}×${(st.totalHeightMm/10).toFixed(0)} cm · ${new Date().toLocaleDateString('fr-FR')}</div>
@@ -4850,6 +4928,86 @@ function bulkLabelsSheet() {
   </body></html>`;
   shareOrDownload(new Blob([html], { type: 'text/html' }), fileName('etiquettes.html'), u => `<iframe src="${u}" style="width:100%;height:70vh;border:0"></iframe>`);
 }
+
+/* ---- plan détaillé, façon dessin technique ---- */
+function bulkTechnicalSVG(p) {
+  const cols = bulkColumns(p);
+  const sc = 1.1;   // mm -> pt, à l'échelle d'une page plutôt que de l'écran
+  const binWpx = 600 * sc, totalWpx = cols * binWpx, totalHpx = bulkTotalHeightMm(p) * sc;
+  const padL = 60, padB = 46, padT = 20, padR = 20;
+  const W = totalWpx + padL + padR, H = totalHpx + padB + padT;
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" width="100%" font-family="-apple-system,Arial,sans-serif">`;
+  s += `<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`;
+  const x0 = padL, yBase = H - padB;
+  s += `<line x1="${x0}" y1="${yBase}" x2="${x0+totalWpx}" y2="${yBase}" stroke="#000" stroke-width="1.6"/>`;
+  let y = yBase;
+  p.bulk.rows.forEach((row, ri) => {
+    const b = BIN[row.type], hpx = b.hMm * sc;
+    y -= hpx;
+    // cote de hauteur de la rangée, à gauche, façon dessin technique
+    s += `<line x1="${x0-8}" y1="${y}" x2="${x0-8}" y2="${y+hpx}" stroke="#000" stroke-width=".6"/>`;
+    s += `<line x1="${x0-11}" y1="${y}" x2="${x0-5}" y2="${y}" stroke="#000" stroke-width=".6"/>`;
+    s += `<line x1="${x0-11}" y1="${y+hpx}" x2="${x0-5}" y2="${y+hpx}" stroke="#000" stroke-width=".6"/>`;
+    s += `<text x="${x0-14}" y="${y+hpx/2+3}" font-size="8" text-anchor="end" fill="#000">${b.hMm} mm</text>`;
+    for (let bi = 0; bi < cols; bi++) {
+      const x = x0 + bi * binWpx;
+      s += `<rect x="${x}" y="${y}" width="${binWpx}" height="${hpx}" fill="none" stroke="#000" stroke-width="1.1"/>`;
+      for (let k = 1; k < b.comps; k++) {
+        const sx = x + (binWpx / b.comps) * k;
+        s += `<line x1="${sx}" y1="${y}" x2="${sx}" y2="${y+hpx}" stroke="#000" stroke-width=".5"/>`;
+      }
+      for (let k = 0; k < b.comps; k++) {
+        const ci = bi * b.comps + k, cx = x + (binWpx / b.comps) * k, cw = binWpx / b.comps;
+        const cell = row.cells[ci];
+        s += `<text x="${cx+cw/2}" y="${y+hpx/2-3}" font-size="6.5" text-anchor="middle" fill="#999">R${ri+1}·${ci+1}</text>`;
+        if (cell) {
+          s += `<text x="${cx+cw/2}" y="${y+hpx/2+7}" font-size="7.5" font-weight="700" text-anchor="middle" fill="#000">${esc(cell.sku||'')}</text>`;
+          s += `<text x="${cx+cw/2}" y="${y+hpx/2+16}" font-size="6" text-anchor="middle" fill="#333">${esc(cell.name).slice(0,16)}</text>`;
+        }
+      }
+    }
+  });
+  // cote de largeur totale, en bas, façon dessin technique
+  const yc = yBase + 20;
+  s += `<line x1="${x0}" y1="${yc}" x2="${x0+totalWpx}" y2="${yc}" stroke="#000" stroke-width=".6"/>`;
+  s += `<line x1="${x0}" y1="${yc-4}" x2="${x0}" y2="${yc+4}" stroke="#000" stroke-width=".6"/>`;
+  s += `<line x1="${x0+totalWpx}" y1="${yc-4}" x2="${x0+totalWpx}" y2="${yc+4}" stroke="#000" stroke-width=".6"/>`;
+  s += `<text x="${x0+totalWpx/2}" y="${yc+16}" font-size="9" text-anchor="middle" fill="#000">${(p.bulk.widthMm/10).toFixed(0)} cm</text>`;
+  for (let bi = 1; bi < cols; bi++) {
+    const x = x0 + bi * binWpx;
+    s += `<line x1="${x}" y1="${yBase+2}" x2="${x}" y2="${yBase+8}" stroke="#000" stroke-width=".5"/>`;
+  }
+  return s + '</svg>';
+}
+
+function bulkPlanExport() {
+  const st = bulkStats(S.cur);
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+  <title>Plan ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>
+    @page { size: A4 landscape; margin: 12mm; }
+    body { font-family: -apple-system, Arial, sans-serif; color: #111; }
+    h1 { font-size: 18px; margin: 0 0 2px; }
+    .sub { color: #555; font-size: 12px; margin-bottom: 14px; }
+    .cadre { border: 1px solid #000; padding: 14px; }
+    .cart { display: flex; justify-content: space-between; margin-top: 10px; font-size: 10px; color: #444; border-top: 1px solid #000; padding-top: 6px; }
+    .noprint button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 8px; background: var(--bubi-graphite); color: #fff; margin-bottom: 14px; }
+    @media print { .noprint { display: none; } }
+  </style></head><body>
+  <div class="noprint"><button onclick="print()">Imprimer / exporter en PDF</button></div>
+  <h1>Plan d'implantation détaillé</h1>
+  <div class="sub">Cotes en centimètres pour l'ensemble, en millimètres par rangée — vue de face, du sol vers le haut.</div>
+  <div class="cadre">
+    ${bulkTechnicalSVG(S.cur)}
+    <div class="cart">
+      <span>${esc(S.cur.store)} — ${esc(S.cur.name)}</span>
+      <span>Pôle vrac · ${st.columns} colonne${st.columns>1?'s':''} · ${st.rows} rangées · ${st.remplis}/${st.totalComps} compartiments renseignés</span>
+      <span>${new Date().toLocaleDateString('fr-FR')}</span>
+    </div>
+  </div>
+  </body></html>`;
+  shareOrDownload(new Blob([html], { type: 'text/html' }), fileName('plan-detaille.html'), u => `<iframe src="${u}" style="width:100%;height:70vh;border:0"></iframe>`);
+}
+
 
 function bulkMenu() {
   sheet(`<h2>Actions</h2>
@@ -5011,7 +5169,7 @@ function renderEditor() {
       </div>
       <div class="dr ${S.drawer}" id="dr">
         <div class="grab" data-act="drawer"></div>
-        <div class="sb"><button class="nb tg" data-act="drawer" id="bDr" aria-label="Hauteur du catalogue">${drawerIcon()}</button><div class="in">${ic('search',18)}<input id="q" placeholder="Réf. ou nom de produit" value="${esc(S.q)}" autocomplete="off" autocorrect="off"></div><button class="nb side" data-act="side" id="bSide" title="Côté d'insertion">${S.side==='left'?ic('left',19):ic('right',19)}</button><span class="cnt" id="cnt"></span></div>
+        <div class="sb"><button class="nb tg" data-act="drawer" id="bDr" aria-label="Hauteur du catalogue">${drawerIcon()}</button><div class="in">${ic('search',18)}<input id="q" placeholder="Réf. ou nom de produit" value="${esc(S.q)}" autocomplete="off" autocorrect="off"><button class="clr" data-act="clear-search" data-target="q">✕</button></div><button class="nb side" data-act="side" id="bSide" title="Côté d'insertion">${S.side==='left'?ic('left',19):ic('right',19)}</button><span class="cnt" id="cnt"></span></div>
         <div class="seg" id="segb"></div>
         <div class="chips" id="chipsBrand"></div>
         <div class="chips" id="chips"></div>
@@ -6603,14 +6761,10 @@ function saveCartons() {
   orderSheet();
 }
 
-function orderExport() {
-  const lines = orderLines();
-  const totUnits = lines.reduce((a, l) => a + l.qty, 0);
-  const totVal = lines.reduce((a, l) => a + l.qty * l.price, 0);
-  const seps = separatorCount();
-  const broches = brocheCount();
-  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
-  <title>Commande ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>
+/* CSS d'une page imprimable façon bon de commande — partagé entre le rayon
+   classique et le pôle vrac, qui reproduisaient chacun le même bloc. */
+function orderPrintCSS() {
+  return `
     @page { size: A4; margin: 14mm; }
     body { font-family: -apple-system, Arial, sans-serif; color: #111; font-size: 12px; }
     h1 { color: var(--bubi-graphite); font-size: 20px; margin: 0; }
@@ -6624,7 +6778,17 @@ function orderExport() {
     .sig { margin-top: 26px; display: flex; gap: 40px; font-size: 12px; color: #444; }
     .sig div { flex: 1; border-top: 1px solid #999; padding-top: 6px; }
     .noprint button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 8px; background: var(--bubi-graphite); color: #fff; }
-    @media print { .noprint { display: none; } }
+    @media print { .noprint { display: none; } }`;
+}
+
+function orderExport() {
+  const lines = orderLines();
+  const totUnits = lines.reduce((a, l) => a + l.qty, 0);
+  const totVal = lines.reduce((a, l) => a + l.qty * l.price, 0);
+  const seps = separatorCount();
+  const broches = brocheCount();
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+  <title>Commande ${esc(S.cur.store)}</title>${TOKEN_STYLE}<style>${orderPrintCSS()}
   </style></head><body>
   <h1>Bon de commande</h1>
   <div class="sub">${esc(S.cur.store)} · ${esc(S.cur.name)} · ${UNIV[S.cur.univ]} · gondole ${S.cur.W}×${S.cur.H}×${S.cur.D} cm · ${new Date().toLocaleDateString('fr-FR')}</div>
@@ -7417,7 +7581,11 @@ document.addEventListener('click', e => {
       bulkRowsSheet();
       break;
     case 'bulk-add-row':
-      bulkAddRow();
+      bulkAskRowType(true);
+      break;
+    case 'bulk-add-row-type':
+      if (el.dataset.from === 'sheet') bulkAddRowFromSheet(v);
+      else { closeSheet(); bulkAddRow(v); bulkRefresh(); }
       break;
     case 'bulk-del-row':
       bulkDelRow(+el.dataset.i);
@@ -7433,6 +7601,12 @@ document.addEventListener('click', e => {
       break;
     case 'bulk-fill':
       bulkToggleFill();
+      break;
+    case 'bulk-fill-stop':
+      S.bulkFill = false;
+      closeSheet();
+      bulkRefresh();
+      toast('Remplissage arrêté');
       break;
     case 'bulk-assign':
       bulkAssign(+el.dataset.ri, +el.dataset.ci, $('bk_name').value, $('bk_sku').value, $('bk_qty').value);
@@ -7460,6 +7634,9 @@ document.addEventListener('click', e => {
       break;
     case 'bulk-build':
       bulkBuildSheet();
+      break;
+    case 'bulk-plan':
+      bulkPlanExport();
       break;
     case 'bulk-labels':
       bulkLabelsSheet();
@@ -7495,6 +7672,15 @@ document.addEventListener('click', e => {
     case 'open':
       openProject(el.dataset.id);
       break;
+    case 'clear-search': {
+      const inp = $(el.dataset.target);
+      if (inp) {
+        inp.value = '';
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        inp.focus();
+      }
+      break;
+    }
     case 'home':
       persist();
       renderHome();
