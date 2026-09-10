@@ -976,7 +976,10 @@ a.chip {
 }
 
 .two .btn {
-  flex: 1
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis
 }
 
 .stp {
@@ -2361,6 +2364,21 @@ html {
   line-height: 1.5;
 }
 
+.tipCard {
+  margin: 0 16px 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bubi-blueprint-soft);
+  color: var(--bubi-graphite);
+  font-size: 13.5px;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tipCard svg { flex-shrink: 0; color: var(--tint); }
+
 .descHint b { color: var(--bubi-graphite); }
 
 /* Zones de texte de la composition assistée */
@@ -2543,6 +2561,7 @@ const BRAND = {
   "Bubi Nature": "var(--bubi-ochre)",
   "Gustav": "var(--bubi-sage)",
   "William's": "var(--bubi-terracotta)",
+  "Personnalisé": "var(--bubi-blueprint-strong)",  /* produit créé par Dominik, orderable */
   "Autre": "#A7ADB0"                     /* concurrence : gris neutre, jamais une couleur Bubimex */
 };
 
@@ -2813,6 +2832,34 @@ const PRODUCTS = CATALOGUE_DB.map(x => {
   };
 });
 const BY_REF = Object.fromEntries(PRODUCTS.map(p => [p.ref, p]));
+
+/* ================= PRODUITS PERSONNALISÉS =================
+   Un produit créé par Dominik plutôt que tiré du catalogue Bubimex — utilisable
+   dans un ou plusieurs types de plan au choix (`natures`). Stockés à part et
+   fusionnés dans PRODUCTS/BY_REF au démarrage, pour ne jamais toucher au
+   catalogue Bubimex lui-même. */
+const CUSTOM_PRODUCTS_KEY = 'bubiplan_custom_products';
+function customProducts() {
+  try { return JSON.parse(lsGet(CUSTOM_PRODUCTS_KEY) || '[]'); } catch (e) { return []; }
+}
+function customProductPh(name) {
+  const lettre = (name.trim()[0] || '?').toUpperCase();
+  return 'data:image/svg+xml,' + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60">` +
+    `<rect width="60" height="60" rx="10" fill="#527789"/>` +
+    `<text x="30" y="38" text-anchor="middle" font-size="26" font-weight="700" fill="#fff" font-family="system-ui">${esc(lettre)}</text>` +
+    `</svg>`);
+}
+customProducts().forEach(c => {
+  const p = {
+    univ: c.univ, ref: c.ref, name: c.name, cat: 'Personnalisé', line: c.name, flav: '',
+    fmt: c.fmt || '', fg: c.fmt || '', w: c.w, h: c.h, d: c.d, df: 1, st: 1,
+    ph: customProductPh(c.name), imageCandidates: [], merch: null, natures: c.natures
+  };
+  PRODUCTS.push(p);
+  BY_REF[p.ref] = p;
+});
+
 try {
   applyDimFixes();
 } catch (e) {}
@@ -4026,6 +4073,32 @@ function blueprintIllustration() {
   </svg>`;
 }
 
+/* Astuces qui tournent à chaque retour à l'accueil, pour rappeler les grosses
+   fonctions de l'app plutôt que de toujours répéter la même chose. */
+const TIPS = [
+  { i: 'wand', t: "Composer avec une IA : décris ton rayon en une phrase, laisse BubiPlan proposer une implantation complète." },
+  { i: 'doc', t: "Depuis une proforma : colle les codes-barres scannés, le rayon se compose tout seul." },
+  { i: 'play', t: "Mode présentation : montre le plan en plein écran au client, zoome et déplace-toi au doigt." },
+  { i: 'doc', t: "Fiche client en une page : un export prêt à envoyer juste après le rendez-vous." },
+  { i: 'chart', t: "Analyse commerciale : une note sur 100 et des pistes concrètes pour chaque rayon." },
+  { i: 'photo', t: "Avant/après : fige une photo du point de départ pour montrer le travail réalisé." },
+  { i: 'undo', t: "La secousse annule : secoue ton iPhone pour annuler la dernière action, sans chercher un bouton." },
+  { i: 'copy', t: "Copier vers un autre magasin : duplique un plan réussi pour un client similaire, en un geste." },
+  { i: 'folder', t: "Descentes types : enregistre une implantation qui marche, réutilise-la n'importe où." },
+  { i: 'bins', t: "Pôle vrac : construis un mur de bacs rangée par rangée, avec bon de commande et plan détaillé." },
+  { i: 'chart', t: "Ventes et contraintes : priorise ce qui tourne vraiment avant de composer un rayon." },
+  { i: 'save', t: "Sauvegarder BubiPlan : exporte toutes tes données dans un seul fichier, à tout moment." },
+  { i: 'ruler', t: "Étiquettes de gondole : imprime les étiquettes à coller directement sur le rayon." },
+  { i: 'grid', t: "Calcul de place : vérifie en un instant si une gamme entière rentre avant de la poser." },
+];
+let dernierTip = -1;
+function tipDuJour() {
+  let i = Math.floor(Math.random() * TIPS.length);
+  if (TIPS.length > 1 && i === dernierTip) i = (i + 1) % TIPS.length;
+  dernierTip = i;
+  return TIPS[i];
+}
+
 function renderHome() {
   S.cur = null;
   const all = S.projects.slice().sort((a, b) => b.updated - a.updated);
@@ -4059,13 +4132,10 @@ function renderHome() {
       <span class="chev">›</span>
     </div>` : ''}
 
+    ${(() => { const tip = tipDuJour(); return `<div class="tipCard">${ic(tip.i, 20)}<span>${tip.t}</span></div>`; })()}
+
     ${all.length ? `
       <div class="storeHead"><span>Descentes types</span><small>${layouts().length || ''}</small></div>
-      ${layouts().length ? '' : `<div class="descHint">
-        Une descente type est un module prêt à poser : une gamme, un nombre de tablettes, une largeur.
-        Ouvre un plan réussi, puis <b>••• → Descentes types</b> pour l'enregistrer. Tu la retrouveras ici,
-        et tu pourras la simuler dans n'importe quelle gondole avant de l'installer.
-      </div>`}
       <div class="descRow">${layouts().map(l => `
         <div class="descCard" data-act="sim" data-id="${l.id}">
           <div class="dcTh">${miniPlan(l.shelves, l.W, l.H)}</div>
@@ -4458,8 +4528,13 @@ function vracLibDel(id) {
 /* Une seule photo, telle quelle, centrée dans le compartiment — pas de répétition. */
 function bulkSinglePhotoSVG(ri, ci, url, x, y, w, h) {
   const cid = 'clipvrac' + ri + '_' + ci;
-  return `<clipPath id="${cid}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/></clipPath>
-    <image href="${url}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet" clip-path="url(#${cid})"/>`;
+  // rempli et recadré plutôt que simplement contenu : une photo très étroite ou
+  // très haute donnerait sinon un simple filet à peine visible dans le
+  // compartiment. La découpe garantit qu'elle ne déborde jamais, quel que soit
+  // son format d'origine. Arrondi aligné sur celui du compartiment lui-même
+  // pour une intégration propre, prête pour les vraies photos à venir.
+  return `<clipPath id="${cid}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/></clipPath>
+    <image href="${url}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cid})"/>`;
 }
 
 function bulkEditSheet() {
@@ -4715,16 +4790,22 @@ function bulkSVG(p) {
         const cw = binWpx / b.comps;
         const cell = row.cells[ci];
         const sel = S.bulkSel && S.bulkSel.ri === ri && S.bulkSel.ci === ci;
+        // poignée arrondie, une par compartiment, vue sur les vrais bacs du
+        // magasin — toujours présente, et c'est là que le numéro d'article
+        // s'affiche une fois le compartiment renseigné
+        const pillH = Math.min(hpx * 0.26, 14);
+        s += `<rect x="${cx}" y="${y+2}" width="${cw}" height="${pillH}" rx="3" fill="${cell&&!cell.photo?'var(--bubi-surface-2)':'rgba(200,215,222,.35)'}" stroke="var(--bubi-blueprint)" stroke-width="1"/>`;
         if (sel) s += `<rect x="${cx+2}" y="${y+2}" width="${cw-4}" height="${hpx-4}" rx="3" fill="none" stroke="var(--bubi-blueprint-strong)" stroke-width="2"/>`;
         if (cell) {
           if (cell.photo) {
             s += bulkSinglePhotoSVG(ri, ci, shortData('vrac:' + ri + ':' + ci, cell.photo) || cell.photo, cx + 1, y + 1, cw - 2, hpx - 2);
           } else {
-            // comme sur le linéaire : le code en bande haute, le reste du
-            // compartiment laissé vide — réservé au visuel du produit à venir
-            const bandH = Math.min(hpx * 0.3, 13);
-            s += `<rect x="${cx+1}" y="${y+1}" width="${cw-2}" height="${bandH}" fill="var(--bubi-surface-2)"/>`;
-            s += `<text x="${cx+cw/2}" y="${y+bandH/2+2.5}" font-size="6.5" font-weight="700" text-anchor="middle" fill="var(--bubi-graphite)" pointer-events="none">${esc(cell.sku || cell.name).slice(0,12)}</text>`;
+            // le nombre de caractères qui tient dépend de la largeur réelle du
+            // compartiment (grand ou petit bac) — jamais un chiffre fixe qui
+            // déborderait sur un compartiment plus étroit
+            const maxChars = Math.max(3, Math.floor((cw - 6) / 4.6));
+            const codeTxt = esc(cell.sku || cell.name).slice(0, maxChars);
+            s += `<text x="${cx+cw/2}" y="${y+2+pillH/2+2.5}" font-size="7" font-weight="700" text-anchor="middle" fill="var(--bubi-graphite)" pointer-events="none">${codeTxt}</text>`;
           }
         } else {
           s += `<text x="${cx+cw/2}" y="${y+hpx/2+3}" font-size="9" text-anchor="middle" fill="var(--bubi-border)" pointer-events="none">+</text>`;
@@ -4772,7 +4853,7 @@ function renderBulkEditor() {
     <div class="st"><b>${(st.totalHeightMm/10).toFixed(0)} cm</b>Hauteur</div>
   </div>
   <div class="cwWrap"><div class="cw" id="bulkCw">${bulkSVG(p)}</div><div class="undobar" id="undobar"></div></div>
-  <div class="sb" style="padding:8px 12px">
+  <div class="two" style="padding:8px 12px">
     <button class="btn" data-act="bulk-rows">${ic('grid')} Gérer les rangées</button>
     <button class="btn ${S.bulkFill?'on-new':''}" data-act="bulk-fill">${ic('wand')} ${S.bulkFill?'Remplissage en cours…':'Remplir les bacs'}</button>
   </div>`;
@@ -5215,7 +5296,7 @@ function plusIcon() {
 function renderList() {
   const q = S.q.toLowerCase().trim();
   const counts = placedCounts();
-  const list = PRODUCTS.filter(p => p.univ === S.univ && (!S.cat || p.cat === S.cat) && (!S.fmt || p.fg === S.fmt) && (!q || p.name.toLowerCase().includes(q) || p.ref.toLowerCase().includes(q)));
+  const list = PRODUCTS.filter(p => p.univ === S.univ && (!S.cat || p.cat === S.cat) && (!S.fmt || p.fg === S.fmt) && (!q || p.name.toLowerCase().includes(q) || p.ref.toLowerCase().includes(q)) && (!p.natures || p.natures.includes(S.cur.kind || 'lineaire')));
   $('cnt').textContent = list.length + ' réf.';
   const card = p => `<div class="pi" data-act="add" data-ref="${p.ref}">
       <div class="ph"><img data-ph="${p.ref}" src="${photoSrc(p.ref)}" alt="" loading="lazy"></div>
@@ -6090,7 +6171,22 @@ function photoSheet() {
     web = list.filter(p => !UPHOTO[p.ref] && PHOTO[p.ref] && PHOTO[p.ref] !== 'none').length;
   const miss = list.filter(p => !photoURL(p.ref));
   const pend = miss.filter(p =>PHOTO[p.ref] === undefined).length;
+  const pq = (S.photoPickQ || '').toLowerCase().trim();
+  const trouves = pq ? list.filter(p => p.ref.toLowerCase().includes(pq) || p.name.toLowerCase().includes(pq)).slice(0, 8) : [];
   sheet(`<h2>Photos ${UNIV[S.univ]}</h2>
+   <p class="lbl2">Photo d'un article précis</p>
+   <div class="sb" style="padding:2px 0"><div class="in">${ic('search',18)}<input id="photoPickQ" placeholder="Chercher par nom ou référence" value="${esc(S.photoPickQ||'')}" autocomplete="off"><button class="clr" data-act="clear-search" data-target="photoPickQ">✕</button></div></div>
+   ${pq ? `<div class="grp" style="max-height:240px;overflow-y:auto;-webkit-overflow-scrolling:touch">
+     ${trouves.length ? trouves.map(p => `
+       <button class="f" style="min-height:60px" data-act="pick1" data-ref="${p.ref}">
+         <span style="flex:0 0 auto;width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--bubi-surface-2);display:flex;align-items:center;justify-content:center"><img src="${photoSrc(p.ref)}" style="width:100%;height:100%;object-fit:contain" alt=""></span>
+         <span class="lbl" style="text-align:left">
+           <span style="display:block;font-size:15px;font-weight:600;color:var(--txt);line-height:1.25">${esc(p.name)}</span>
+           <span style="display:block;font-size:12px;color:var(--mut)">${p.ref}${UPHOTO[p.ref]?' · photo importée':''}</span>
+         </span>
+       </button>`).join('') : `<div class="f" style="color:var(--mut);font-size:13px">Aucune correspondance.</div>`}
+   </div>` : ''}
+   <p class="lbl2" style="margin-top:16px">Tout le catalogue</p>
    <div class="stats" style="padding:0 0 10px"><div class="st">Incorporées<b>${imp}</b></div><div class="st">Affichage seul<b>${web}</b></div><div class="st">Sans visuel<b>${miss.length-pend}</b></div>${pend?`<div class="st">En cours<b>${pend}</b></div>`:''}</div>
    ${web ? `<div class="warn" style="margin:0 0 10px">${web} visuel${web>1?'s sont affichés':' est affiché'} depuis bubimex.eu : ${web>1?'ils apparaissent':'il apparaît'} dans l'app mais ${web>1?'ne peuvent':'ne peut'} pas être ${web>1?'inclus':'inclus'} dans un export. Importe-les pour les avoir dans le PDF et hors ligne.</div>` : ''}
    <p>Les visuels officiels sont recherchés automatiquement sur bubimex.eu, y compris les variantes WordPress (réf.jpg, réf-700x700.jpg, etc.). Les familles contrôlées sur les fiches Bubimex utilisent maintenant leurs dimensions de face réelles (boîtes, barquettes et pochons), et l'image est contenue sans recadrage dans cette empreinte physique. Pour un usage hors ligne, tu peux toujours importer tes propres fichiers nommés par référence.</p>
@@ -6105,6 +6201,8 @@ function photoSheet() {
    ${miss.length-pend?`<p style="margin-top:14px"><b>Sans photo :</b> tu peux importer manuellement un visuel si aucune des variantes officielles n'est disponible.</p><div class="chips" style="flex-wrap:wrap;padding:0">${miss.filter(p=>PHOTO[p.ref]!==undefined).map(p=>`<a class="chip" href="${PHOTO_BASE+p.ref}.jpg" target="_blank" rel="noreferrer">${p.ref}</a>`).join('')}</div>`:''}
    ${imp?`<button class="btn d" data-act="clearphotos" style="margin-top:14px">Supprimer les ${imp} photos importées</button>`:''}
    <button class="btn" data-act="close">Fermer</button>`);
+  const ppEl = $('photoPickQ');
+  if (ppEl) ppEl.addEventListener('input', e => { S.photoPickQ = e.target.value; photoSheet(); setTimeout(() => { const el = $('photoPickQ'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 0); });
 }
 
 /* ================= IMPORT D'UNE PROFORMA =================
@@ -7330,6 +7428,7 @@ function settingsSheet() {
   <div class="grp">
     ${vrac ? row('vrac-lib', 'photo', 'Photos vrac') + row('edit-project', 'cog', 'Dimensions du pôle vrac')
            : row('photosheet', 'photo', 'Photos produits') + row('dims', 'ruler', 'Dimensions des boîtes') + row('edit-project', 'cog', vrac?'Dimensions du pôle vrac':'Dimensions de la gondole')}
+    ${row('new-product', 'plus', 'Créer un produit personnalisé')}
   </div>
   <p class="lbl2">Où en est ce plan ?</p>
   <div class="qs">${Object.entries(STATUS).map(([k, v]) => `<button data-act="setstatus" data-v="${k}" class="${statusOf(S.cur) === k ? 'on' : ''}">${v.l}</button>`).join('')}</div>
@@ -7344,6 +7443,68 @@ function settingsSheet() {
     ${row('restore', 'tray', 'Restaurer une sauvegarde')}
   </div>
   <button class="btn" data-act="close" style="margin-top:4px">Fermer</button>`);
+}
+
+/* Un seul écran de création, quelle que soit la nature du plan actuellement
+   ouvert — les cases à cocher décident dans quelles natures le produit doit
+   apparaître, plutôt que de dupliquer cette fonction quatre fois. */
+function customProductSheet() {
+  const kindActuel = S.cur ? S.cur.kind || 'lineaire' : 'lineaire';
+  sheet(`<h2>Créer un produit</h2>
+   <p>Un produit qui n'est pas dans le catalogue Bubimex — le tien, ou celui d'un partenaire.</p>
+   <div class="grp"><div class="f"><label>Nom</label><input id="cp_name" placeholder="Friandise maison" autocapitalize="sentences"></div></div>
+   <div class="grp"><div class="f"><label>Référence</label><input id="cp_ref" placeholder="ex. PERSO1"></div></div>
+   <p class="lbl2">Univers</p>
+   <div class="qs"><button data-act="cp-univ" data-v="chien" class="on">Chien</button><button data-act="cp-univ" data-v="chat">Chat</button></div>
+   <p class="lbl2" style="margin-top:16px">Où l'utiliser ?</p>
+   <div class="grp">
+     <div class="f"><input type="checkbox" id="cp_lineaire" ${kindActuel==='lineaire'?'checked':''} style="flex:0 0 auto;width:20px;height:20px"><label for="cp_lineaire" style="flex:1;min-width:0">Linéaire</label></div>
+     <div class="f"><input type="checkbox" id="cp_gondole" ${kindActuel==='gondole'?'checked':''} style="flex:0 0 auto;width:20px;height:20px"><label for="cp_gondole" style="flex:1;min-width:0">Tête de gondole</label></div>
+     <div class="f"><input type="checkbox" id="cp_display" ${kindActuel==='display'?'checked':''} style="flex:0 0 auto;width:20px;height:20px"><label for="cp_display" style="flex:1;min-width:0">Display</label></div>
+     <div class="f"><input type="checkbox" id="cp_vrac" ${kindActuel==='vrac'?'checked':''} style="flex:0 0 auto;width:20px;height:20px"><label for="cp_vrac" style="flex:1;min-width:0">Pôle vrac</label></div>
+   </div>
+   <div id="cp_dims">
+     <p class="lbl2" style="margin-top:16px">Dimensions de face (linéaire, gondole, display)</p>
+     <div class="grp">
+       <div class="f"><label>Largeur</label><input id="cp_w" type="text" inputmode="decimal" value="9"><span class="unit">cm</span></div>
+       <div class="f"><label>Hauteur</label><input id="cp_h" type="text" inputmode="decimal" value="9"><span class="unit">cm</span></div>
+       <div class="f"><label>Profondeur</label><input id="cp_d" type="text" inputmode="decimal" value="9"><span class="unit">cm</span></div>
+     </div>
+   </div>
+   <button class="btn p" data-act="cp-save">Créer</button>
+   <button class="btn" data-act="close">Annuler</button>`);
+  setTimeout(() => { const el = $('cp_name'); if (el) el.focus(); }, 200);
+}
+
+function saveCustomProduct() {
+  const name = ($('cp_name').value || '').trim();
+  if (!name) { toast('Indique un nom'); return; }
+  let ref = ($('cp_ref').value || '').trim();
+  if (!ref) ref = 'PERSO-' + uid();
+  if (BY_REF[ref]) { toast('Cette référence existe déjà'); return; }
+  const univ = document.querySelector('[data-act="cp-univ"].on')?.dataset.v || 'chien';
+  const natures = [];
+  if ($('cp_lineaire').checked) natures.push('lineaire');
+  if ($('cp_gondole').checked) natures.push('gondole');
+  if ($('cp_display').checked) natures.push('display');
+  if ($('cp_vrac').checked) natures.push('vrac');
+  if (!natures.length) { toast('Choisis au moins un endroit où l\'utiliser'); return; }
+  const w = parseFloat(($('cp_w').value || '9').replace(',', '.')) || 9;
+  const h = parseFloat(($('cp_h').value || '9').replace(',', '.')) || 9;
+  const d = parseFloat(($('cp_d').value || '9').replace(',', '.')) || 9;
+  const c = { ref, name, univ, w, h, d, fmt: '', natures };
+  const list = customProducts();
+  list.push(c);
+  lsSet(CUSTOM_PRODUCTS_KEY, JSON.stringify(list));
+  const p = {
+    univ, ref, name, cat: 'Personnalisé', line: name, flav: '', fmt: '', fg: '',
+    w, h, d, df: 1, st: 1, ph: customProductPh(name), imageCandidates: [], merch: null, natures
+  };
+  PRODUCTS.push(p);
+  BY_REF[ref] = p;
+  if (natures.includes('vrac')) vracRemember(name, ref);
+  closeSheet();
+  toast('Produit créé : ' + name);
 }
 
 
@@ -7994,6 +8155,15 @@ document.addEventListener('click', e => {
       break;
     case 'photosheet':
       photoSheet();
+      break;
+    case 'new-product':
+      customProductSheet();
+      break;
+    case 'cp-univ':
+      document.querySelectorAll('[data-act="cp-univ"]').forEach(b => b.classList.toggle('on', b === el));
+      break;
+    case 'cp-save':
+      saveCustomProduct();
       break;
     case 'clearphotos':
       confirmBox('Supprimer les photos importées ?', 'Les photos web restent disponibles.', 'Supprimer', () => {
