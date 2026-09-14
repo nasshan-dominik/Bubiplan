@@ -2889,6 +2889,8 @@ function ic(name, size) {
     folder: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
     chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
     grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    shelf: '<rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M4 9.3h16M4 14.7h16"/>',
+    flag: '<path d="M6 21V3"/><path d="M6 4h12l-3.5 4.5L18 13H6"/>',
     play: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18"/>',
     trash: '<path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/>',
     copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>',
@@ -3608,6 +3610,28 @@ try {
 // les visuels vivent dans la base du navigateur : chargement et migration au démarrage
 setTimeout(loadPhotoStore, 0);
 
+/* Migration : les photos vrac enregistrées avant ce correctif vivaient
+   directement dans le stockage simple, en double (bibliothèque + compartiment).
+   On les bascule une fois pour toutes vers la grande réserve, ce qui libère
+   immédiatement la place — sans ça, un appareil déjà plein le resterait. */
+function migrateVracPhotos() {
+  let changed = false;
+  const list = vracLib();
+  list.forEach(e => {
+    if (e.photo && e.photo.startsWith('data:')) { e.photo = vracStorePhoto(e.photo); changed = true; }
+  });
+  if (changed) vracLibSave(list);
+  let projChanged = false;
+  (S.projects || []).forEach(p => {
+    if (p.kind !== 'vrac' || !p.bulk) return;
+    p.bulk.rows.forEach(row => row.cells.forEach(c => {
+      if (c && c.photo && c.photo.startsWith('data:')) { c.photo = vracStorePhoto(c.photo); projChanged = true; }
+    }));
+  });
+  if (projChanged) store.save(S.projects);
+}
+setTimeout(migrateVracPhotos, 200);
+
 function saveUPhotos(refs) {
   // les images vont dans la base du navigateur, pas dans le stockage simple
   const list = refs || Object.keys(UPHOTO);
@@ -4261,8 +4285,8 @@ function newProjectSheet() {
   sheet(`<h2>Nouveau projet</h2>
    <p>Quel type d'implantation veux-tu préparer ?</p>
    <div class="kindList">
-     ${row('lineaire', 'grid', 'Nouveau linéaire', 'Un rayon classique, plusieurs niveaux')}
-     ${row('gondole', 'grid', 'Nouvelle gondole', 'Tête de gondole, mise en avant ou promo')}
+     ${row('lineaire', 'shelf', 'Nouveau linéaire', 'Un rayon classique, plusieurs niveaux')}
+     ${row('gondole', 'flag', 'Nouvelle gondole', 'Tête de gondole, mise en avant ou promo')}
      ${row('display', 'box', 'Nouveau display', 'Présentoir aux dimensions figées', true)}
      ${row('vrac', 'bins', 'Nouveau pôle vrac', 'Bacs libre-service, construction au sol')}
    </div>
@@ -4338,13 +4362,12 @@ function bulkStats(p) {
 /* ---- création ---- */
 function bulkCreateSheet() {
   sheet(`<h2>Nouveau pôle vrac</h2>
-   <p>La largeur se convertit en bacs de 60 cm. Le nombre de colonnes se calcule tout seul.</p>
+   <p>La largeur se convertit en bacs de 60 cm. Le nombre de colonnes se calcule tout seul — tu ajoutes les rangées une par une ensuite, avec le + en haut du pôle.</p>
    <div class="grp"><div class="f"><label>Magasin</label><input id="f_store" placeholder="Gamm Vert Muret" autocapitalize="words"></div></div>
    <div class="grp"><div class="f"><label>Plan</label><input id="f_name" placeholder="Pôle vrac" autocapitalize="sentences"></div></div>
    <p class="lbl2">Structure</p>
    <div class="grp">
      <div class="f"><label>Largeur disponible</label><input id="bk_w" type="number" inputmode="numeric" value="180"><span class="unit">cm</span></div>
-     <div class="f"><label>Rangées</label><input id="bk_n" type="number" inputmode="numeric" value="3"></div>
    </div>
    <p id="bk_prev" style="font-size:13px;color:var(--mut)"></p>
    <button class="btn p" data-act="bulk-create">Créer le pôle vrac</button>
@@ -4363,14 +4386,11 @@ function createBulkProject() {
   const st = ($('f_store').value || '').trim();
   if (!st) { toast('Indique le magasin'); return; }
   const wCm = Math.max(60, parseInt($('bk_w').value, 10) || 180);
-  const n = Math.max(1, Math.min(12, parseInt($('bk_n').value, 10) || 3));
   const widthMm = Math.round(wCm * 10);
   const cols = Math.max(1, Math.floor(widthMm / 600));
-  // suggestion douce, jamais imposée : grands en bas, un petit en haut s'il y a au
-  // moins deux rangées — l'utilisateur change chaque rangée en un appui ensuite.
-  const rows = Array.from({ length: n }, (_, i) =>
-    ({ type: (n >= 2 && i === n - 1) ? 'petit' : 'grand', cells: null }));
-  rows.forEach(r => { r.cells = bulkCellsFor(r.type, cols); });
+  // une seule rangée au départ, façon page blanche — les suivantes s'ajoutent
+  // une par une avec le + en haut du pôle, en choisissant Grand ou Petit à chaque fois
+  const rows = [{ type: 'grand', cells: bulkCellsFor('grand', cols) }];
   const p = {
     id: uid(), store: st, name: ($('f_name').value || '').trim() || 'Pôle vrac',
     univ: 'chien', kind: 'vrac', mount: 'tablette',
@@ -4439,6 +4459,24 @@ function vracLib() {
 }
 function vracLibSave(list) { lsSet(VRAC_LIB_KEY, JSON.stringify(list)); }
 
+/* Une photo vrac pèse pareil qu'une photo de catalogue — elle ne doit donc pas
+   vivre directement dans le stockage simple, sous peine de le remplir très vite
+   (et en double : une fois dans la bibliothèque, une fois dans le compartiment).
+   On la range dans la même grande réserve que les photos du catalogue, et on ne
+   garde dans le stockage simple qu'une courte référence vers elle. */
+function vracPhotoSrc(photo) {
+  if (!photo) return null;
+  if (photo.startsWith('vracphoto:')) return shortData(photo, UPHOTO[photo]) || UPHOTO[photo] || null;
+  return photo;   // chemin de fichier (./photos/vrac/...) ou ancienne donnée intégrée telle quelle
+}
+function vracStorePhoto(dataUrl) {
+  if (!dataUrl || !dataUrl.startsWith('data:')) return dataUrl;   // déjà une référence ou un chemin
+  const key = 'vracphoto:' + uid();
+  UPHOTO[key] = dataUrl;
+  dbPut(key, dataUrl);
+  return key;
+}
+
 /* Ajoute ou met à jour une entrée de la bibliothèque (même nom + même SKU = la même
    référence, sa photo se remplace plutôt que de dupliquer l'entrée). */
 function vracRemember(name, sku, photo) {
@@ -4447,8 +4485,8 @@ function vracRemember(name, sku, photo) {
   sku = (sku || '').trim();
   const list = vracLib();
   let e = list.find(x => x.name === name && x.sku === sku);
-  if (e) { if (photo) e.photo = photo; }
-  else { e = { id: uid(), name, sku, photo: photo || null }; list.unshift(e); }
+  if (e) { if (photo) e.photo = vracStorePhoto(photo); }
+  else { e = { id: uid(), name, sku, photo: photo ? vracStorePhoto(photo) : null }; list.unshift(e); }
   vracLibSave(list.slice(0, 200));
   return e;
 }
@@ -4474,7 +4512,7 @@ function bulkPickPhoto(ri, ci) {
     toast('Détourage…');
     detourImage(photo).then(clean => {
       const cell = S.cur.bulk.rows[ri].cells[ci] || { name: '', sku: '' };
-      cell.photo = clean;
+      cell.photo = vracStorePhoto(clean);
       S.cur.bulk.rows[ri].cells[ci] = cell;
       vracRemember(cell.name, cell.sku, cell.photo);
       dropShortURL('vrac:' + ri + ':' + ci);
@@ -4494,7 +4532,7 @@ function vracLibSheet() {
    <button class="btn p" data-act="vrac-lib-add">${ic('plus')} Ajouter une photo</button>
    ${list.length ? list.map(e => `
      <div class="grp"><div class="f" style="min-height:56px">
-       <div style="flex:0 0 auto;width:40px;height:40px;border-radius:8px;overflow:hidden;background:var(--fill)">${e.photo?`<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover">`:''}</div>
+       <div style="flex:0 0 auto;width:40px;height:40px;border-radius:8px;overflow:hidden;background:var(--fill)">${e.photo?`<img src="${vracPhotoSrc(e.photo)}" style="width:100%;height:100%;object-fit:cover">`:''}</div>
        <div style="flex:1;min-width:0;margin-left:10px">
          <div style="font-size:14px;font-weight:500">${esc(e.name)}</div>
          ${e.sku ? `<div style="font-size:12px;color:var(--mut)">${esc(e.sku)}</div>` : ''}
@@ -4528,6 +4566,8 @@ function vracLibSaveNew() {
   vracLibSheet();
 }
 function vracLibDel(id) {
+  const e = vracLib().find(x => x.id === id);
+  if (e && e.photo && e.photo.startsWith('vracphoto:')) dbDelete(e.photo);
   vracLibSave(vracLib().filter(e => e.id !== id));
   vracLibSheet();
 }
@@ -4674,7 +4714,7 @@ function bulkCellSheet(ri, ci) {
   const lib = toutesLesRefs.filter(e => !q || e.name.toLowerCase().includes(q) || e.sku.toLowerCase().includes(q));
   const ligne = e => `
      <button class="f" style="min-height:60px" data-act="bulk-pick" data-ri="${ri}" data-ci="${ci}" data-libid="${e.id}">
-       <span style="flex:0 0 auto;width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--bubi-surface-2);display:flex;align-items:center;justify-content:center;color:var(--mut)">${e.photo?`<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover">`:ic('photo',20)}</span>
+       <span style="flex:0 0 auto;width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--bubi-surface-2);display:flex;align-items:center;justify-content:center;color:var(--mut)">${e.photo?`<img src="${vracPhotoSrc(e.photo)}" style="width:100%;height:100%;object-fit:cover">`:ic('photo',20)}</span>
        <span class="lbl" style="text-align:left">
          <span style="display:block;font-size:15px;font-weight:600;color:var(--txt);line-height:1.25">${esc(e.name)}</span>
          ${e.sku?`<span style="display:block;font-size:12px;color:var(--mut)">${esc(e.sku)}</span>`:''}
@@ -4773,8 +4813,9 @@ function bulkSVG(p, avecCotes) {
   const totalWpx = cols * binWpx;
   const totalHpx = bulkTotalHeightMm(p) * sc;
   const padL = avecCotes ? 34 : 14, padB = avecCotes ? 30 : 10, padT = 10;
+  const padR = avecCotes ? 30 : padL;
   const addRowH = avecCotes ? 0 : 30;   // pas de bandeau d'ajout en mode présentation
-  const W = totalWpx + padL * 2, H = totalHpx + padB + padT + addRowH;
+  const W = totalWpx + padL + padR, H = totalHpx + padB + padT + addRowH;
   let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">`;
   s += `<line x1="0" y1="${H-padB}" x2="${W}" y2="${H-padB}" stroke="var(--bubi-graphite)" stroke-width="2"/>`;
   let y = H - padB;   // on empile du sol vers le haut
@@ -4813,10 +4854,10 @@ function bulkSVG(p, avecCotes) {
           // s'affiche une fois le compartiment renseigné
           s += `<rect x="${cx+0.5}" y="${y+2.5}" width="${cw-1}" height="${pillH}" rx="3" fill="${cell?'var(--bubi-surface-2)':'rgba(200,215,222,.35)'}" stroke="var(--bubi-blueprint)" stroke-width="1"/>`;
         }
-        if (sel) s += `<rect x="${cx+2}" y="${y+2}" width="${cw-4}" height="${hpx-4}" rx="3" fill="none" stroke="var(--bubi-blueprint-strong)" stroke-width="2"/>`;
+        if (sel && !avecCotes) s += `<rect x="${cx+2}" y="${y+2}" width="${cw-4}" height="${hpx-4}" rx="3" fill="none" stroke="var(--bubi-blueprint-strong)" stroke-width="2"/>`;
         if (cell) {
           if (cell.photo) {
-            s += bulkSinglePhotoSVG(ri, ci, shortData('vrac:' + ri + ':' + ci, cell.photo) || cell.photo, cx + 1, y + 1, cw - 2, hpx - 2);
+            s += bulkSinglePhotoSVG(ri, ci, shortData('vrac:' + ri + ':' + ci, vracPhotoSrc(cell.photo)) || vracPhotoSrc(cell.photo), cx + 1, y + 1, cw - 2, hpx - 2);
             // voile dépoli derrière le numéro d'article, pour qu'il reste lisible
             // sur la photo sans flouter le reste du visuel en dessous
             const maxChars = Math.max(3, Math.floor((cw - 6) / 4.6));
@@ -4855,6 +4896,12 @@ function bulkSVG(p, avecCotes) {
     s += `<line x1="${padL}" y1="${yc-4}" x2="${padL}" y2="${yc+4}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
     s += `<line x1="${padL+totalWpx}" y1="${yc-4}" x2="${padL+totalWpx}" y2="${yc+4}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
     s += `<text x="${padL+totalWpx/2}" y="${yc+13}" font-size="9" text-anchor="middle" fill="var(--bubi-blueprint-strong)">${(p.bulk.widthMm/10).toFixed(0)} cm</text>`;
+    // cote de hauteur totale, à droite, même principe que la largeur
+    const xc = padL + totalWpx + 14;
+    s += `<line x1="${xc}" y1="${y}" x2="${xc}" y2="${H-padB}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
+    s += `<line x1="${xc-4}" y1="${y}" x2="${xc+4}" y2="${y}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
+    s += `<line x1="${xc-4}" y1="${H-padB}" x2="${xc+4}" y2="${H-padB}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
+    s += `<text x="${xc+5}" y="${(y+H-padB)/2+3}" font-size="9" text-anchor="start" fill="var(--bubi-blueprint-strong)" transform="rotate(90 ${xc+5} ${(y+H-padB)/2+3})">${(bulkTotalHeightMm(p)/10).toFixed(0)} cm</text>`;
   }
   return s + '</svg>';
 }
