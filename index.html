@@ -4793,7 +4793,7 @@ function bulkSVG(p, avecCotes) {
     for (let bi = 0; bi < cols; bi++) {
       const x = padL + bi * binWpx;
       // contour unique du bac : jamais redessiné comme plusieurs bacs indépendants
-      s += `<rect x="${x+1}" y="${y+1}" width="${binWpx-2}" height="${hpx-2}" rx="4" fill="rgba(120,140,150,.07)" stroke="var(--bubi-blueprint)" stroke-width="1.1"/>`;
+      s += `<rect x="${x+1}" y="${y+1}" width="${binWpx-2}" height="${hpx-2}" rx="4" fill="rgba(190,215,225,.10)" stroke="var(--bubi-blueprint)" stroke-width="1" stroke-opacity=".6"/>`;
       // séparations internes, plus fines que le contour du bac
       for (let k = 1; k < b.comps; k++) {
         const sx = x + (binWpx / b.comps) * k;
@@ -4821,7 +4821,7 @@ function bulkSVG(p, avecCotes) {
             // sur la photo sans flouter le reste du visuel en dessous
             const maxChars = Math.max(3, Math.floor((cw - 6) / 4.6));
             const codeTxt = esc(cell.sku || cell.name).slice(0, maxChars);
-            s += `<rect x="${cx+0.5}" y="${y+2.5}" width="${cw-1}" height="${pillH}" rx="3" fill="rgba(255,255,255,.55)" stroke="rgba(255,255,255,.8)" stroke-width="1"/>`;
+            s += `<rect x="${cx+0.5}" y="${y+2.5}" width="${cw-1}" height="${pillH}" rx="3" fill="rgba(255,255,255,.55)" stroke="var(--bubi-blueprint)" stroke-width="1"/>`;
             s += `<text x="${cx+cw/2}" y="${y+2+pillH/2+2.5}" font-size="7" font-weight="700" text-anchor="middle" fill="#1a2226" pointer-events="none">${codeTxt}</text>`;
           } else {
             // le nombre de caractères qui tient dépend de la largeur réelle du
@@ -5131,6 +5131,7 @@ function bulkMenu() {
     ${menuRow('bulk-fill', 'wand', S.bulkFill?'Arrêter le remplissage':'Remplir les bacs')}
     ${menuRow('bulk-share', 'doc', 'Partager')}
     ${menuRow('present', 'play', 'Mode présentation')}
+    ${menuRow('bulk-compare', 'chart', 'Avant / après')}
     ${menuRow('settings', 'cog', 'Réglages')}
   </div>
   <div class="grp">
@@ -6619,6 +6620,59 @@ function addAll(brand) {
    rayon proposé. Ici, en version simple et utile sur le terrain : on fige l'existant
    au début de la visite, on retravaille, et on montre l'écart au client.
 */
+function bulkSaveBefore() {
+  S.cur.before = {
+    bulk: JSON.parse(JSON.stringify(S.cur.bulk)),
+    date: Date.now()
+  };
+  persist();
+  closeSheet();
+  toast('État actuel enregistré');
+}
+
+function bulkPlanStats(bulk) {
+  const refs = new Set();
+  let filled = 0, total = 0, qty = 0;
+  bulk.rows.forEach(row => row.cells.forEach(c => {
+    total++;
+    if (c) { filled++; refs.add(c.sku || c.name); qty += c.qty || 0; }
+  }));
+  return { refs: refs.size, filled, total, qty, set: refs };
+}
+
+function bulkCompareSheet() {
+  if (!S.cur.before) {
+    sheet(`<h2>Avant / après</h2>
+     <p>Fige d'abord le pôle vrac tel qu'il est aujourd'hui. Tu pourras ensuite montrer précisément ce que ta proposition change.</p>
+     <button class="btn p" data-act="bulk-save-before">Enregistrer l'état actuel</button>
+     <button class="btn" data-act="close">Fermer</button>`);
+    return;
+  }
+  const a = bulkPlanStats(S.cur.before.bulk), b = bulkPlanStats(S.cur.bulk);
+  const gained = [...b.set].filter(r => !a.set.has(r));
+  const lost = [...a.set].filter(r => !b.set.has(r));
+  const d = (x, y, u) => {
+    const v = y - x;
+    return `<b style="color:${v>0?'var(--tint)':v<0?'var(--red)':'inherit'}">${v>0?'+':''}${Math.round(v)}${u}</b>`;
+  };
+  sheet(`<h2>Avant / après</h2>
+   <p>Relevé du ${fmtDate(S.cur.before.date)} comparé à l'état actuel.</p>
+   <div class="cmp">
+     <div><span>Avant</span>${bulkThumb({ bulk: S.cur.before.bulk })}</div>
+     <div><span>Maintenant</span>${bulkThumb(S.cur)}</div>
+   </div>
+   <div class="grp">
+     <div class="f"><label>Références</label><span>${a.refs} → ${b.refs}</span><span class="unit">${d(a.refs,b.refs,'')}</span></div>
+     <div class="f"><label>Compartiments renseignés</label><span>${a.filled} → ${b.filled}</span><span class="unit">${d(a.filled,b.filled,'')}</span></div>
+     <div class="f"><label>Unités à commander</label><span>${a.qty} → ${b.qty}</span><span class="unit">${d(a.qty,b.qty,'')}</span></div>
+   </div>
+   ${gained.length ? `<p><b>${gained.length} référence${gained.length>1?'s':''} en plus</b><br><span style="font-size:13px;color:var(--mut)">${gained.slice(0,14).join(', ')}${gained.length>14?'…':''}</span></p>` : ''}
+   ${lost.length ? `<p><b>${lost.length} référence${lost.length>1?'s':''} retirée${lost.length>1?'s':''}</b><br><span style="font-size:13px;color:var(--mut)">${lost.slice(0,14).join(', ')}${lost.length>14?'…':''}</span></p>` : ''}
+   <button class="btn" data-act="bulk-save-before">Remplacer l'état actuel par le pôle en cours</button>
+   <button class="btn" data-act="close">Fermer</button>`);
+}
+
+
 function saveBefore() {
   S.cur.before = {
     shelves: JSON.parse(JSON.stringify(S.cur.shelves)),
@@ -7974,6 +8028,12 @@ document.addEventListener('click', e => {
       break;
     case 'save-before':
       saveBefore();
+      break;
+    case 'bulk-save-before':
+      bulkSaveBefore();
+      break;
+    case 'bulk-compare':
+      bulkCompareSheet();
       break;
     case 'labels':
       labelsSheet();
