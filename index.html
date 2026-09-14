@@ -4424,13 +4424,14 @@ const VRAC_SEED = [
   { sku: '7445', name: 'Rouleau de peau de chèvre' },
   { sku: '7446', name: 'Rouleau de peau de chèvre' },
   { sku: '8943', name: 'Corne de buffle fourrée, 8cm' },
-  { sku: '8944', name: 'Corne de buffle fourrée, 12cm' }
+  { sku: '8944', name: 'Corne de buffle fourrée, 12cm' },
+  { sku: '712', name: 'Oreilles de porc', photo: './photos/vrac/712.png' }
 ];
 function vracLib() {
   const brut = lsGet(VRAC_LIB_KEY);
   if (brut === null) {
     // jamais touché sur cet appareil : on part avec le catalogue fourni par Dominik
-    const depart = VRAC_SEED.map(e => ({ id: uid(), name: e.name, sku: e.sku, photo: null }));
+    const depart = VRAC_SEED.map(e => ({ id: uid(), name: e.name, sku: e.sku, photo: e.photo || null }));
     vracLibSave(depart);
     return depart;
   }
@@ -4470,12 +4471,15 @@ function pickImageFile(cb) {
 
 function bulkPickPhoto(ri, ci) {
   pickImageFile(photo => {
-    const cell = S.cur.bulk.rows[ri].cells[ci] || { name: '', sku: '' };
-    cell.photo = photo;
-    S.cur.bulk.rows[ri].cells[ci] = cell;
-    vracRemember(cell.name, cell.sku, cell.photo);
-    dropShortURL('vrac:' + ri + ':' + ci);
-    snap(); persist(); closeSheet(); bulkRefresh();
+    toast('Détourage…');
+    detourImage(photo).then(clean => {
+      const cell = S.cur.bulk.rows[ri].cells[ci] || { name: '', sku: '' };
+      cell.photo = clean;
+      S.cur.bulk.rows[ri].cells[ci] = cell;
+      vracRemember(cell.name, cell.sku, cell.photo);
+      dropShortURL('vrac:' + ri + ':' + ci);
+      snap(); persist(); closeSheet(); bulkRefresh();
+    });
   });
 }
 
@@ -4503,14 +4507,17 @@ function vracLibSheet() {
 
 function vracLibAdd() {
   pickImageFile(photo => {
-    sheet(`<h2>Nouvelle photo</h2>
-     <div style="text-align:center;margin-bottom:10px"><img src="${photo}" style="max-width:120px;max-height:120px;border-radius:10px"></div>
-     <div class="grp"><div class="f"><label>Référence</label><input id="vl_name" placeholder="Oreilles de porc" autocapitalize="sentences"></div></div>
-     <div class="grp"><div class="f"><label>SKU</label><input id="vl_sku" placeholder="facultatif"></div></div>
-     <button class="btn p" data-act="vrac-lib-save">Enregistrer</button>
-     <button class="btn" data-act="vrac-lib">Annuler</button>`);
-    S.vracLibPending = photo;
-    setTimeout(() => { const el = $('vl_name'); if (el) el.focus(); }, 200);
+    toast('Détourage…');
+    detourImage(photo).then(clean => {
+      sheet(`<h2>Nouvelle photo</h2>
+       <div style="text-align:center;margin-bottom:10px"><img src="${clean}" style="max-width:120px;max-height:120px;border-radius:10px"></div>
+       <div class="grp"><div class="f"><label>Référence</label><input id="vl_name" placeholder="Oreilles de porc" autocapitalize="sentences"></div></div>
+       <div class="grp"><div class="f"><label>SKU</label><input id="vl_sku" placeholder="facultatif"></div></div>
+       <button class="btn p" data-act="vrac-lib-save">Enregistrer</button>
+       <button class="btn" data-act="vrac-lib">Annuler</button>`);
+      S.vracLibPending = clean;
+      setTimeout(() => { const el = $('vl_name'); if (el) el.focus(); }, 200);
+    });
   });
 }
 function vracLibSaveNew() {
@@ -4759,14 +4766,14 @@ function bulkToggleFill() {
 }
 
 /* ---- rendu 2D, strictement de face, du sol vers le haut ---- */
-function bulkSVG(p) {
+function bulkSVG(p, avecCotes) {
   const cols = bulkColumns(p);
   const sc = 0.22;   // px par mm, calibré pour tenir sur iPhone comme sur iPad
   const binWpx = 600 * sc;
   const totalWpx = cols * binWpx;
   const totalHpx = bulkTotalHeightMm(p) * sc;
-  const padL = 14, padB = 10, padT = 10;
-  const addRowH = 30;   // bandeau d'ajout d'une rangée, hauteur fixe, pas à l'échelle
+  const padL = avecCotes ? 34 : 14, padB = avecCotes ? 30 : 10, padT = 10;
+  const addRowH = avecCotes ? 0 : 30;   // pas de bandeau d'ajout en mode présentation
   const W = totalWpx + padL * 2, H = totalHpx + padB + padT + addRowH;
   let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">`;
   s += `<line x1="0" y1="${H-padB}" x2="${W}" y2="${H-padB}" stroke="var(--bubi-graphite)" stroke-width="2"/>`;
@@ -4775,6 +4782,14 @@ function bulkSVG(p) {
     const b = BIN[row.type];
     const hpx = b.hMm * sc;
     y -= hpx;
+    if (avecCotes) {
+      // cote de hauteur, à gauche de chaque rangée — mêmes repères que sur le
+      // plan détaillé imprimé, mais avec les couleurs de l'app en direct
+      s += `<line x1="${padL-8}" y1="${y}" x2="${padL-8}" y2="${y+hpx}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
+      s += `<line x1="${padL-11}" y1="${y}" x2="${padL-5}" y2="${y}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
+      s += `<line x1="${padL-11}" y1="${y+hpx}" x2="${padL-5}" y2="${y+hpx}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
+      s += `<text x="${padL-14}" y="${y+hpx/2+3}" font-size="8" text-anchor="end" fill="var(--bubi-blueprint-strong)">${b.hMm}</text>`;
+    }
     for (let bi = 0; bi < cols; bi++) {
       const x = padL + bi * binWpx;
       // contour unique du bac : jamais redessiné comme plusieurs bacs indépendants
@@ -4790,15 +4805,24 @@ function bulkSVG(p) {
         const cw = binWpx / b.comps;
         const cell = row.cells[ci];
         const sel = S.bulkSel && S.bulkSel.ri === ri && S.bulkSel.ci === ci;
-        // poignée arrondie, une par compartiment, vue sur les vrais bacs du
-        // magasin — toujours présente, et c'est là que le numéro d'article
-        // s'affiche une fois le compartiment renseigné
         const pillH = Math.min(hpx * 0.26, 14);
-        s += `<rect x="${cx}" y="${y+2}" width="${cw}" height="${pillH}" rx="3" fill="${cell&&!cell.photo?'var(--bubi-surface-2)':'rgba(200,215,222,.35)'}" stroke="var(--bubi-blueprint)" stroke-width="1"/>`;
+        const avecPhoto = cell && cell.photo;
+        if (!avecPhoto) {
+          // poignée arrondie, une par compartiment, vue sur les vrais bacs du
+          // magasin — toujours présente, et c'est là que le numéro d'article
+          // s'affiche une fois le compartiment renseigné
+          s += `<rect x="${cx+0.5}" y="${y+2.5}" width="${cw-1}" height="${pillH}" rx="3" fill="${cell?'var(--bubi-surface-2)':'rgba(200,215,222,.35)'}" stroke="var(--bubi-blueprint)" stroke-width="1"/>`;
+        }
         if (sel) s += `<rect x="${cx+2}" y="${y+2}" width="${cw-4}" height="${hpx-4}" rx="3" fill="none" stroke="var(--bubi-blueprint-strong)" stroke-width="2"/>`;
         if (cell) {
           if (cell.photo) {
             s += bulkSinglePhotoSVG(ri, ci, shortData('vrac:' + ri + ':' + ci, cell.photo) || cell.photo, cx + 1, y + 1, cw - 2, hpx - 2);
+            // voile dépoli derrière le numéro d'article, pour qu'il reste lisible
+            // sur la photo sans flouter le reste du visuel en dessous
+            const maxChars = Math.max(3, Math.floor((cw - 6) / 4.6));
+            const codeTxt = esc(cell.sku || cell.name).slice(0, maxChars);
+            s += `<rect x="${cx+0.5}" y="${y+2.5}" width="${cw-1}" height="${pillH}" rx="3" fill="rgba(255,255,255,.55)" stroke="rgba(255,255,255,.8)" stroke-width="1"/>`;
+            s += `<text x="${cx+cw/2}" y="${y+2+pillH/2+2.5}" font-size="7" font-weight="700" text-anchor="middle" fill="#1a2226" pointer-events="none">${codeTxt}</text>`;
           } else {
             // le nombre de caractères qui tient dépend de la largeur réelle du
             // compartiment (grand ou petit bac) — jamais un chiffre fixe qui
@@ -4814,14 +4838,23 @@ function bulkSVG(p) {
       }
     }
   });
-  // rangée d'ajout, toujours disponible en haut du pôle, découpée en blocs de
-  // 60 cm comme un vrai bac — on peut toujours « monter encore un peu plus »
-  y -= addRowH;
-  for (let bi = 0; bi < cols; bi++) {
-    const bx = padL + bi * binWpx;
-    s += `<rect x="${bx+2}" y="${y+2}" width="${binWpx-4}" height="${addRowH-6}" rx="4" fill="none" stroke="var(--bubi-border)" stroke-width="1.4" stroke-dasharray="4 3"/>`;
-    s += `<text x="${bx+binWpx/2}" y="${y+addRowH/2+2}" font-size="13" text-anchor="middle" fill="var(--bubi-border)" pointer-events="none">+</text>`;
-    s += `<rect class="bulkaddrow" x="${bx+2}" y="${y+2}" width="${binWpx-4}" height="${addRowH-6}" fill="transparent"/>`;
+  // rangée d'ajout, toujours disponible en haut du pôle en mode édition,
+  // découpée en blocs de 60 cm comme un vrai bac — absente en présentation
+  if (!avecCotes) {
+    y -= addRowH;
+    for (let bi = 0; bi < cols; bi++) {
+      const bx = padL + bi * binWpx;
+      s += `<rect x="${bx+2}" y="${y+2}" width="${binWpx-4}" height="${addRowH-6}" rx="4" fill="none" stroke="var(--bubi-border)" stroke-width="1.4" stroke-dasharray="4 3"/>`;
+      s += `<text x="${bx+binWpx/2}" y="${y+addRowH/2+2}" font-size="13" text-anchor="middle" fill="var(--bubi-border)" pointer-events="none">+</text>`;
+      s += `<rect class="bulkaddrow" x="${bx+2}" y="${y+2}" width="${binWpx-4}" height="${addRowH-6}" fill="transparent"/>`;
+    }
+  } else {
+    // cote de largeur totale, en bas, façon plan détaillé mais en couleurs de l'app
+    const yc = H - padB + 14;
+    s += `<line x1="${padL}" y1="${yc}" x2="${padL+totalWpx}" y2="${yc}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
+    s += `<line x1="${padL}" y1="${yc-4}" x2="${padL}" y2="${yc+4}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
+    s += `<line x1="${padL+totalWpx}" y1="${yc-4}" x2="${padL+totalWpx}" y2="${yc+4}" stroke="var(--bubi-blueprint)" stroke-width=".8"/>`;
+    s += `<text x="${padL+totalWpx/2}" y="${yc+13}" font-size="9" text-anchor="middle" fill="var(--bubi-blueprint-strong)">${(p.bulk.widthMm/10).toFixed(0)} cm</text>`;
   }
   return s + '</svg>';
 }
@@ -7624,7 +7657,7 @@ function presentation() {
   const d = document.createElement('div');
   d.className = 'pres';
   d.id = 'pres';
-  d.innerHTML = `<div class="presWrap" id="presWrap">${S.cur.kind === 'vrac' ? bulkSVG(S.cur) : gondolaSVG(false, true)}</div>
+  d.innerHTML = `<div class="presWrap" id="presWrap">${S.cur.kind === 'vrac' ? bulkSVG(S.cur, true) : gondolaSVG(false, true)}</div>
     <div class="presBar">
       <button class="nb" data-act="pres-zoom" data-v="-1">−</button>
       <span id="presPct">100 %</span>
